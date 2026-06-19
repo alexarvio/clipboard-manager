@@ -1,0 +1,17 @@
+{
+  "name": "clip-server",
+  "version": "0.1.0",
+  "description": "Tiny proxy server for Clip's AI transform feature. Holds the Anthropic API key server-side so it never ships inside the desktop app.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  }
+}
