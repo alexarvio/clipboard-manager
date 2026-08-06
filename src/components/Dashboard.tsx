@@ -92,9 +92,20 @@ const NAV_ITEMS = [
   { key: "folders", label: "Folders", icon: "ti-folder" },
 ];
 
+// Local device time, not server time -- a greeting is about the moment the
+// person is actually looking at the screen, and Clip has no reason to know
+// or care what time zone the server itself runs in.
+function timeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function Dashboard() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [tier, setTier] = useState<"free" | "pro">("free");
+  const [firstName, setFirstName] = useState("");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [history, setHistory] = useState<ClipEntry[]>([]);
   const [nav, setNav] = useState("home");
@@ -128,11 +139,13 @@ export default function Dashboard() {
         theme: "dark" | "light";
         tier: "free" | "pro";
         auth_token?: string;
+        first_name?: string;
         onboarding_complete?: boolean;
       }>("get_settings");
       setTheme(settings.theme);
       setTier(settings.tier);
       setAuthToken(settings.auth_token ?? "");
+      setFirstName(settings.first_name ?? "");
       setOnboardingComplete(settings.onboarding_complete ?? false);
 
       if (!settings.auth_token) return;
@@ -227,6 +240,7 @@ export default function Dashboard() {
               setAuthToken(settings.auth_token);
               setTheme(settings.theme);
               setTier(settings.tier);
+              setFirstName(settings.first_name ?? "");
               setOnboardingComplete(settings.onboarding_complete);
               // Load stats/history now that we're actually signed in --
               // mirrors the effect above, which skipped this while logged out.
@@ -365,7 +379,10 @@ export default function Dashboard() {
         {nav === "home" && (
           <div className="flex-1 min-h-0 flex flex-col">
           <div className="flex-1 overflow-y-auto p-8">
-            <h1 className="text-[22px] font-semibold mb-1">Welcome back</h1>
+            <h1 className="text-[22px] font-semibold mb-1">
+              {timeOfDayGreeting()}
+              {firstName ? `, ${firstName}` : ""}.
+            </h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-7">
               Here's how you've been using Clip.
             </p>
@@ -688,6 +705,7 @@ export default function Dashboard() {
                 onClose={() => setNav("home")}
                 onThemeChange={setTheme}
                 onTierChange={setTier}
+                onFirstNameChange={setFirstName}
                 onLoggedOut={() => setAuthToken("")}
               />
             </div>

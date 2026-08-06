@@ -512,7 +512,12 @@ export default function ScreenshotsPanel({
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
-    <div className="flex-1 overflow-y-auto px-4 py-2">
+    {/* pt-3 instead of the plain py-2 this used to have (2026-08-06) --
+        widens the gap between the Text/Screenshots toggle row above (in
+        App.tsx) and the first card here (Pinned or the first date group),
+        so the toggle pill's own ring/shadow has clear room and doesn't read
+        as touching/overlapping the card below it. */}
+    <div className="flex-1 overflow-y-auto px-4 pt-3 pb-2">
       {transformPaywallMsg && (
         <div className="mx-1 mt-1 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium">
           Transform with AI is a Pro feature — upgrade to use it on screenshots.

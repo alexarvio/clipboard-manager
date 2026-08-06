@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "../lib/tauriShim";
+import fatClipboardLogo from "../assets/fatclipboard-logo.png";
 
 // Mirrors src-tauri/src/settings.rs::Settings closely enough for what this
 // screen needs back -- auth_signup/auth_login return the *whole* updated
@@ -8,6 +9,7 @@ import { invoke } from "../lib/tauriShim";
 interface AuthSettings {
   auth_token: string;
   user_email: string;
+  first_name: string;
   tier: "free" | "pro";
   theme: "dark" | "light";
   onboarding_complete: boolean;
@@ -22,6 +24,7 @@ type Mode = "signup" | "login" | "forgot" | "reset";
 
 export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settings: AuthSettings) => void }) {
   const [mode, setMode] = useState<Mode>("signup");
+  const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetToken, setResetToken] = useState("");
@@ -46,6 +49,10 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settin
       setError("Enter your email and password.");
       return;
     }
+    if (mode === "signup" && !firstName.trim()) {
+      setError("Enter your first name.");
+      return;
+    }
     if (mode === "signup" && password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -53,10 +60,12 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settin
 
     setLoading(true);
     try {
-      const settings = await invoke<AuthSettings>(mode === "signup" ? "auth_signup" : "auth_login", {
-        email: email.trim(),
-        password,
-      });
+      const settings = await invoke<AuthSettings>(
+        mode === "signup" ? "auth_signup" : "auth_login",
+        mode === "signup"
+          ? { email: email.trim(), password, firstName: firstName.trim() }
+          : { email: email.trim(), password }
+      );
       onAuthenticated(settings);
     } catch (err) {
       setError(typeof err === "string" ? err : "Something went wrong. Please try again.");
@@ -119,14 +128,13 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settin
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-ink dark:text-cream">
-      <i className="ti ti-clipboard-text text-[26px] text-accent dark:text-accentDark mb-3" />
+      <img src={fatClipboardLogo} alt="FatClipboard" className="h-10 w-auto mb-4" />
       <h1 className="text-[17px] font-semibold mb-1">
-        {mode === "forgot" ? "Reset your password" : mode === "reset" ? "Check your email" : "Welcome to Clip"}
+        {mode === "forgot" ? "Reset your password" : mode === "reset" ? "Check your email" : "Welcome to FatClipboard"}
       </h1>
       <p className="text-[12.5px] text-inkMuted dark:text-inkMutedDark text-center mb-6 max-w-[260px]">
-        {mode === "signup" &&
-          "Create an account to get started — it's how Pro and your settings follow you across devices."}
-        {mode === "login" && "Log in to your Clip account."}
+        {mode === "signup" && "Create an account to get started."}
+        {mode === "login" && "Log in to your FatClipboard account."}
         {mode === "forgot" && "Enter your email and we'll send you a code to reset your password."}
         {mode === "reset" &&
           (forgotMessage ?? "Paste the code from your email, then choose a new password.")}
@@ -161,9 +169,21 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settin
 
       {isAccountMode && (
         <form onSubmit={submit} className="w-full max-w-[280px] space-y-2.5">
+          {mode === "signup" && (
+            <input
+              type="text"
+              autoFocus
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              autoComplete="given-name"
+              maxLength={50}
+              className="w-full bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2.5 text-[13px] outline-none"
+            />
+          )}
           <input
             type="email"
-            autoFocus
+            autoFocus={mode !== "signup"}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"

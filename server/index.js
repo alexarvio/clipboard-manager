@@ -115,7 +115,7 @@ app.use(["/auth/signup", "/auth/login"], authAttemptLimiter);
 app.post("/auth/signup", async (req, res) => {
   if (!JWT_SECRET) return res.status(500).json({ error: "server is not configured for accounts yet" });
 
-  const { email, password } = req.body || {};
+  const { email, password, firstName } = req.body || {};
   // Normalize *before* validating. isValidEmail's regex is anchored and
   // rejects any whitespace, so " Alex@Example.com " (trivially produced by
   // pasting, or by a mobile keyboard adding a trailing space) used to be
@@ -129,6 +129,16 @@ app.post("/auth/signup", async (req, res) => {
   }
   if (typeof password !== "string" || password.length < 8) {
     return res.status(400).json({ error: "password must be at least 8 characters" });
+  }
+  const normalizedFirstName = typeof firstName === "string" ? firstName.trim() : "";
+  if (!normalizedFirstName) {
+    return res.status(400).json({ error: "enter your first name" });
+  }
+  // Generous but not unbounded -- this only ever renders in a greeting
+  // ("Good morning, {name}"), so there's no reason to accept anything long
+  // enough to look broken there.
+  if (normalizedFirstName.length > 50) {
+    return res.status(400).json({ error: "first name is too long" });
   }
 
   const { rows: existingRows } = await pool.query("SELECT id FROM users WHERE email = $1", [
@@ -147,8 +157,8 @@ app.post("/auth/signup", async (req, res) => {
   let userId;
   try {
     const { rows } = await pool.query(
-      "INSERT INTO users (email, password_hash, tier) VALUES ($1, $2, 'free') RETURNING id",
-      [normalizedEmail, password_hash]
+      "INSERT INTO users (email, password_hash, tier, first_name) VALUES ($1, $2, 'free', $3) RETURNING id",
+      [normalizedEmail, password_hash, normalizedFirstName]
     );
     userId = rows[0].id;
   } catch (err) {
@@ -166,7 +176,10 @@ app.post("/auth/signup", async (req, res) => {
   // wait on an email provider round-trip just to finish signing up.
   sendWelcomeEmail(normalizedEmail);
 
-  res.json({ token: signSession(user), user: { email: user.email, tier: user.tier } });
+  res.json({
+    token: signSession(user),
+    user: { email: user.email, tier: user.tier, first_name: normalizedFirstName },
+  });
 });
 
 app.post("/auth/login", async (req, res) => {
@@ -187,7 +200,10 @@ app.post("/auth/login", async (req, res) => {
   const ok = await bcrypt.compare(password, row.password_hash);
   if (!ok) return res.status(401).json({ error: "invalid email or password" });
 
-  res.json({ token: signSession(row), user: { email: row.email, tier: row.tier } });
+  res.json({
+    token: signSession(row),
+    user: { email: row.email, tier: row.tier, first_name: row.first_name || "" },
+  });
 });
 
 function requireAuth(req, res, next) {
@@ -202,15 +218,38 @@ function requireAuth(req, res, next) {
   }
 }
 
+// Lets an existing account (created before first_name was collected at
+// signup, or anyone who just wants to change it) set/update their display
+// name from Settings -- see SettingsPanel.tsx's Account section and
+// update_first_name in main.rs. Same validation as signup's own first-name
+// check.
+app.post("/auth/update-profile", requireAuth, async (req, res) => {
+  const { firstName } = req.body || {};
+  const normalizedFirstName = typeof firstName === "string" ? firstName.trim() : "";
+  if (!normalizedFirstName) {
+    return res.status(400).json({ error: "enter your first name" });
+  }
+  if (normalizedFirstName.length > 50) {
+    return res.status(400).json({ error: "first name is too long" });
+  }
+
+  const { rows } = await pool.query(
+    "UPDATE users SET first_name = $1 WHERE id = $2 RETURNING email, tier, first_name",
+    [normalizedFirstName, req.authUser.sub]
+  );
+  if (!rows[0]) return res.status(404).json({ error: "account not found" });
+  res.json({ user: rows[0] });
+});
+
 // Lets the app re-check a stored session is still valid and pull the
 // account's current tier (e.g. after upgrading on another device, once
 // real billing exists).
 app.get("/auth/me", requireAuth, async (req, res) => {
-  const { rows } = await pool.query("SELECT email, tier FROM users WHERE id = $1", [
+  const { rows } = await pool.query("SELECT email, tier, first_name FROM users WHERE id = $1", [
     req.authUser.sub,
   ]);
   if (!rows[0]) return res.status(404).json({ error: "account not found" });
-  res.json({ user: rows[0] });
+  res.json({ user: { ...rows[0], first_name: rows[0].first_name || "" } });
 });
 
 // --- Billing (Stripe) ------------------------------------------------------

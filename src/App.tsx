@@ -796,7 +796,14 @@ export default function App() {
                 transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-            <div className="grid grid-cols-2 gap-1.5 px-4 pt-1.5">
+            {/* pb-0.5 (2026-08-06): the active pill's ring-1/shadow-sm render
+                a hair outside its own border box, which this motion.div's
+                animated height (measured to exactly fit the content) doesn't
+                account for -- without this buffer, overflow-hidden sliced
+                off that outer sliver right at the bottom, flattening the
+                pill's bottom-rounded corners instead of a small visual glitch
+                nobody would notice. */}
+            <div className="grid grid-cols-2 gap-1.5 px-4 pt-1.5 pb-0.5">
               {/* Same active-pill treatment as the History/Transform/Folders
                   row above it now (white/charcoalSurface + shadow + ring,
                   2026-08-03) -- this sub-toggle used to get a flatter,

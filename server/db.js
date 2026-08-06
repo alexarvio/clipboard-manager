@@ -98,6 +98,13 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
   `);
 
+  // Display name (2026-08-06), collected at signup so the app can show a
+  // "Good morning, Alex" style greeting on the Dashboard instead of nothing
+  // more personal than the account's email. Nullable/no default -- accounts
+  // created before this column existed just show a name-less greeting
+  // fallback (see Dashboard.tsx) rather than needing a backfill.
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;`);
+
   console.log("[clip-server] Postgres schema ready");
 }
 

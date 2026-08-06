@@ -35,15 +35,24 @@ pub struct Settings {
     pub max_history: i64,
     pub launch_at_startup: bool,
     pub theme: String,
-    /// Where the AI transform feature sends requests. Defaults to a local
-    /// dev server; point this at your deployed server URL once you have one.
+    /// Where the AI transform feature sends requests. Defaults to the
+    /// deployed Railway server (2026-08-06) -- was a local dev server
+    /// (localhost:8787) before this was actually deployed anywhere.
     /// The app never talks to Anthropic directly -- see server/README.md.
     #[serde(default = "default_server_url")]
     pub server_url: String,
-    /// Optional shared secret sent as the x-app-secret header. Only needed
-    /// once the server has APP_SHARED_SECRET set (i.e. once it's deployed
-    /// somewhere public, not for local dev).
-    #[serde(default)]
+    /// Shared secret sent as the x-app-secret header. Must match whatever
+    /// APP_SHARED_SECRET is set to on the server -- the server rejects any
+    /// request without a matching header once that env var is set (see
+    /// server/README.md), which it now is on the deployed Railway instance.
+    /// Baked in here (2026-08-06) rather than left empty, since an empty
+    /// default would mean every app install starts out unable to reach the
+    /// now-gated server until someone manually pastes this into Settings.
+    /// This is a build-identity secret, not a per-user credential -- it
+    /// just proves "this request came from a real build of the app," so
+    /// shipping it inside the app (rather than treating it like a real
+    /// secret) is the intended use, same as the server_url default above.
+    #[serde(default = "default_app_secret")]
     pub app_secret: String,
     /// "free" or "pro". No real billing/account system exists yet -- this is
     /// the seam that future Stripe/license work will set. Until then it's a
@@ -105,6 +114,14 @@ pub struct Settings {
     /// auth decision itself, the server is the source of truth for that.
     #[serde(default)]
     pub user_email: String,
+    /// The signed-in account's first name (collected at signup, 2026-08-06)
+    /// -- purely for display, same reasoning as user_email above (e.g. the
+    /// "Good morning, {name}" greeting on Dashboard's Home tab). Empty for
+    /// accounts created before this field existed, or if the server is on
+    /// an older build that doesn't send it -- callers should fall back to
+    /// something name-less rather than assume this is always populated.
+    #[serde(default)]
+    pub first_name: String,
     /// Whether the post-signup onboarding tour (feature highlights + a few
     /// practical setup steps: hotkey, theme, launch at startup) has been
     /// completed on this device. Deliberately per-device rather than
@@ -123,7 +140,14 @@ fn default_tier() -> String {
 }
 
 fn default_server_url() -> String {
-    "http://localhost:8787".into()
+    "https://clipboard-manager-production.up.railway.app".into()
+}
+
+/// Must match APP_SHARED_SECRET on the deployed server (see the doc comment
+/// on the `app_secret` field above for why this is safe to bake into the
+/// app rather than treat as a real per-user secret).
+fn default_app_secret() -> String {
+    "d2bb3ec709731ebe180575e214204002cad3defafa5e31a314b82cc6eab668ef".into()
 }
 
 fn default_visible_categories() -> Vec<String> {
@@ -174,7 +198,7 @@ impl Default for Settings {
             launch_at_startup: false,
             theme: "dark".into(),
             server_url: default_server_url(),
-            app_secret: String::new(),
+            app_secret: default_app_secret(),
             tier: default_tier(),
             custom_presets: Vec::new(),
             custom_filters: Vec::new(),
@@ -183,6 +207,7 @@ impl Default for Settings {
             visible_presets_screenshots: default_visible_presets_screenshots(),
             auth_token: String::new(),
             user_email: String::new(),
+            first_name: String::new(),
             onboarding_complete: false,
         }
     }

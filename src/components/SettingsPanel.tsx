@@ -39,6 +39,7 @@ interface Settings {
   visible_presets_screenshots: string[];
   custom_filters: CustomFilter[];
   user_email: string;
+  first_name: string;
 }
 
 // Small shared wrapper so every settings section reads as its own card --
@@ -75,6 +76,7 @@ export default function SettingsPanel({
   onClose,
   onThemeChange,
   onTierChange,
+  onFirstNameChange,
   onVisibleCategoriesChange,
   scrollToPresets,
   onScrolledToPresets,
@@ -84,6 +86,10 @@ export default function SettingsPanel({
   onClose: () => void;
   onThemeChange?: (theme: "dark" | "light") => void;
   onTierChange?: (tier: "free" | "pro") => void;
+  // Fired after update_first_name succeeds (see saveName below) -- lets
+  // Dashboard's greeting update immediately instead of waiting for the next
+  // full get_settings load.
+  onFirstNameChange?: (firstName: string) => void;
   onVisibleCategoriesChange?: (categories: string[]) => void;
   // Set by TransformBar's "x/6 presets" link (via App.tsx) to jump straight
   // to the Presets section below once settings has loaded and rendered it.
@@ -139,6 +145,46 @@ export default function SettingsPanel({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // First-name editing (2026-08-06) -- separate from the rest of `settings`
+  // since this one field is server-authoritative (stored on the account in
+  // Postgres, not just locally), so it needs its own save action hitting
+  // update_first_name rather than folding into the generic update()/
+  // save_settings path the other fields use. Local draft state (nameInput)
+  // is only synced from settings.first_name once, when settings first
+  // loads -- see the effect below -- so typing doesn't get clobbered by any
+  // unrelated re-render of `settings`.
+  const [nameInput, setNameInput] = useState("");
+  const [nameSynced, setNameSynced] = useState(false);
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  useEffect(() => {
+    if (settings && !nameSynced) {
+      setNameInput(settings.first_name || "");
+      setNameSynced(true);
+    }
+  }, [settings, nameSynced]);
+
+  async function saveName() {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === settings?.first_name) return;
+    setNameSaving(true);
+    setNameError(null);
+    try {
+      const next = await invoke<Settings>("update_first_name", { firstName: trimmed });
+      setSettings((prev) => (prev ? { ...prev, first_name: next.first_name } : prev));
+      setNameInput(next.first_name);
+      onFirstNameChange?.(next.first_name);
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 1800);
+    } catch (err) {
+      setNameError(typeof err === "string" ? err : "Couldn't save your name.");
+    } finally {
+      setNameSaving(false);
+    }
+  }
 
   useEffect(() => {
     // Cleanup on unmount -- Settings can close (or the panel it's docked in
@@ -398,7 +444,7 @@ export default function SettingsPanel({
       className="flex-1 overflow-y-auto px-4 py-4 text-sm space-y-3 text-ink dark:text-cream"
     >
       <Section icon="ti-user-circle" title="Account">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="min-w-0">
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-0.5">Signed in as</p>
             <p className="text-[13px] font-medium truncate">{settings.user_email || "—"}</p>
@@ -410,26 +456,52 @@ export default function SettingsPanel({
             Log out
           </button>
         </div>
+
+        <div>
+          <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-1">
+            First name
+            <span className="opacity-70"> — used for the "Good morning" greeting on Dashboard</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveName();
+              }}
+              placeholder="Your first name"
+              maxLength={50}
+              className="flex-1 min-w-0 bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 text-[13px] outline-none"
+            />
+            <button
+              onClick={saveName}
+              disabled={nameSaving || !nameInput.trim() || nameInput.trim() === settings.first_name}
+              className="shrink-0 text-[11.5px] px-3 py-2 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal font-medium disabled:opacity-40"
+            >
+              {nameSaving ? "Saving…" : nameSaved ? "Saved" : "Save"}
+            </button>
+          </div>
+          {nameError && <p className="text-[11.5px] text-red-500 dark:text-red-400 mt-1.5">{nameError}</p>}
+        </div>
       </Section>
 
       <Section icon="ti-sparkles" title="Plan">
         {settings.tier === "pro" ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[13px] font-medium flex items-center gap-1.5">
-                Pro
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark">
-                  ACTIVE
-                </span>
-              </p>
-              <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-0.5">
-                Unlimited history, AI transform, AI filters, and semantic search.
-              </p>
-            </div>
+          <div>
+            <p className="text-[13px] font-medium flex items-center gap-1.5">
+              Pro
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark">
+                ACTIVE
+              </span>
+            </p>
+            <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-0.5">
+              Unlimited history, AI transform, AI filters, and semantic search.
+            </p>
             <button
               onClick={openBillingPortal}
               disabled={portalLoading}
-              className="shrink-0 text-[11.5px] px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] transition-colors disabled:opacity-50"
+              className="mt-3 w-full text-[11.5px] px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] transition-colors disabled:opacity-50"
             >
               {portalLoading ? "Opening…" : "Manage subscription"}
             </button>

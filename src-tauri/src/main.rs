@@ -1244,12 +1244,24 @@ fn save_settings(settings: Settings, app: tauri::AppHandle, state: tauri::State<
 struct AuthCredentials<'a> {
     email: &'a str,
     password: &'a str,
+    // Only ever set on signup -- login has no reason to send it, and the
+    // server's /auth/login route doesn't look for it. skip_serializing_if
+    // keeps it out of the JSON body entirely on login rather than sending an
+    // explicit `"firstName":null`.
+    #[serde(skip_serializing_if = "Option::is_none", rename = "firstName")]
+    first_name: Option<&'a str>,
 }
 
 #[derive(serde::Deserialize)]
 struct AuthUser {
     email: String,
     tier: String,
+    // #[serde(default)] so this doesn't break deserializing a response from
+    // an older server that predates this field, or an account created
+    // before first_name was collected (server sends "" for those, but
+    // defensive either way).
+    #[serde(default)]
+    first_name: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -1270,6 +1282,7 @@ async fn run_auth_request(
     path: &str,
     email: String,
     password: String,
+    first_name: Option<String>,
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<Settings, String> {
@@ -1281,6 +1294,7 @@ async fn run_auth_request(
         .json(&AuthCredentials {
             email: &email,
             password: &password,
+            first_name: first_name.as_deref(),
         })
         .send()
         .await
@@ -1305,6 +1319,7 @@ async fn run_auth_request(
     settings.auth_token = token;
     settings.user_email = user.email;
     settings.tier = user.tier;
+    settings.first_name = user.first_name;
     settings::save(&settings);
     *state.settings.lock().unwrap() = settings.clone();
 
@@ -1326,10 +1341,11 @@ async fn run_auth_request(
 async fn auth_signup(
     email: String,
     password: String,
+    first_name: String,
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<Settings, String> {
-    run_auth_request("auth/signup", email, password, app, state).await
+    run_auth_request("auth/signup", email, password, Some(first_name), app, state).await
 }
 
 /// Signs into an existing account (see server/index.js POST /auth/login).
@@ -1340,7 +1356,7 @@ async fn auth_login(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<Settings, String> {
-    run_auth_request("auth/login", email, password, app, state).await
+    run_auth_request("auth/login", email, password, None, app, state).await
 }
 
 /// Clears the local session. Tier is reset to "free" rather than left as
@@ -1353,6 +1369,7 @@ fn auth_logout(state: tauri::State<AppState>) -> Settings {
     settings.auth_token = String::new();
     settings.user_email = String::new();
     settings.tier = "free".into();
+    settings.first_name = String::new();
     settings::save(&settings);
     settings.clone()
 }
@@ -1583,6 +1600,68 @@ async fn open_billing_portal(state: tauri::State<'_, AppState>) -> Result<(), St
     open::that(url).map_err(|e| format!("couldn't open browser: {e}"))
 }
 
+#[derive(serde::Serialize)]
+struct UpdateProfileBody<'a> {
+    #[serde(rename = "firstName")]
+    first_name: &'a str,
+}
+
+/// Updates the signed-in account's first name on the server (see
+/// server/index.js POST /auth/update-profile) and mirrors it into local
+/// settings -- used by Settings' Account section so accounts created before
+/// first_name was collected at signup (or anyone who just wants to change
+/// it) can set/edit it after the fact, same idea as refresh_account_status
+/// pulling tier from the server rather than trusting a purely local value.
+#[tauri::command]
+async fn update_first_name(
+    first_name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Settings, String> {
+    let (server_url, auth_token) = {
+        let settings = state.settings.lock().unwrap();
+        (settings.server_url.clone(), settings.auth_token.clone())
+    };
+    if auth_token.is_empty() {
+        return Err("please log in first".into());
+    }
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!(
+            "{}/auth/update-profile",
+            server_url.trim_end_matches('/')
+        ))
+        .header("Authorization", format!("Bearer {auth_token}"))
+        .json(&UpdateProfileBody {
+            first_name: &first_name,
+        })
+        .send()
+        .await
+        .map_err(|e| format!("couldn't reach server: {e}"))?;
+
+    let ok = resp.status().is_success();
+    #[derive(serde::Deserialize)]
+    struct UpdateProfileResponse {
+        user: Option<AuthUser>,
+        error: Option<String>,
+    }
+    let body: UpdateProfileResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("bad response from server: {e}"))?;
+
+    if !ok {
+        return Err(body.error.unwrap_or_else(|| "couldn't update your name".into()));
+    }
+    let user = body.user.ok_or("server didn't return account info")?;
+
+    let mut settings = state.settings.lock().unwrap().clone();
+    settings.first_name = user.first_name;
+    settings::save(&settings);
+    *state.settings.lock().unwrap() = settings.clone();
+    Ok(settings)
+}
+
 /// Re-checks the account's real tier from the server (GET /auth/me) and
 /// updates local settings to match. This is the only thing that actually
 /// detects a Checkout session finishing -- there's no webhook back to the
@@ -1629,6 +1708,7 @@ async fn refresh_account_status(
 
     let mut settings = state.settings.lock().unwrap().clone();
     settings.tier = body.user.tier;
+    settings.first_name = body.user.first_name;
     settings::save(&settings);
     *state.settings.lock().unwrap() = settings.clone();
 
@@ -2088,6 +2168,7 @@ fn main() {
             start_checkout,
             open_billing_portal,
             refresh_account_status,
+            update_first_name,
             transform_clip,
             filter_by_ai,
             semantic_search,
