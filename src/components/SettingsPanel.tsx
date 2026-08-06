@@ -167,6 +167,35 @@ export default function SettingsPanel({
     }
   }, [settings, nameSynced]);
 
+  // Delete account (2026-08-06) -- deliberately more friction than
+  // ConfirmPopover's click-to-confirm (used for reversible-ish things like
+  // deleting a custom preset): typing the exact account email is the same
+  // "prove you mean it" pattern Stripe/GitHub use for irreversible account
+  // actions, harder to fat-finger through than a single extra click.
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function closeDeleteModal() {
+    setShowDeleteModal(false);
+    setDeleteConfirmInput("");
+    setDeleteError(null);
+  }
+
+  async function confirmDeleteAccount() {
+    if (!settings || deleteConfirmInput.trim().toLowerCase() !== settings.user_email.toLowerCase()) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await invoke("delete_account");
+      onLoggedOut?.();
+    } catch (err) {
+      setDeleteError(typeof err === "string" ? err : "Couldn't delete your account.");
+      setDeleting(false);
+    }
+  }
+
   async function saveName() {
     const trimmed = nameInput.trim();
     if (!trimmed || trimmed === settings?.first_name) return;
@@ -484,6 +513,15 @@ export default function SettingsPanel({
           </div>
           {nameError && <p className="text-[11.5px] text-red-500 dark:text-red-400 mt-1.5">{nameError}</p>}
         </div>
+
+        <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="text-[11.5px] text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium transition-colors"
+          >
+            Delete account
+          </button>
+        </div>
       </Section>
 
       <Section icon="ti-sparkles" title="Plan">
@@ -601,13 +639,40 @@ export default function SettingsPanel({
             <p className="text-[13px]">
               {settings.tier === "pro" ? "Unlimited" : "50 items or 7 days, whichever comes first"}
             </p>
-            <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
-              {settings.tier === "pro"
-                ? "Pro has no history cap."
-                : "Fixed by plan, not editable — upgrade to Pro for unlimited history."}
-            </p>
+            {/* Caption dropped for Pro (2026-08-06) -- "Unlimited" above and
+                "Pro has no history cap" below just said the same thing
+                twice. Free still gets the caption since the value line alone
+                ("50 items or 7 days...") doesn't explain *why* -- that it's
+                fixed by plan rather than something to go looking for a
+                setting to change. */}
+            {settings.tier !== "pro" && (
+              <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
+                Fixed by plan, not editable — upgrade to Pro for unlimited history.
+              </p>
+            )}
           </div>
 
+          <div>
+            <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">
+              Language
+            </label>
+            <select
+              disabled
+              value="en"
+              className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none opacity-60 cursor-not-allowed"
+            >
+              <option value="en">English</option>
+            </select>
+            <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
+              Only English is available right now — more languages are on the roadmap, not a
+              current setting.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section icon="ti-palette" title="Appearance & Startup">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span>Launch at startup</span>
             <input
@@ -630,20 +695,6 @@ export default function SettingsPanel({
             </select>
           </div>
         </div>
-      </Section>
-
-      <Section
-        icon="ti-language"
-        title="Language"
-        description="Only English is available right now -- more languages are on the roadmap, not a current setting."
-      >
-        <select
-          disabled
-          value="en"
-          className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none opacity-60 cursor-not-allowed"
-        >
-          <option value="en">English</option>
-        </select>
       </Section>
 
       <Section
@@ -1121,6 +1172,61 @@ export default function SettingsPanel({
               setDeleteConfirmLabel(null);
             }}
           />,
+          document.body
+        )}
+
+      {showDeleteModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-6"
+            onClick={closeDeleteModal}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[320px] rounded-2xl bg-cream dark:bg-charcoalSurface shadow-2xl p-4"
+            >
+              <p className="text-[14px] font-semibold mb-1.5">Delete your account?</p>
+              <p className="text-[12.5px] text-inkMuted dark:text-inkMutedDark leading-snug mb-3">
+                This permanently deletes your FatClipboard account and cancels any active
+                subscription. This can't be undone. Your local clip history on this device isn't
+                affected.
+              </p>
+              <p className="text-[12px] text-inkMuted dark:text-inkMutedDark mb-1.5">
+                Type <span className="font-medium text-ink dark:text-cream">{settings.user_email}</span> to
+                confirm.
+              </p>
+              <input
+                type="text"
+                autoFocus
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmDeleteAccount();
+                }}
+                className="w-full bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 text-[13px] outline-none mb-1.5"
+              />
+              {deleteError && (
+                <p className="text-[11.5px] text-red-500 dark:text-red-400 mb-1.5">{deleteError}</p>
+              )}
+              <div className="flex gap-1.5 mt-2">
+                <button
+                  onClick={closeDeleteModal}
+                  className="flex-1 text-[12.5px] py-2 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.12] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteAccount}
+                  disabled={
+                    deleting || deleteConfirmInput.trim().toLowerCase() !== settings.user_email.toLowerCase()
+                  }
+                  className="flex-1 text-[12.5px] font-medium py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40"
+                >
+                  {deleting ? "Deleting…" : "Delete account"}
+                </button>
+              </div>
+            </div>
+          </div>,
           document.body
         )}
     </div>

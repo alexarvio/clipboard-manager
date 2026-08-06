@@ -1374,6 +1374,52 @@ fn auth_logout(state: tauri::State<AppState>) -> Settings {
     settings.clone()
 }
 
+/// Permanently deletes the signed-in account on the server (see
+/// server/index.js DELETE /auth/account) and then clears the local session
+/// exactly like auth_logout -- there's no account left to be signed into
+/// once this succeeds. Deliberately does *not* touch the local clip history
+/// database: that's on-device data that exists independently of any
+/// account (it's how Free tier works with nobody signed in at all), so
+/// deleting the account shouldn't silently wipe clips sitting on this
+/// machine -- see settings.rs's own reasoning for why auth state and local
+/// data are kept as separate concerns throughout this app.
+#[tauri::command]
+async fn delete_account(state: tauri::State<'_, AppState>) -> Result<Settings, String> {
+    let (server_url, auth_token) = {
+        let settings = state.settings.lock().unwrap();
+        (settings.server_url.clone(), settings.auth_token.clone())
+    };
+    if auth_token.is_empty() {
+        return Err("please log in first".into());
+    }
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .delete(format!("{}/auth/account", server_url.trim_end_matches('/')))
+        .header("Authorization", format!("Bearer {auth_token}"))
+        .send()
+        .await
+        .map_err(|e| format!("couldn't reach server: {e}"))?;
+
+    let ok = resp.status().is_success();
+    if !ok {
+        #[derive(serde::Deserialize)]
+        struct ErrorResponse {
+            error: Option<String>,
+        }
+        let body: ErrorResponse = resp.json().await.unwrap_or(ErrorResponse { error: None });
+        return Err(body.error.unwrap_or_else(|| "couldn't delete your account".into()));
+    }
+
+    let mut settings = state.settings.lock().unwrap();
+    settings.auth_token = String::new();
+    settings.user_email = String::new();
+    settings.tier = "free".into();
+    settings.first_name = String::new();
+    settings::save(&settings);
+    Ok(settings.clone())
+}
+
 #[derive(serde::Serialize)]
 struct ForgotPasswordBody<'a> {
     email: &'a str,
@@ -2163,6 +2209,7 @@ fn main() {
             auth_signup,
             auth_login,
             auth_logout,
+            delete_account,
             request_password_reset,
             reset_password,
             start_checkout,

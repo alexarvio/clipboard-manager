@@ -292,6 +292,26 @@ app.post("/billing/portal", requireAuth, async (req, res) => {
   }
 });
 
+// Permanently deletes the signed-in account -- see SettingsPanel.tsx's
+// "Delete account" confirm-by-typing-your-email flow and delete_account in
+// main.rs. Cancels any active Stripe subscription first (so deleting the
+// account doesn't leave a subscription silently billing an account that no
+// longer exists), then deletes the users row outright. password_reset_tokens
+// cascade-delete via their own FK (see db.js's ON DELETE CASCADE) -- nothing
+// else in this schema references users.id, so there's no other cleanup
+// needed. Irreversible: there's no "soft delete"/undo here, matching the
+// plain wording the confirm UI uses ("This can't be undone").
+app.delete("/auth/account", requireAuth, async (req, res) => {
+  const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [req.authUser.sub]);
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: "account not found" });
+
+  await billing.cancelSubscriptionImmediately(user);
+  await pool.query("DELETE FROM users WHERE id = $1", [user.id]);
+
+  res.json({ ok: true });
+});
+
 // --- Password reset -------------------------------------------------------
 //
 // Two-step flow: request a reset (always responds the same way whether or

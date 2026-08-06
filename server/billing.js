@@ -131,6 +131,27 @@ async function createPortalSession(user) {
   return session.url;
 }
 
+// Cancels a subscription immediately (not "at period end") -- used by
+// account deletion (see index.js's DELETE /auth/account) so someone deleting
+// their account doesn't keep getting billed for a subscription tied to an
+// account that no longer exists. Deliberately not routed through Stripe's
+// webhook -> applySubscriptionStatus path: the users row is about to be
+// deleted outright anyway, so there's nothing left to update it on.
+// Swallows "no such subscription"/already-canceled errors rather than
+// throwing -- account deletion should still succeed even if Stripe's side
+// of this is already gone or was never fully set up.
+async function cancelSubscriptionImmediately(user) {
+  if (!stripe || !user.stripe_subscription_id) return;
+  try {
+    await stripe.subscriptions.cancel(user.stripe_subscription_id);
+  } catch (err) {
+    console.warn(
+      `[clip-server] couldn't cancel subscription ${user.stripe_subscription_id} during account deletion:`,
+      err.message || err
+    );
+  }
+}
+
 // Applies a subscription's current Stripe status to the account it belongs
 // to. Looked up by stripe_customer_id (present on every subscription event
 // Stripe sends) rather than app_user_id metadata, since customer id is the
@@ -200,4 +221,5 @@ module.exports = {
   createCheckoutSession,
   createPortalSession,
   handleWebhookEvent,
+  cancelSubscriptionImmediately,
 };
