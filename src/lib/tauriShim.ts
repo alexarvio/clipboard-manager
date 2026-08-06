@@ -24,11 +24,21 @@ interface MockSettings {
   app_secret: string;
   tier: "free" | "pro";
   custom_presets: { label: string; instruction: string }[];
+  // Screenshots' own separate custom-preset pool (2026-08-06 split) -- see
+  // the matching field's doc comment on settings.rs::Settings.
+  custom_presets_screenshots: { label: string; instruction: string }[];
   custom_filters: { name: string; prompt: string }[];
   visible_categories: string[];
   visible_presets: string[];
+  // Was missing from this mock entirely -- fell back silently to
+  // DEFAULT_SCREENSHOT_PRESETS wherever it's read with `?? fallback`, so it
+  // never actually broke anything visible, just wasn't an accurate mirror
+  // of settings.rs::Settings. Added while touching this file for the
+  // custom_presets_screenshots split above.
+  visible_presets_screenshots: string[];
   auth_token: string;
   user_email: string;
+  first_name: string;
   onboarding_complete: boolean;
 }
 
@@ -58,11 +68,14 @@ let settings: MockSettings = {
   app_secret: "",
   tier: "free",
   custom_presets: [],
+  custom_presets_screenshots: [],
   custom_filters: [],
   visible_categories: ["link", "email", "phone", "address", "bank_account"],
   visible_presets: [...BUILTIN_PRESETS],
+  visible_presets_screenshots: [...BUILTIN_PRESETS],
   auth_token: startLoggedOut ? "" : "mock-session-token",
   user_email: startLoggedOut ? "" : "alex@example.com",
+  first_name: startLoggedOut ? "" : "Alex",
   onboarding_complete: !startNeedsOnboarding,
 };
 

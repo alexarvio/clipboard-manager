@@ -32,6 +32,11 @@ interface Settings {
   tier: "free" | "pro";
   visible_categories: string[];
   custom_presets: CustomPreset[];
+  // Screenshots' own fully independent custom-preset pool (2026-08-06
+  // split) -- see the matching field on settings.rs::Settings for why a
+  // preset saved under Screenshots no longer shows up in Text's "Your
+  // presets" list at all, not just unchecked there.
+  custom_presets_screenshots: CustomPreset[];
   visible_presets: string[];
   // Screenshots' own independent "which presets show as chips" list -- see
   // the matching field on settings.rs::Settings for why this is separate
@@ -131,6 +136,13 @@ export default function SettingsPanel({
 
   const [filterTab, setFilterTab] = useState<"categories" | "ai">("categories");
   const [filterSearch, setFilterSearch] = useState("");
+  // Which custom AI filter's full prompt is expanded, if any -- these rows
+  // used to only show the prompt via a single-line truncate + a hover
+  // tooltip (title=), which meant reading the whole thing meant hovering
+  // and waiting for the OS tooltip rather than just clicking to see it.
+  // Single string, not a Set -- one filter's prompt open at a time is
+  // plenty for a "quickly check what this one says" action.
+  const [expandedFilterName, setExpandedFilterName] = useState<string | null>(null);
   const [addingFilter, setAddingFilter] = useState(false);
   const [newFilterName, setNewFilterName] = useState("");
   const [newFilterPrompt, setNewFilterPrompt] = useState("");
@@ -302,22 +314,30 @@ export default function SettingsPanel({
     invoke<Settings>("get_settings")
       .then((s) => {
         const customPresets = s.custom_presets ?? [];
-        const customLabels = customPresets.map((p) => p.label);
+        const customPresetsScreenshots = s.custom_presets_screenshots ?? [];
         // Every label that actually still resolves to a real preset for
-        // *that* context -- builtin-appropriate-to-this-context, or custom
-        // (custom presets have no inherent text-vs-screenshot nature, so
-        // they're valid for both). A label can end up in
-        // visible_presets(_screenshots) without qualifying anymore if a
-        // custom preset was ever deleted by some other path than
-        // TransformBar/TransformTab's own deletePreset (which cleans both
-        // lists itself), or -- as of 2026-08-03 -- if a builtin that used to
-        // be toggleable for this context no longer is (e.g. "Clean up OCR
-        // errors" under Text: there's no OCR step for a plain text clip, so
-        // it never made sense there to begin with). Pruning both cases here
-        // keeps the "x/6" counter honest and stops a context from silently
-        // carrying a preset that doesn't apply to it.
-        const validTextLabels = new Set([...TEXT_ELIGIBLE_PRESETS, ...customLabels]);
-        const validScreenshotLabels = new Set([...DEFAULT_SCREENSHOT_PRESETS, ...customLabels]);
+        // *that* context -- builtin-appropriate-to-this-context, or a
+        // custom preset from *that context's own pool* (2026-08-06: custom
+        // presets are no longer shared between Text and Screenshots -- see
+        // custom_presets_screenshots's doc comment on settings.rs::Settings).
+        // A label can end up in visible_presets(_screenshots) without
+        // qualifying anymore if a custom preset was ever deleted by some
+        // other path than TransformBar/TransformTab's own deletePreset
+        // (which cleans both lists itself), or -- as of 2026-08-03 -- if a
+        // builtin that used to be toggleable for this context no longer is
+        // (e.g. "Clean up OCR errors" under Text: there's no OCR step for a
+        // plain text clip, so it never made sense there to begin with).
+        // Pruning both cases here keeps the "x/6" counter honest and stops
+        // a context from silently carrying a preset that doesn't apply to
+        // it.
+        const validTextLabels = new Set([
+          ...TEXT_ELIGIBLE_PRESETS,
+          ...customPresets.map((p) => p.label),
+        ]);
+        const validScreenshotLabels = new Set([
+          ...DEFAULT_SCREENSHOT_PRESETS,
+          ...customPresetsScreenshots.map((p) => p.label),
+        ]);
         const visiblePresets = (s.visible_presets ?? TEXT_ELIGIBLE_PRESETS).filter((l) => validTextLabels.has(l));
         const visiblePresetsScreenshots = (
           s.visible_presets_screenshots ?? DEFAULT_SCREENSHOT_PRESETS
@@ -325,6 +345,7 @@ export default function SettingsPanel({
         const cleaned = {
           ...s,
           custom_presets: customPresets,
+          custom_presets_screenshots: customPresetsScreenshots,
           visible_presets: visiblePresets,
           visible_presets_screenshots: visiblePresetsScreenshots,
           custom_filters: s.custom_filters ?? [],
@@ -375,17 +396,18 @@ export default function SettingsPanel({
   }
 
   // Deletes a custom preset entirely -- mirrors TransformBar/TransformTab's
-  // own deletePreset (the trash icon on a preset chip there). Has to come
-  // out of *both* visibility lists here too, not just custom_presets --
-  // otherwise a deleted preset's label could linger in whichever context
-  // (text/screenshots) isn't currently selected, silently doing nothing
-  // since custom_presets no longer has a matching entry for it.
+  // own deletePreset (the trash icon on a preset button there). Scoped to
+  // whichever context (Text/Screenshots) is currently selected here --
+  // since custom presets are fully separate pools per context (2026-08-06),
+  // this only ever needs to touch that one pool and its matching visibility
+  // list, not both.
   function deletePreset(label: string) {
     if (!settings) return;
+    const customField = presetContext === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
+    const visibleField = presetContext === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
     update({
-      custom_presets: settings.custom_presets.filter((p) => p.label !== label),
-      visible_presets: settings.visible_presets.filter((l) => l !== label),
-      visible_presets_screenshots: settings.visible_presets_screenshots.filter((l) => l !== label),
+      [customField]: settings[customField].filter((p) => p.label !== label),
+      [visibleField]: settings[visibleField].filter((l) => l !== label),
     });
   }
 
@@ -424,20 +446,27 @@ export default function SettingsPanel({
   // don't fit OCR'd screenshot content much better (2026-08-03 fix, see
   // TEXT_ELIGIBLE_PRESETS/DEFAULT_SCREENSHOT_PRESETS's own doc comments).
   const eligibleBuiltins = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  // Which custom-preset pool "Your presets" reads/writes for the currently
+  // selected context -- fully separate arrays as of 2026-08-06 (see
+  // custom_presets_screenshots's doc comment on settings.rs::Settings),
+  // mirroring activePresetField's own context switch above.
+  const activeCustomPresetField = presetContext === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
+  const activeCustomPresets = settings[activeCustomPresetField];
   // Shown next to "Your presets" below -- both Built-in and Your-presets
   // share one combined visibility list (hence presetCount above being the
   // one true total), but calling out how many of *your own* saved presets
   // specifically are turned on is useful once that list grows past a
   // handful, same reasoning as the search box only appearing past 5.
-  const customVisibleCount = settings.custom_presets.filter((p) =>
+  const customVisibleCount = activeCustomPresets.filter((p) =>
     activeVisiblePresets.includes(p.label)
   ).length;
 
-  // Every label already in use, builtin or custom -- both share one
-  // namespace (see settings.rs's visible_presets doc comment), so a
-  // duplicate here would make one of the two indistinguishable to
-  // togglePresetVisible/deletePreset, which both key off label alone.
-  const takenPresetLabels = new Set([...BUILTIN_PRESETS, ...settings.custom_presets.map((p) => p.label)]);
+  // Every label already in use *for this context* -- builtins are still a
+  // shared namespace across both contexts (same underlying instruction
+  // text either way), but custom presets no longer are, so "Recipes" can
+  // now exist as a Text preset and, independently, as a different
+  // Screenshots preset without colliding.
+  const takenPresetLabels = new Set([...BUILTIN_PRESETS, ...activeCustomPresets.map((p) => p.label)]);
   const trimmedNewLabel = (
     newPresetLabelTouched ? newPresetLabel : newPresetInstruction.slice(0, MAX_PRESET_LABEL_LENGTH)
   ).trim();
@@ -457,7 +486,7 @@ export default function SettingsPanel({
       currentVisible.length < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
 
     await update({
-      custom_presets: [...settings.custom_presets, { label, instruction }],
+      [activeCustomPresetField]: [...activeCustomPresets, { label, instruction }],
       [activePresetField]: nextVisible,
     });
 
@@ -472,58 +501,6 @@ export default function SettingsPanel({
       onKeyDown={(e) => e.stopPropagation()}
       className="flex-1 overflow-y-auto px-4 py-4 text-sm space-y-3 text-ink dark:text-cream"
     >
-      <Section icon="ti-user-circle" title="Account">
-        <div className="flex items-center justify-between mb-3">
-          <div className="min-w-0">
-            <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-0.5">Signed in as</p>
-            <p className="text-[13px] font-medium truncate">{settings.user_email || "—"}</p>
-          </div>
-          <button
-            onClick={logOut}
-            className="shrink-0 text-[11.5px] px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] transition-colors"
-          >
-            Log out
-          </button>
-        </div>
-
-        <div>
-          <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-1">
-            First name
-            <span className="opacity-70"> — used for the "Good morning" greeting on Dashboard</span>
-          </p>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveName();
-              }}
-              placeholder="Your first name"
-              maxLength={50}
-              className="flex-1 min-w-0 bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 text-[13px] outline-none"
-            />
-            <button
-              onClick={saveName}
-              disabled={nameSaving || !nameInput.trim() || nameInput.trim() === settings.first_name}
-              className="shrink-0 text-[11.5px] px-3 py-2 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal font-medium disabled:opacity-40"
-            >
-              {nameSaving ? "Saving…" : nameSaved ? "Saved" : "Save"}
-            </button>
-          </div>
-          {nameError && <p className="text-[11.5px] text-red-500 dark:text-red-400 mt-1.5">{nameError}</p>}
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="text-[11.5px] text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium transition-colors"
-          >
-            Delete account
-          </button>
-        </div>
-      </Section>
-
       <Section icon="ti-sparkles" title="Plan">
         {settings.tier === "pro" ? (
           <div>
@@ -679,7 +656,7 @@ export default function SettingsPanel({
               type="checkbox"
               checked={settings.launch_at_startup}
               onChange={(e) => update({ launch_at_startup: e.target.checked })}
-              className="w-4 h-4 accent-accentDark"
+              className="w-4 h-4 accent-accent dark:accent-accentDark"
             />
           </div>
 
@@ -700,7 +677,7 @@ export default function SettingsPanel({
       <Section
         icon="ti-filter"
         title="Filters"
-        description="Rule-based category chips for everyone, plus your own natural-language AI filters on Pro."
+        description="Rule-based category buttons for everyone, plus your own natural-language AI filters on Pro."
       >
         {/* Same built-in/custom split as AI Transform's presets above --
             categories are the fixed free-tier set, AI filters are the
@@ -743,7 +720,7 @@ export default function SettingsPanel({
                         : settings.visible_categories.filter((v) => v !== c.value);
                       update({ visible_categories: next });
                     }}
-                    className="w-4 h-4 accent-accentDark"
+                    className="w-4 h-4 accent-accent dark:accent-accentDark"
                   />
                   {c.label}
                 </label>
@@ -780,29 +757,48 @@ export default function SettingsPanel({
                 )}
 
                 {settings.custom_filters.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1 mb-2">
+                  <div className="max-h-48 overflow-y-auto overflow-x-hidden space-y-1 pr-1 mb-2">
                     {settings.custom_filters
                       .filter((f) => f.name.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                      .map((f) => (
-                        <div
-                          key={f.name}
-                          title={f.prompt}
-                          className="group flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                        >
-                          <i className="ti ti-sparkles text-[11px] text-accent dark:text-accentDark shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] truncate">{f.name}</p>
-                            <p className="text-inkMuted dark:text-inkMutedDark text-[11px] truncate">{f.prompt}</p>
-                          </div>
-                          <button
-                            onClick={() => deleteFilter(f.name)}
-                            title="Delete filter"
-                            className="shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
+                      .map((f) => {
+                        const expanded = expandedFilterName === f.name;
+                        return (
+                          <div
+                            key={f.name}
+                            onClick={() => setExpandedFilterName(expanded ? null : f.name)}
+                            className="group rounded-lg px-2.5 py-1.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer"
                           >
-                            <i className="ti ti-trash text-[12px]" />
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-2">
+                              <i className="ti ti-sparkles text-[11px] text-accent dark:text-accentDark shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] truncate">{f.name}</p>
+                                <p
+                                  className={`text-inkMuted dark:text-inkMutedDark text-[11px] ${
+                                    expanded ? "whitespace-pre-wrap break-words" : "truncate"
+                                  }`}
+                                >
+                                  {f.prompt}
+                                </p>
+                              </div>
+                              <i
+                                className={`ti ti-chevron-down text-[11px] text-inkMuted dark:text-inkMutedDark shrink-0 opacity-0 group-hover:opacity-60 transition-all ${
+                                  expanded ? "rotate-180 !opacity-60" : ""
+                                }`}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFilter(f.name);
+                                }}
+                                title="Delete filter"
+                                className="shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
+                              >
+                                <i className="ti ti-trash text-[12px]" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     {filterSearch.trim() &&
                       !settings.custom_filters.some((f) =>
                         f.name.toLowerCase().includes(filterSearch.trim().toLowerCase())
@@ -871,7 +867,7 @@ export default function SettingsPanel({
         <Section
           icon="ti-sparkles"
           title="AI Transform"
-          description={`Choose up to ${MAX_VISIBLE_PRESETS} presets to show as one-click chips in Transform -- separately for text clips and for screenshots, since a mix of built-in and your own saved ones makes sense differently for each.`}
+          description={`Choose up to ${MAX_VISIBLE_PRESETS} presets to show as one-click buttons in Transform -- separately for text clips and for screenshots, since a mix of built-in and your own saved ones makes sense differently for each.`}
         >
           {/* Redesigned 2026-08-03 -- the old layout stacked a Text/
               Screenshots switch, a combined "x/6" counter, *another*
@@ -886,7 +882,7 @@ export default function SettingsPanel({
               counter up top that now actually matches what's checked below
               it since there's nothing hidden on another tab anymore. */}
           <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1.5">
-            Show chips for
+            Show buttons for
           </p>
           <div className="grid grid-cols-2 gap-1.5 mb-3">
             <button
@@ -913,7 +909,7 @@ export default function SettingsPanel({
 
           <div className="flex items-center justify-between mb-2.5 pb-2.5 border-b border-borderLight dark:border-borderDark">
             <span className="text-[12.5px] font-medium">
-              {presetContext === "screenshot" ? "Screenshot" : "Text"} chips shown
+              {presetContext === "screenshot" ? "Screenshot" : "Text"} buttons shown
             </span>
             <span
               className={`text-[12px] font-medium ${
@@ -948,7 +944,7 @@ export default function SettingsPanel({
                     type="checkbox"
                     checked={checked}
                     onChange={(e) => togglePresetVisible(label, e.target.checked)}
-                    className="w-4 h-4 accent-accentDark shrink-0"
+                    className="w-4 h-4 accent-accent dark:accent-accentDark shrink-0"
                   />
                 </label>
               );
@@ -959,9 +955,9 @@ export default function SettingsPanel({
             <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
               Your presets
             </p>
-            {settings.custom_presets.length > 0 && (
+            {activeCustomPresets.length > 0 && (
               <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
-                {customVisibleCount}/{settings.custom_presets.length} shown
+                {customVisibleCount}/{activeCustomPresets.length} shown
               </span>
             )}
           </div>
@@ -976,21 +972,32 @@ export default function SettingsPanel({
               </button>
             ) : (
               <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.05] p-2.5 mb-2.5 space-y-1.5">
+                {/* Name above Instruction (2026-08-06, swapped from the
+                    original instruction-first order) -- the name is the
+                    short, glanceable label you'll actually recognize the
+                    preset by later (it's what shows on the one-click button
+                    in Transform), so it reads better as the "title" sitting
+                    on top, with the longer instruction as supporting detail
+                    below it -- same top-to-bottom hierarchy as everything
+                    else in this app (title first, detail after). Renamed
+                    from "Chip label" to "Name" at the same time -- "chip" is
+                    internal terminology for the one-click button itself, not
+                    a word this field needs to expose to explain what it is. */}
                 <input
                   autoFocus
-                  value={newPresetInstruction}
-                  onChange={(e) => setNewPresetInstruction(e.target.value)}
-                  placeholder="Instruction, e.g. “Translate into French”"
-                  className="w-full bg-cream dark:bg-charcoal border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
-                />
-                <input
                   value={newPresetLabelTouched ? newPresetLabel : newPresetInstruction.slice(0, MAX_PRESET_LABEL_LENGTH)}
                   onChange={(e) => {
                     setNewPresetLabelTouched(true);
                     setNewPresetLabel(e.target.value.slice(0, MAX_PRESET_LABEL_LENGTH));
                   }}
                   maxLength={MAX_PRESET_LABEL_LENGTH}
-                  placeholder="Chip label"
+                  placeholder="Name"
+                  className="w-full bg-cream dark:bg-charcoal border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+                />
+                <input
+                  value={newPresetInstruction}
+                  onChange={(e) => setNewPresetInstruction(e.target.value)}
+                  placeholder="Instruction, e.g. “Translate into French”"
                   className="w-full bg-cream dark:bg-charcoal border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
                 />
                 {newPresetLabelTaken && (
@@ -1021,7 +1028,7 @@ export default function SettingsPanel({
               </div>
             )}
 
-            {settings.custom_presets.length === 0 ? (
+            {activeCustomPresets.length === 0 ? (
               <p className="text-inkMuted dark:text-inkMutedDark text-xs text-center py-3">
                 Presets you add here or save from Transform (via "Save as preset") will show up here.
               </p>
@@ -1030,7 +1037,7 @@ export default function SettingsPanel({
                 {/* Search only kicks in once there's enough custom presets
                     that scanning the raw list stops being faster than
                     typing a few letters -- no point showing it for 2-3. */}
-                {settings.custom_presets.length > 5 && (
+                {activeCustomPresets.length > 5 && (
                   <div className="relative mb-2">
                     <i className="ti ti-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-inkMuted dark:text-inkMutedDark opacity-60" />
                     <input
@@ -1049,8 +1056,8 @@ export default function SettingsPanel({
                     "keep a dozen custom presets from burying the fixed
                     defaults" job now that both sections are always visible
                     at once. */}
-                <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1">
-                  {settings.custom_presets
+                <div className="max-h-48 overflow-y-auto overflow-x-hidden space-y-0.5 pr-1">
+                  {activeCustomPresets
                     .filter((p) => p.label.toLowerCase().includes(presetSearch.trim().toLowerCase()))
                     .map((p) => {
                       const checked = activeVisiblePresets.includes(p.label);
@@ -1087,14 +1094,14 @@ export default function SettingsPanel({
                               type="checkbox"
                               checked={checked}
                               onChange={(e) => togglePresetVisible(p.label, e.target.checked)}
-                              className="w-4 h-4 accent-accentDark shrink-0"
+                              className="w-4 h-4 accent-accent dark:accent-accentDark shrink-0"
                             />
                           </span>
                         </label>
                       );
                     })}
                   {presetSearch.trim() &&
-                    !settings.custom_presets.some((p) =>
+                    !activeCustomPresets.some((p) =>
                       p.label.toLowerCase().includes(presetSearch.trim().toLowerCase())
                     ) && (
                       <p className="text-inkMuted dark:text-inkMutedDark text-xs text-center py-1">
@@ -1150,6 +1157,65 @@ export default function SettingsPanel({
               placeholder="leave blank for local dev"
             />
           </div>
+        </div>
+      </Section>
+
+      {/* Account moved to the bottom (2026-08-06, was the very first
+          section) -- Log out being the first thing anyone sees on opening
+          Settings read as an odd, slightly alarming default. Preferences
+          people actually come here to change (hotkey, theme, presets,
+          filters) now lead; account-level actions (sign out, delete
+          account) sit at the end, the same "housekeeping last" convention
+          most apps use. */}
+      <Section icon="ti-user-circle" title="Account">
+        <div className="flex items-center justify-between mb-3">
+          <div className="min-w-0">
+            <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-0.5">Signed in as</p>
+            <p className="text-[13px] font-medium truncate">{settings.user_email || "—"}</p>
+          </div>
+          <button
+            onClick={logOut}
+            className="shrink-0 text-[11.5px] px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] transition-colors"
+          >
+            Log out
+          </button>
+        </div>
+
+        <div>
+          <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-1">
+            First name
+            <span className="opacity-70"> — used for the "Good morning" greeting on Dashboard</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveName();
+              }}
+              placeholder="Your first name"
+              maxLength={50}
+              className="flex-1 min-w-0 bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 text-[13px] outline-none"
+            />
+            <button
+              onClick={saveName}
+              disabled={nameSaving || !nameInput.trim() || nameInput.trim() === settings.first_name}
+              className="shrink-0 text-[11.5px] px-3 py-2 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal font-medium disabled:opacity-40"
+            >
+              {nameSaving ? "Saving…" : nameSaved ? "Saved" : "Save"}
+            </button>
+          </div>
+          {nameError && <p className="text-[11.5px] text-red-500 dark:text-red-400 mt-1.5">{nameError}</p>}
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="text-[11.5px] text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium transition-colors"
+          >
+            Delete account
+          </button>
         </div>
       </Section>
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "../lib/tauriShim";
 import {
-  BUILTIN_PRESETS,
   DEFAULT_SCREENSHOT_PRESETS,
   TEXT_ELIGIBLE_PRESETS,
   MAX_VISIBLE_PRESETS,
@@ -23,8 +22,13 @@ interface CustomPreset {
 // (see loadedSettings below) rather than constructing a partial one.
 interface Settings {
   custom_presets: CustomPreset[];
+  // Screenshots' own fully separate custom-preset pool (2026-08-06 split) --
+  // see the matching field's doc comment on settings.rs::Settings. Only
+  // read/written when `context === "screenshot"` (see Props), same as
+  // visible_presets_screenshots below.
+  custom_presets_screenshots?: CustomPreset[];
   // Which preset labels (builtin instruction text or custom preset label)
-  // are actually shown as chips here -- capped at MAX_VISIBLE_PRESETS (see
+  // are actually shown as buttons here -- capped at MAX_VISIBLE_PRESETS (see
   // lib/presets.ts). Missing on settings saved before this existed, which
   // defaults to "every builtin visible, no customs" -- i.e. exactly what
   // everyone already saw before this was configurable.
@@ -91,7 +95,13 @@ export default function TransformBar({
 
   useEffect(() => {
     invoke<Settings>("get_settings")
-      .then((s) => setLoadedSettings({ ...s, custom_presets: s.custom_presets ?? [] }))
+      .then((s) =>
+        setLoadedSettings({
+          ...s,
+          custom_presets: s.custom_presets ?? [],
+          custom_presets_screenshots: s.custom_presets_screenshots ?? [],
+        })
+      )
       .catch(console.error);
   }, []);
 
@@ -110,8 +120,12 @@ export default function TransformBar({
   // file (2026-08-03 fix; SettingsPanel prunes these on load too, but that
   // only runs once someone actually opens Settings).
   const eligibleBuiltins = context === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  // Which custom-preset pool belongs to this instance's context -- fully
+  // separate arrays as of 2026-08-06 (see custom_presets_screenshots's doc
+  // comment above), mirroring visibleField's own context switch.
+  const customField = context === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
 
-  const customPresets = loadedSettings?.custom_presets ?? [];
+  const customPresets = loadedSettings?.[customField] ?? [];
   const visiblePresetLabels = new Set(loadedSettings?.[visibleField] ?? visibleFallback);
   const visibleBuiltins = eligibleBuiltins.filter((p) => visiblePresetLabels.has(p));
   const visibleCustomPresets = customPresets.filter((p) => visiblePresetLabels.has(p.label));
@@ -138,7 +152,7 @@ export default function TransformBar({
     const nextVisible = visibleCount < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
     const updated = {
       ...loadedSettings,
-      custom_presets: [...customPresets, { label, instruction: instruction.trim() }],
+      [customField]: [...customPresets, { label, instruction: instruction.trim() }],
       [visibleField]: nextVisible,
     };
     setLoadedSettings(updated);
@@ -149,18 +163,14 @@ export default function TransformBar({
 
   async function deletePreset(label: string) {
     if (!loadedSettings) return;
-    // Deleting removes the preset entirely (not just from this context), so
-    // it has to come out of *both* visibility lists -- otherwise a deleted
-    // custom preset's label could linger in the other context's list,
-    // silently doing nothing since custom_presets no longer has a matching
-    // entry for it.
+    // Scoped to this instance's own context -- custom presets are fully
+    // separate pools per context now (2026-08-06), so deleting one here
+    // only ever needs to touch this context's pool and visibility list, not
+    // the other context's.
     const updated = {
       ...loadedSettings,
-      custom_presets: customPresets.filter((p) => p.label !== label),
-      visible_presets: (loadedSettings.visible_presets ?? BUILTIN_PRESETS).filter((l) => l !== label),
-      visible_presets_screenshots: (
-        loadedSettings.visible_presets_screenshots ?? DEFAULT_SCREENSHOT_PRESETS
-      ).filter((l) => l !== label),
+      [customField]: customPresets.filter((p) => p.label !== label),
+      [visibleField]: (loadedSettings[visibleField] ?? visibleFallback).filter((l) => l !== label),
     };
     setLoadedSettings(updated);
     await invoke("save_settings", { settings: updated });

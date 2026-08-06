@@ -60,12 +60,28 @@ pub struct Settings {
     /// gates AI transform server-side.
     #[serde(default = "default_tier")]
     pub tier: String,
-    /// User-saved custom AI transform instructions, reusable as one-click
-    /// preset buttons in TransformBar. `#[serde(default)]` so existing
-    /// settings.json files on disk (written before this field existed)
-    /// still deserialize fine, just with an empty list.
+    /// User-saved custom AI transform instructions for text clips, reusable
+    /// as one-click preset buttons in TransformBar/TransformTab.
+    /// `#[serde(default)]` so existing settings.json files on disk (written
+    /// before this field existed) still deserialize fine, just with an
+    /// empty list.
     #[serde(default)]
     pub custom_presets: Vec<CustomPreset>,
+    /// Same idea as custom_presets, but the fully separate pool for
+    /// screenshots' own Transform panel (2026-08-06 split) -- a preset
+    /// created while managing Screenshots presets in Settings only ever
+    /// shows up there, and vice versa for custom_presets/Text. Before this
+    /// split, both contexts drew from one shared custom_presets list and
+    /// only *visibility* (see visible_presets_screenshots below) differed
+    /// per context, which meant a preset written for screenshots (e.g. "OCR
+    /// cleanup") cluttered the Text "Your presets" list too, just unchecked
+    /// by default. `#[serde(default)]` so pre-split settings.json files
+    /// deserialize fine with an empty screenshot pool -- their existing
+    /// custom_presets entries all become Text presets, which is the correct
+    /// migration since that's the only pool that existed for them to have
+    /// been added to.
+    #[serde(default)]
+    pub custom_presets_screenshots: Vec<CustomPreset>,
     /// User-defined AI history filters (Pro-only -- see CustomFilter docs
     /// above). `#[serde(default)]` so existing settings.json files written
     /// before this field existed still deserialize fine, just empty.
@@ -92,8 +108,9 @@ pub struct Settings {
     /// by context ("Fix grammar" makes little sense on a screenshot of a
     /// Discord chat, and a screenshot-specific preset like "Extract key
     /// info" wouldn't necessarily belong in the text list either). The
-    /// underlying preset pool (builtins + custom_presets) is still shared --
-    /// only which ones are *visible as chips* differs per context.
+    /// custom preset pool is *also* fully separate per context now (see
+    /// custom_presets_screenshots above) -- only the built-in presets are
+    /// still a shared, fixed set between the two visibility lists.
     /// `#[serde(default)]` uses default_visible_presets_screenshots (a
     /// distinct, screenshot-appropriate subset) rather than reusing
     /// default_visible_presets, so this actually looks different out of the
@@ -201,6 +218,7 @@ impl Default for Settings {
             app_secret: default_app_secret(),
             tier: default_tier(),
             custom_presets: Vec::new(),
+            custom_presets_screenshots: Vec::new(),
             custom_filters: Vec::new(),
             visible_categories: default_visible_categories(),
             visible_presets: default_visible_presets(),
