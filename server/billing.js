@@ -44,7 +44,15 @@ if (!WEBSITE_URL) {
   );
 }
 
-const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
+// 2026-08-06: pinned explicitly after Stripe rejected requests with
+// "Managed Payments is not supported on API version 2025-02-24.acacia" --
+// the account defaults to a newer API version than the installed `stripe`
+// npm package (17.3.0) itself defaults to when no apiVersion is given.
+// Pinning avoids relying on whatever the account's dashboard default
+// happens to be, so this doesn't silently break again if that changes.
+const stripe = STRIPE_SECRET_KEY
+  ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-03-31.basil" })
+  : null;
 
 function priceIdForPlan(plan) {
   if (plan === "monthly") return STRIPE_PRICE_MONTHLY;
