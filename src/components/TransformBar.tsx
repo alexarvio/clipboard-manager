@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-
-const PRESETS = [
-  "Fix grammar",
-  "Make formal",
-  "Make casual",
-  "Summarize",
-  "To bullet points",
-  "Translate to Spanish",
-];
+import { createPortal } from "react-dom";
+import { invoke } from "../lib/tauriShim";
+import {
+  BUILTIN_PRESETS,
+  DEFAULT_SCREENSHOT_PRESETS,
+  TEXT_ELIGIBLE_PRESETS,
+  MAX_VISIBLE_PRESETS,
+  MAX_PRESET_LABEL_LENGTH,
+} from "../lib/presets";
+import ClampedText from "./ClampedText";
+import ConfirmPopover from "./ConfirmPopover";
+import { clampMenuPosition } from "../lib/menuPosition";
 
 interface CustomPreset {
   label: string;
@@ -21,6 +23,17 @@ interface CustomPreset {
 // (see loadedSettings below) rather than constructing a partial one.
 interface Settings {
   custom_presets: CustomPreset[];
+  // Which preset labels (builtin instruction text or custom preset label)
+  // are actually shown as chips here -- capped at MAX_VISIBLE_PRESETS (see
+  // lib/presets.ts). Missing on settings saved before this existed, which
+  // defaults to "every builtin visible, no customs" -- i.e. exactly what
+  // everyone already saw before this was configurable.
+  visible_presets?: string[];
+  // Same idea, but for the Screenshots Transform panel -- kept as a
+  // separate list (see settings.rs's own comment on this field) since which
+  // presets make sense differs between copied text and OCR'd screenshot
+  // text. Only read/written when `context === "screenshot"` (see Props).
+  visible_presets_screenshots?: string[];
   [key: string]: unknown;
 }
 
@@ -28,6 +41,25 @@ interface Props {
   content: string;
   onDone: () => void; // called after the user pastes the result, to close + hide panel
   onCancel: () => void;
+  // Jumps the user to Settings -> Presets so they can change which chips
+  // show up here, instead of trying to manage the picking logic inline.
+  onManagePresets?: () => void;
+  // Which of the two independent "which presets are visible" lists to read/
+  // write -- "text" for clip history (the original, default behavior) and
+  // "screenshot" for ScreenshotsPanel's Transform action. The underlying
+  // preset pool (builtins + custom_presets) is shared either way; only
+  // visibility differs, per the 2026-07-31 decision to let presets be
+  // chosen separately for screenshots vs. text.
+  context?: "text" | "screenshot";
+  // Hides the "Input" section below (default: shown). The History/
+  // Screenshots/Folders panels all render their own preview of the item's
+  // content in the space above this component now (see each panel's
+  // transform overlay), which made this section a second, literal copy of
+  // the exact same text a few pixels down -- pointless duplication once
+  // there's already an unmissable preview above. Left on by default for any
+  // caller (e.g. Dashboard's "Edit with AI") that doesn't show its own
+  // preview above the panel.
+  showInputPreview?: boolean;
 }
 
 // Renders as the contents of the dedicated bottom transform panel in
@@ -35,7 +67,14 @@ interface Props {
 // background/border styling). Laid out as three stacked stages -- source
 // text, instruction, result -- so the user can see what they're
 // transforming and what they got back before committing to a paste.
-export default function TransformBar({ content, onDone, onCancel }: Props) {
+export default function TransformBar({
+  content,
+  onDone,
+  onCancel,
+  onManagePresets,
+  context = "text",
+  showInputPreview = true,
+}: Props) {
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +83,11 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
   const [loadedSettings, setLoadedSettings] = useState<Settings | null>(null);
   const [namingPreset, setNamingPreset] = useState(false);
   const [presetLabel, setPresetLabel] = useState("");
+  // Which custom preset's delete is currently being confirmed, if any --
+  // see ConfirmPopover. Deleting used to happen straight off the trash
+  // icon's click with no way back; this makes it a two-step action instead.
+  const [deleteConfirmLabel, setDeleteConfirmLabel] = useState<string | null>(null);
+  const [deleteConfirmPos, setDeleteConfirmPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     invoke<Settings>("get_settings")
@@ -51,31 +95,75 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
       .catch(console.error);
   }, []);
 
-  const customPresets = loadedSettings?.custom_presets ?? [];
+  // Which field of Settings holds the visibility list for this instance's
+  // context -- see the two doc comments above (Settings.visible_presets and
+  // .visible_presets_screenshots).
+  const visibleField = context === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
+  // What to show when settings has no list for this context yet -- screenshots
+  // get their own OCR-oriented default subset (see lib/presets.ts), not the
+  // full builtin catalog.
+  const visibleFallback = context === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  // Which builtins even apply to this context -- filtering against this
+  // (not the full BUILTIN_PRESETS) instead of just visiblePresetLabels
+  // means a chip like "Clean up OCR errors" can never render for plain text
+  // even if a stale label happens to still be sitting in an old settings
+  // file (2026-08-03 fix; SettingsPanel prunes these on load too, but that
+  // only runs once someone actually opens Settings).
+  const eligibleBuiltins = context === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
 
-  async function persistPresets(next: CustomPreset[]) {
-    if (!loadedSettings) return;
-    const updated = { ...loadedSettings, custom_presets: next };
-    setLoadedSettings(updated);
-    await invoke("save_settings", { settings: updated });
-  }
+  const customPresets = loadedSettings?.custom_presets ?? [];
+  const visiblePresetLabels = new Set(loadedSettings?.[visibleField] ?? visibleFallback);
+  const visibleBuiltins = eligibleBuiltins.filter((p) => visiblePresetLabels.has(p));
+  const visibleCustomPresets = customPresets.filter((p) => visiblePresetLabels.has(p.label));
+  const visibleCount = visibleBuiltins.length + visibleCustomPresets.length;
 
   function startSavingPreset() {
     if (!instruction.trim()) return;
-    setPresetLabel(instruction.trim().slice(0, 40));
+    setPresetLabel(instruction.trim().slice(0, MAX_PRESET_LABEL_LENGTH));
     setNamingPreset(true);
   }
 
   async function confirmSavePreset() {
     const label = presetLabel.trim();
-    if (!label) return;
-    await persistPresets([...customPresets, { label, instruction: instruction.trim() }]);
+    if (!label || !loadedSettings) return;
+    // Auto-show the new preset if there's room under the cap -- saving one
+    // and then not seeing it appear anywhere would be a confusing dead end.
+    // If we're already at the cap, it's just saved hidden; the user can swap
+    // it in from Settings -> Presets whenever they want. Only this
+    // instance's own context list gets the new label added -- a preset
+    // saved while transforming a screenshot shows up in Screenshots'
+    // Transform panel, not text's, until manually enabled for both from
+    // Settings.
+    const currentVisible = loadedSettings[visibleField] ?? visibleFallback;
+    const nextVisible = visibleCount < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
+    const updated = {
+      ...loadedSettings,
+      custom_presets: [...customPresets, { label, instruction: instruction.trim() }],
+      [visibleField]: nextVisible,
+    };
+    setLoadedSettings(updated);
+    await invoke("save_settings", { settings: updated });
     setNamingPreset(false);
     setPresetLabel("");
   }
 
   async function deletePreset(label: string) {
-    await persistPresets(customPresets.filter((p) => p.label !== label));
+    if (!loadedSettings) return;
+    // Deleting removes the preset entirely (not just from this context), so
+    // it has to come out of *both* visibility lists -- otherwise a deleted
+    // custom preset's label could linger in the other context's list,
+    // silently doing nothing since custom_presets no longer has a matching
+    // entry for it.
+    const updated = {
+      ...loadedSettings,
+      custom_presets: customPresets.filter((p) => p.label !== label),
+      visible_presets: (loadedSettings.visible_presets ?? BUILTIN_PRESETS).filter((l) => l !== label),
+      visible_presets_screenshots: (
+        loadedSettings.visible_presets_screenshots ?? DEFAULT_SCREENSHOT_PRESETS
+      ).filter((l) => l !== label),
+    };
+    setLoadedSettings(updated);
+    await invoke("save_settings", { settings: updated });
   }
 
   async function run(finalInstruction: string) {
@@ -118,21 +206,39 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2.5 space-y-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
-            Input
-          </p>
-          <p className="text-[12px] leading-snug whitespace-pre-wrap break-words line-clamp-3 bg-black/[0.03] dark:bg-white/[0.05] rounded-lg px-2.5 py-2">
-            {content}
-          </p>
-        </div>
+        {showInputPreview && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
+              Input
+            </p>
+            <div className="bg-black/[0.03] dark:bg-white/[0.05] rounded-lg px-2.5 py-2">
+              <ClampedText
+                text={content}
+                lines={3}
+                className="text-[12px] leading-snug whitespace-pre-wrap break-words"
+              />
+            </div>
+          </div>
+        )}
 
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
-            Instruction
-          </p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
+              Instruction
+            </p>
+            <button
+              onClick={onManagePresets}
+              title="Choose which presets show up here"
+              className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
+            >
+              <span>
+                {visibleCount}/{MAX_VISIBLE_PRESETS} presets
+              </span>
+              <i className="ti ti-settings text-[10px]" />
+            </button>
+          </div>
           <div className="flex flex-wrap gap-1.5 mb-1.5">
-            {PRESETS.map((p) => (
+            {visibleBuiltins.map((p) => (
               <button
                 key={p}
                 disabled={loading}
@@ -149,7 +255,7 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
                 {p}
               </button>
             ))}
-            {customPresets.map((p) => (
+            {visibleCustomPresets.map((p) => (
               <div key={p.label} className="group relative">
                 <button
                   disabled={loading}
@@ -165,39 +271,59 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
                   }`}
                 >
                   <i className="ti ti-bookmark text-[9px] mr-1 opacity-60" />
-                  {p.label}
+                  <span className="inline-block align-middle max-w-[140px] truncate">{p.label}</span>
                 </button>
                 <button
-                  onClick={() => deletePreset(p.label)}
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setDeleteConfirmPos(clampMenuPosition(r.bottom + 4, r.right - 224, 224, 100));
+                    setDeleteConfirmLabel(p.label);
+                  }}
                   title="Delete preset"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
                 >
-                  <i className="ti ti-x text-[10px]" />
+                  <i className="ti ti-trash text-[10px]" />
                 </button>
               </div>
             ))}
           </div>
-          <div className="flex gap-1.5">
-            <input
-              autoFocus
-              value={instruction}
-              onChange={(e) => setInstruction(e.target.value)}
-              onKeyDown={(e) => {
-                // Stop these from bubbling up to the panel's own keydown
-                // handler, which would otherwise also treat Enter as "paste
-                // selected item" and Escape as "hide the whole panel".
-                e.stopPropagation();
-                if (e.key === "Enter") run(instruction);
-                if (e.key === "Escape") onCancel();
-              }}
-              placeholder="Or type your own instruction…"
-              className="flex-1 bg-accent/10 dark:bg-accentDark/15 border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
-              disabled={loading}
-            />
+          {/* Grown from a single-line input into a multi-line textarea
+              (2026-08-03) -- now that the transform panel takes over the
+              full view (see App.tsx/ScreenshotsPanel/FoldersPanel's overlay
+              comments), there's a lot of vertical room that used to sit
+              empty below a one-line box. Fixed at a taller rows count
+              regardless of how much text is actually in it, rather than
+              auto-growing, so the layout doesn't jump around as you type --
+              it's sized for "there's space, use it," not for the current
+              instruction's length. Enter still runs (matches the old
+              input's behavior so short instructions aren't slowed down);
+              Shift+Enter inserts a newline for anyone writing a longer,
+              multi-step instruction. */}
+          <textarea
+            autoFocus
+            rows={5}
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            onKeyDown={(e) => {
+              // Stop these from bubbling up to the panel's own keydown
+              // handler, which would otherwise also treat Enter as "paste
+              // selected item" and Escape as "hide the whole panel".
+              e.stopPropagation();
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                run(instruction);
+              }
+              if (e.key === "Escape") onCancel();
+            }}
+            placeholder="Or type your own instruction…"
+            className="w-full bg-accent/10 dark:bg-accentDark/15 border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none resize-none"
+            disabled={loading}
+          />
+          <div className="flex gap-1.5 mt-1.5">
             <button
               onClick={() => run(instruction)}
               disabled={loading}
-              className="text-[11px] px-2.5 rounded-lg bg-accent/15 dark:bg-accentDark/20 disabled:opacity-40"
+              className="flex-1 text-[11px] py-1.5 rounded-lg bg-accent/15 dark:bg-accentDark/20 disabled:opacity-40"
             >
               Run
             </button>
@@ -215,12 +341,13 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
               <input
                 autoFocus
                 value={presetLabel}
-                onChange={(e) => setPresetLabel(e.target.value)}
+                onChange={(e) => setPresetLabel(e.target.value.slice(0, MAX_PRESET_LABEL_LENGTH))}
                 onKeyDown={(e) => {
                   e.stopPropagation();
                   if (e.key === "Enter") confirmSavePreset();
                   if (e.key === "Escape") setNamingPreset(false);
                 }}
+                maxLength={MAX_PRESET_LABEL_LENGTH}
                 placeholder="Name this preset…"
                 className="flex-1 bg-accent/10 dark:bg-accentDark/15 border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
               />
@@ -267,6 +394,21 @@ export default function TransformBar({ content, onDone, onCancel }: Props) {
           )}
         </div>
       </div>
+
+      {deleteConfirmLabel &&
+        deleteConfirmPos &&
+        createPortal(
+          <ConfirmPopover
+            position={deleteConfirmPos}
+            message={`Delete the "${deleteConfirmLabel}" preset? This can't be undone.`}
+            onCancel={() => setDeleteConfirmLabel(null)}
+            onConfirm={() => {
+              deletePreset(deleteConfirmLabel);
+              setDeleteConfirmLabel(null);
+            }}
+          />,
+          document.body
+        )}
     </div>
   );
 }

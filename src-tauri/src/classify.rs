@@ -21,6 +21,33 @@ static ADDRESS_RE: Lazy<Regex> = Lazy::new(|| {
     .unwrap()
 });
 
+static IPV4_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$").unwrap()
+});
+
+static IPV6_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[0-9a-fA-F:]{2,39}$").unwrap());
+
+static FILE_PATH_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(?:[A-Za-z]:\\[^\s]*|/[^\s]+(?:/[^\s]+)+|~/[^\s]+)$").unwrap());
+
+static PRICE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"[$€£¥]\s?\d[\d,]*(\.\d{1,2})?|\b\d+(\.\d{1,2})?\s?(usd|eur|gbp)\b").unwrap());
+
+static CODE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?m)(=>|;\s*$|\{\s*$|^\s*\}|\bfunction\b|\bconst\b|\blet\b|\bimport\b|\bdef\s+\w+\(|\bclass\s+\w+|^\s*#include|</?[a-zA-Z][^>]*>)",
+    )
+    .unwrap()
+});
+
+static DATE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)^\d{4}-\d{2}-\d{2}$|^\d{1,2}/\d{1,2}/\d{2,4}$|^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(st|nd|rd|th)?(,?\s+\d{4})?$|^\d{1,2}:\d{2}(:\d{2})?\s?(am|pm)?$",
+    )
+    .unwrap()
+});
+
 /// Best-effort classification of a clipboard entry into a coarse category,
 /// used to power the Pro-only history filter. This is pattern matching, not
 /// validation -- it will misclassify edge cases (e.g. a 10-digit number that
@@ -39,6 +66,14 @@ pub fn classify(content: &str) -> &'static str {
     if EMAIL_RE.is_match(trimmed) {
         return "email";
     }
+    if IPV4_RE.is_match(trimmed)
+        || (trimmed.matches(':').count() >= 2 && IPV6_RE.is_match(trimmed))
+    {
+        return "ip_address";
+    }
+    if FILE_PATH_RE.is_match(trimmed) {
+        return "file_path";
+    }
     if BANK_KEYWORDS_RE.is_match(trimmed) {
         return "bank_account";
     }
@@ -55,6 +90,15 @@ pub fn classify(content: &str) -> &'static str {
     }
     if ADDRESS_RE.is_match(trimmed) {
         return "address";
+    }
+    if DATE_RE.is_match(trimmed) {
+        return "date_time";
+    }
+    if PRICE_RE.is_match(trimmed) {
+        return "price";
+    }
+    if CODE_RE.is_match(trimmed) {
+        return "code";
     }
     "text"
 }

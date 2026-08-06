@@ -11,6 +11,10 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
+# Native "choose a file" dialog for TransformTab's image upload (see
+# main.rs::ocr_uploaded_image) -- only its Rust API is used (app.dialog()),
+# never invoked from JS, so no capabilities/ACL entry is needed for it.
+tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
@@ -24,6 +28,38 @@ dirs = "5"
 regex = "1"
 reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+# Opens the system's default browser for Stripe Checkout / the Billing
+# Portal (see billing commands in main.rs). Deliberately not a Tauri plugin
+# (e.g. tauri-plugin-opener) -- this is only ever called from inside Rust
+# command bodies, never invoked directly from JS, so it doesn't need a
+# capabilities/ACL entry the way a JS-invokable plugin command would (same
+# reasoning as tauri-plugin-dialog's app.dialog() usage above).
+open = "5"
+# Screenshots feature (Pro-only, see db.rs "Screenshots" section): decodes
+# the raw RGBA buffer arboard::get_image() returns and encodes it to PNG for
+# on-disk storage, plus generates the smaller thumbnail used in list views.
+# jpeg/webp added 2026-08-01 for TransformTab's "upload a picture" OCR input
+# (see main.rs::ocr_image_data) -- unlike captured screenshots (always PNG),
+# a photo picked from disk is most commonly a JPEG (phone camera) or
+# sometimes WebP, so decoding needs to handle those too.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+# Encodes thumbnail PNG bytes as a data URI so the frontend can render them
+# straight from list_screenshots without a second round-trip per image.
+base64 = "0.22"
+# Screenshot OCR (see src/ocr.rs): Windows.Media.Ocr is a built-in WinRT API
+# (ships with Windows 10/11, no extra install, no cloud vision API bill),
+# chosen specifically to keep OCR text extraction local -- consistent with
+# the rest of the Screenshots feature's "never uploaded" privacy story.
+# NOTE: this is the one dependency in this file that hasn't been verified
+# against a real `cargo build` yet (see ocr.rs's own doc comment) -- if the
+# exact API surface has moved between windows-rs versions, this version
+# pin/feature list is the first thing to check.
+windows = { version = "0.58", features = [
+    "Media_Ocr",
+    "Graphics_Imaging",
+    "Globalization",
+    "Win32_System_WinRT",
+] }
 
 [[bin]]
 name = "clipboard-manager"

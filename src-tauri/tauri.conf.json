@@ -19,13 +19,29 @@
         "x": 0,
         "y": 0,
         "resizable": true,
-        "decorations": true,
-        "transparent": false,
+        "decorations": false,
+        "transparent": true,
         "alwaysOnTop": false,
         "skipTaskbar": false,
         "visible": false,
         "center": false,
         "shadow": false
+      },
+      {
+        "label": "dashboard",
+        "title": "Clip Dashboard",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 860,
+        "minHeight": 560,
+        "resizable": true,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "visible": false,
+        "center": true,
+        "shadow": true
       }
     ],
     "security": {

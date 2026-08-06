@@ -12,13 +12,21 @@ body,
   user-select: none;
 }
 
-/* thin custom scrollbar so it doesn't break the glass aesthetic */
+/* Thin custom scrollbar so it doesn't break the glass aesthetic. Colored to
+   match the FatClipboard accent green (2026-07-27, was a leftover pink from
+   before the rebrand) -- separate light/dark rules since this is plain CSS,
+   not a Tailwind class, so it can't just reference accent/dark:accentDark
+   the way everything else does. Bumped opacity up from the original 0.25 --
+   that was tuned for the old pink and read as basically invisible here. */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 175, 215, 0.25);
+  background: rgba(94, 168, 0, 0.45);
   border-radius: 999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(193, 255, 114, 0.45);
 }
 ::-webkit-scrollbar-track {
   background: transparent;

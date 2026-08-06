@@ -2,149 +2,129 @@
 
 Part of the product/infra planning docs (see `free-vs-pro.md` for the tier feature breakdown this builds on).
 
-This doc sketches the contract the app needs to integrate against once a Stripe
-account exists. Nothing here is implemented yet — `tier` in `settings.rs` is
-still a local dev-only flag with no real billing behind it. The point of
-writing this now is so the eventual Stripe integration has a clear shape to
-slot into, instead of being designed from scratch under pressure later.
+**Status: implemented (2026-08-03).** This doc used to sketch a license-key
+model on the premise that Clip had no concept of an account. That premise is
+gone — real accounts (email + password, JWT sessions, `tier` on the server
+in Postgres) shipped first, and server-side tier enforcement (every
+AI-backed endpoint re-checks `tier` from the database, not from anything the
+client sends) shipped after that. Billing slots into that existing identity
+layer instead of inventing a new one: **Stripe subscriptions are tied to the
+same account row that already has a `tier` column**, no license key, no
+pasting a code into Settings.
 
-## The core architecture gap
+## Pricing
 
-Clip currently has **no concept of an account or identity** — it's a fully
-local desktop app, and `tier` is just a flag a user can flip in Settings.
-Stripe subscriptions are tied to a customer (email), not a device. So before
-any billing code can work, the app needs *some* way to know "this install
-belongs to a paying customer."
+- **$3.99/mo**, or **$29/yr** (~40% off the monthly rate — a real incentive
+  to pick annual, which is better for retention and cash flow than a token
+  discount).
+- **7-day free trial, card required up front** — Stripe auto-charges at day
+  7 unless cancelled; this needs zero custom code beyond setting
+  `subscription_data.trial_period_days: 7` on the Checkout session.
+  Cancelling during the trial reverts to Free at day 7, nothing charged.
+- Free tier stays free forever, capped as described in `free-vs-pro.md`.
+  Free costs nothing to run (no AI calls), so there's no cost pressure to
+  ever change that.
 
-Two ways to close that gap:
+## How identity carries through
 
-1. **License key / activation code** — Stripe Checkout completion triggers
-   the server to generate a key, emailed to the customer, which they paste
-   into Settings. The app sends it to the server on launch (and periodically)
-   to confirm it's still valid and get back `tier`. Simple, no passwords, no
-   session management — closest fit for a single-user desktop utility.
-2. **Email + magic link account system** — heavier; gives you multi-device
-   sync later, but is a bigger lift (auth, sessions, account recovery) for a
-   v1 that doesn't need multi-device yet.
+1. User is already signed in (real requirement before first app use, see
+   `AuthGate.tsx`) — the app always has a valid session token by the time
+   billing is relevant.
+2. Starting checkout is `POST /billing/checkout` with that same
+   `Authorization: Bearer <token>` header everything else already sends.
+   The server knows exactly which account this is for — no separate
+   "prove who you are to Stripe" step.
+3. Stripe Checkout collects the card (Clip never touches card details,
+   keeping it out of PCI scope). On completion, the server's webhook
+   handler stamps `stripe_customer_id` onto that same `users` row and sets
+   `tier = 'pro'`.
+4. Next time the app calls any Pro-gated endpoint, or re-checks `/auth/me`,
+   it sees the new tier. No activation code, nothing to paste.
 
-**Recommendation: start with (1).** It's the minimum that makes billing real,
-and it doesn't foreclose moving to (2) later if multi-device sync becomes a
-real feature (it's already listed as a future upsell in `free-vs-pro.md`).
-This doc assumes the license-key model from here on.
+## Schema
 
-## States
+Three columns added to the existing `users` table (`server/db.js`):
 
-A subscription (and by extension, the local `tier`) moves through:
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT;
+```
 
-| State | Meaning | Local `tier` |
+`subscription_status` mirrors Stripe's own subscription status
+(`trialing`/`active`/`past_due`/`canceled`/etc.) — kept separately from
+`tier` because they're not quite the same thing: `tier` is the binary
+free/pro the rest of the app already checks everywhere, `subscription_status`
+is the finer-grained Stripe state used to decide *what `tier` should be* and
+to show something more informative than "Pro" or "Free" in Settings (e.g.
+"Pro — trial ends in 4 days", "Pro — payment failed, update your card").
+
+## Tier state machine
+
+| Stripe subscription status | `tier` | Reasoning |
 |---|---|---|
-| `none` | Never started a trial or subscription | `free` |
-| `trialing` | In the 7-day trial, card on file | `pro` |
-| `active` | Paid subscription, billing normally | `pro` |
-| `past_due` | Payment failed, Stripe retrying | `pro` (grace period) or `free` — TBD, see open questions |
-| `canceled` | User cancelled, or all retries exhausted | `free` |
+| `trialing` | `pro` | Trial means full access, that's the point of a trial |
+| `active` | `pro` | Paying normally |
+| `past_due` | `pro` | **Decision:** grace period. Stripe's Smart Retries are already trying to recharge the card; dropping someone to Free the moment a card expires (before they've even noticed) is a bad experience for what's usually a temporary problem. They keep Pro until retries are exhausted. |
+| `canceled` / `unpaid` / `incomplete_expired` | `free` | Subscription is genuinely over |
 
-## Flow
+History/folders/pins already saved are never touched by a tier change —
+dropping to Free just re-imposes the caps (50 items/7 days, 3 pins, 3
+folders) going forward, per `free-vs-pro.md`.
 
-**1. Starting a trial**
-- User clicks "Start free trial" in-app (likely from the paywall message
-  already shown when a Free user hits a Pro-gated action).
-- App opens a Stripe Checkout session in the browser (Checkout handles card
-  collection — Clip never touches card details directly, which also keeps it
-  out of PCI scope).
-- Checkout is configured with `subscription_data.trial_period_days: 7` and
-  the monthly/annual price the user picked.
-- On completion, Stripe fires `checkout.session.completed`.
+## Endpoints (`server/index.js` + `server/billing.js`)
 
-**2. Server-side, on `checkout.session.completed`**
-- Look up or create a customer record keyed by email.
-- Generate a license key, store it against that customer + subscription ID.
-- Email the key to the customer (or, if the app has a way to stay in the
-  loop — e.g. it polls a short-lived session token after Checkout redirects
-  back — hand the key straight back to the app so the user never has to copy
-  it manually. Worth designing for this if feasible, since "go check your
-  email and paste a code" is real friction).
+- `POST /billing/checkout` (requires auth) — body `{ "plan": "monthly" | "annual" }`.
+  Creates or reuses a Stripe Customer for this account, creates a Checkout
+  Session in subscription mode with a 7-day trial, returns `{ "url": "..." }`
+  for the app to open in the system browser.
+- `POST /billing/portal` (requires auth) — creates a Stripe Billing Portal
+  session (handles plan switching and cancellation entirely on Stripe's
+  side — far less work and more trustworthy than building that UI
+  ourselves) and returns `{ "url": "..." }`. Errors if the account has never
+  checked out (no `stripe_customer_id` yet).
+- `POST /billing/webhook` — Stripe webhook receiver. Verifies the
+  `Stripe-Signature` header against `STRIPE_WEBHOOK_SECRET` (this route is
+  mounted with `express.raw()`, ahead of the app's global `express.json()`
+  middleware, since signature verification needs the exact raw request
+  body). Handles:
+  - `checkout.session.completed` — stamps `stripe_customer_id` and
+    `stripe_subscription_id` onto the account.
+  - `customer.subscription.updated` — the main state-transition event
+    (trialing → active, active → past_due, etc.); updates
+    `subscription_status` and derives `tier` per the table above.
+  - `customer.subscription.deleted` — sets `subscription_status = 'canceled'`,
+    `tier = 'free'`.
 
-**3. App activation**
-- User pastes the license key into Settings.
-- App calls a `/activate` (or `/license/status`) endpoint with the key.
-- Server validates it against the subscription's current Stripe status and
-  returns `{ tier, status, current_period_end }`.
-- App stores the key + last-known `tier` locally and sets `tier` accordingly.
+## App side
 
-**4. Ongoing validation**
-- App re-checks license status periodically (e.g. on launch, and maybe once
-  a day in the background) rather than trusting the local flag forever —
-  otherwise a cancelled subscription would still show as Pro indefinitely.
-- If the check fails (network down, server unreachable), fail soft: keep the
-  last-known tier for some grace window rather than instantly locking the
-  user out over a transient outage.
+- `start_checkout(plan)` (Tauri command) calls `/billing/checkout`, opens
+  the returned URL in the system browser (the `open` crate — no custom URL
+  scheme, no deep-linking. Same reasoning as password reset: getting a
+  browser tab to hand control back to a specific desktop app cleanly is a
+  real platform-specific project, copy/return-to-the-app is not).
+- Since there's no deep link back, the app can't be told the instant
+  checkout finishes. Instead, once checkout opens, the UI polls
+  `refresh_account_status` (hits `/auth/me`, updates local `tier`) every few
+  seconds for a few minutes, and stops as soon as `tier` flips to `pro`. A
+  manual "I've finished checking out" button covers anyone who takes longer
+  than the polling window.
+- `open_billing_portal()` calls `/billing/portal` and opens it the same way
+  — this is how someone cancels or switches plans, from Settings.
+- The dev-only Plan toggle in `SettingsPanel.tsx` (Settings → Plan) still
+  exists for local testing without needing a real Stripe checkout every
+  time, clearly labeled as not real billing. It's a genuine gap that
+  nothing stops it from reaching a real build — see `free-vs-pro.md`'s
+  "not built yet" list.
 
-**5. Trial ending / conversion**
-- Stripe auto-charges the card at day 7 unless cancelled (this is just
-  Stripe's default trial behavior — no custom code needed beyond having
-  `trial_period_days` set).
-- `customer.subscription.updated` fires when status moves from `trialing` to
-  `active`. Server updates its record; app picks up the new status on its
-  next validation check.
+## Open questions (down from four to two)
 
-**6. Cancellation**
-- User cancels (likely via a Stripe Customer Portal link, not a custom UI —
-  Stripe's hosted portal handles plan changes/cancellation out of the box and
-  is far less work than building it ourselves).
-- `customer.subscription.deleted` (or `updated` with `cancel_at_period_end`)
-  fires. Server marks the license inactive at period end.
-- App's next validation check sees `status: canceled` and reverts `tier` to
-  `free`. History/folders/pins already in place stay as-is — going to Free
-  just re-imposes the caps (per `free-vs-pro.md`, the 50-item/3-folder/3-pin
-  limits apply going forward, nothing already saved is deleted).
-
-**7. Payment failure**
-- `invoice.payment_failed` fires. Stripe's own retry schedule (Smart Retries)
-  handles re-attempting the charge.
-- Open question (below): does Pro access continue during retries, or drop
-  immediately?
-
-## Webhook events the server needs to handle
-
-- `checkout.session.completed` — provision the license
-- `customer.subscription.updated` — status transitions (trialing → active,
-  active → past_due, etc.)
-- `customer.subscription.deleted` — cancellation, revoke license
-- `invoice.payment_failed` — optionally notify the user, decide grace-period
-  behavior
-
-All webhook handlers need to verify the Stripe signature header — this is
-where `APP_SHARED_SECRET`-style thinking applies again, except it's Stripe's
-own webhook signing secret, not something we invent.
-
-## What needs to exist before this can be built
-
-- A Stripe account (test mode is enough to build and test the whole flow
-  before going live)
-- A `/checkout` endpoint (server) to create Checkout sessions
-- A `/webhook` endpoint (server) to receive the events above
-- A `/activate` + `/license/status` endpoint (server)
-- A customers/licenses table (server-side DB — doesn't exist yet; the
-  existing `db.rs` is the *local* SQLite store on the user's machine, not a
-  server-side store)
-- License key field + "Manage subscription" link in `SettingsPanel.tsx`
-- Replace the dev-only Plan toggle with the real activation flow (the toggle
-  can stay behind a debug build flag for testing, but shouldn't ship to real
-  users)
-
-## Open questions
-
-- **Past-due grace period**: keep Pro access during Stripe's retry window, or
-  drop to Free immediately on first failed payment? Leaning toward a short
-  grace period (matches how most subscription apps behave, avoids punishing
-  someone over an expired card before they've even noticed).
-- **Multiple devices**: license-key model as scoped above is single-key,
-  not single-device-limited — same key could be pasted into Clip on two
-  machines. Decide whether to cap activations per license, or just not worry
-  about it for v1.
-- **Annual plan trial**: does picking annual still get the 7-day trial, or is
-  the trial monthly-only with annual requiring payment up front? Stripe
-  supports either; this is a product decision, not a technical constraint.
+- **Multiple devices**: signing into the same Pro account on a second
+  device already grants Pro there too (tier lives on the account, not the
+  device) — this was true the moment accounts shipped, unrelated to
+  billing. Not treated as abuse; a family/multi-computer user having Pro
+  everywhere they're signed in is a feature, not a leak.
 - **Refunds/disputes**: no process defined yet for handling chargebacks or
-  refund requests — needs a decision once real money is flowing.
+  refund requests — needs a decision once real money is flowing. Stripe's
+  dashboard handles the mechanics; the open question is just what Clip's
+  own policy is.
