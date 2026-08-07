@@ -26,6 +26,19 @@ interface Settings {
   [key: string]: unknown;
 }
 
+// Minimal shape needed for the "Choose a screenshot" picker below -- mirrors
+// the fields ScreenshotsPanel's own ScreenshotItem has, just not importing
+// that interface directly since this only ever reads (never pins/deletes/
+// etc.) a screenshot from here.
+interface ScreenshotPickerItem {
+  id: number;
+  width: number;
+  height: number;
+  thumb_data_uri: string;
+  ocr_text: string | null;
+  created_at: string;
+}
+
 interface TransformLogEntry {
   id: number;
   input: string;
@@ -146,6 +159,30 @@ export default function TransformTab({
   // fetch can't land after a newer request (or a dismiss) and overwrite the
   // preview with a stale/wrong image.
   const previewRequestId = useRef<number | null>(null);
+
+  // "Add image" dropdown (2026-08-07) -- previously the only way to get an
+  // image's text into Input was uploadImage's native file dialog; there was
+  // no way to reuse a screenshot already captured by the app itself without
+  // leaving this tab, going to Screenshots, and clicking that item's own
+  // Transform icon. This small menu offers both from right here: "Upload
+  // image" (unchanged, see uploadImage below) and "Choose a screenshot"
+  // (opens screenshotPickerOpen below).
+  const [addImageMenuOpen, setAddImageMenuOpen] = useState(false);
+  const addImageMenuRef = useRef<HTMLDivElement>(null);
+  const [screenshotPickerOpen, setScreenshotPickerOpen] = useState(false);
+  const [pickerScreenshots, setPickerScreenshots] = useState<ScreenshotPickerItem[] | null>(null);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!addImageMenuOpen) return;
+    function onClickAway(e: MouseEvent) {
+      if (addImageMenuRef.current && !addImageMenuRef.current.contains(e.target as Node)) {
+        setAddImageMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [addImageMenuOpen]);
 
   // Copy/Save are both "act on some piece of text, from one of several
   // buttons scattered across the tab" -- tracked generically by target
@@ -332,6 +369,40 @@ export default function TransformTab({
     }
   }
 
+  // Opens the "Choose a screenshot" picker (see screenshotPickerOpen above)
+  // and loads every captured screenshot, same list_screenshots call
+  // ScreenshotsPanel itself uses. Free to browse regardless of tier --
+  // capturing/viewing screenshots is free (see docs/free-vs-pro.md); this
+  // whole tab is already gated Pro-only above, so no separate check is
+  // needed here.
+  function openScreenshotPicker() {
+    setAddImageMenuOpen(false);
+    setScreenshotPickerOpen(true);
+    setPickerScreenshots(null);
+    setPickerError(null);
+    invoke<ScreenshotPickerItem[]>("list_screenshots", { query: null })
+      .then(setPickerScreenshots)
+      .catch(() => setPickerError("Couldn't load your screenshots."));
+  }
+
+  // Picking one reuses the exact same fields/shape uploadImage's success
+  // path sets -- Input gets the OCR'd text, screenshotSource gets the
+  // "From a screenshot" preview card, and screenshot_id (not full_data_uri)
+  // is what tells that preview card's expand button to fetch the full-res
+  // image on demand rather than assume one's already in hand.
+  function selectScreenshot(item: ScreenshotPickerItem) {
+    if (!item.ocr_text?.trim()) return;
+    setInput(item.ocr_text);
+    setResult(null);
+    setScreenshotSource({
+      thumb_data_uri: item.thumb_data_uri,
+      width: item.width,
+      height: item.height,
+      screenshot_id: item.id,
+    });
+    setScreenshotPickerOpen(false);
+  }
+
   // Generic now (2026-07-27) -- used by the main Output box's Copy button
   // *and* each Recent-list row's own Copy button, not just the current
   // result, so past runs don't need to be reloaded into the main view just
@@ -398,20 +469,45 @@ export default function TransformTab({
             <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
               Input
             </p>
-            {/* Pick a picture with text in it (a photo, a scan, whatever) and
-                its recognized text lands here instead -- same idea as
-                Screenshots' OCR, just fed from an arbitrary file instead of
-                a captured screenshot. A native dialog rather than
-                drag-and-drop -- see uploadImage's doc comment for why. */}
-            <button
-              onClick={uploadImage}
-              disabled={imageLoading}
-              title="Upload a picture to extract its text"
-              className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors disabled:opacity-50"
-            >
-              <i className="ti ti-photo-up text-[11px]" />
-              <span>{imageLoading ? "Reading image…" : "Upload image"}</span>
-            </button>
+            {/* Add image dropdown (2026-08-07) -- two ways to get a
+                picture's text into Input: upload an arbitrary file (a
+                photo, a scan, whatever -- native dialog, see uploadImage's
+                doc comment for why not drag-and-drop) or reuse a screenshot
+                already captured by the app (see openScreenshotPicker).
+                Previously only the upload path existed here. */}
+            <div ref={addImageMenuRef} className="relative">
+              <button
+                onClick={() => setAddImageMenuOpen((v) => !v)}
+                disabled={imageLoading}
+                title="Add an image to extract its text"
+                className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors disabled:opacity-50"
+              >
+                <i className="ti ti-photo-up text-[11px]" />
+                <span>{imageLoading ? "Reading image…" : "Add image"}</span>
+                <i className={`ti ti-chevron-down text-[9px] transition-transform ${addImageMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+              {addImageMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl bg-cream dark:bg-charcoalSurface border border-borderLight dark:border-borderDark shadow-float dark:shadow-floatDark py-1 text-[12px]">
+                  <button
+                    onClick={() => {
+                      setAddImageMenuOpen(false);
+                      uploadImage();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                  >
+                    <i className="ti ti-photo-up text-[12px] text-inkMuted dark:text-inkMutedDark" />
+                    Upload image
+                  </button>
+                  <button
+                    onClick={openScreenshotPicker}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                  >
+                    <i className="ti ti-photo text-[12px] text-inkMuted dark:text-inkMutedDark" />
+                    Choose a screenshot
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           {/* Shown when this Input came from a screenshot's OCR'd text
               (2026-08-03) -- without this, jumping here from Screenshots'
@@ -798,6 +894,76 @@ export default function TransformTab({
             >
               Close
             </button>
+          </div>,
+          document.body
+        )}
+
+      {/* "Choose a screenshot" picker (2026-08-07) -- lets the "Add image"
+          menu's second option reuse any already-captured screenshot instead
+          of only ever uploading a fresh file. A centered grid rather than a
+          small dropdown list -- thumbnails need real size to tell them
+          apart, the same reasoning ScreenshotsPanel's own cards use. */}
+      {screenshotPickerOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-6"
+            onClick={() => setScreenshotPickerOpen(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[360px] max-h-[80vh] flex flex-col rounded-2xl bg-cream dark:bg-charcoalSurface shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-borderLight dark:border-borderDark">
+                <p className="text-[13px] font-medium">Choose a screenshot</p>
+                <button
+                  onClick={() => setScreenshotPickerOpen(false)}
+                  className="text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream"
+                >
+                  <i className="ti ti-x text-[15px]" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                {pickerError ? (
+                  <p className="text-red-500 dark:text-red-400 text-[12.5px] text-center py-6">{pickerError}</p>
+                ) : pickerScreenshots === null ? (
+                  <p className="text-inkMuted dark:text-inkMutedDark text-[12.5px] text-center py-6">Loading…</p>
+                ) : pickerScreenshots.length === 0 ? (
+                  <p className="text-inkMuted dark:text-inkMutedDark text-[12.5px] text-center py-6">
+                    No screenshots yet -- take one (Win+Shift+S or PrintScreen) and it'll show up here.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {pickerScreenshots.map((item) => {
+                      const hasText = !!item.ocr_text?.trim();
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => selectScreenshot(item)}
+                          disabled={!hasText}
+                          title={hasText ? "Use this screenshot" : "No text found in this screenshot yet"}
+                          className="group text-left disabled:opacity-40 disabled:cursor-default"
+                        >
+                          <div className="relative h-20 rounded-lg overflow-hidden bg-black/[0.05] dark:bg-white/[0.08]">
+                            <img
+                              src={item.thumb_data_uri}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              draggable={false}
+                            />
+                            {hasText && (
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            )}
+                          </div>
+                          <p className="text-[10.5px] text-inkMuted dark:text-inkMutedDark mt-1">
+                            {formatTimestamp(item.created_at)}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>,
           document.body
         )}
