@@ -566,8 +566,19 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
         total_clips_saved: 1247,
         transforms_run: 86,
         total_screenshots_saved: 23,
+        total_characters_captured: 184320,
         categories,
         daily_activity,
+        top_presets: [
+          { label: "Summarize", count: 34 },
+          { label: "Fix grammar", count: 21 },
+          { label: "Extract key info", count: 12 },
+        ],
+        folders: {
+          folder_count: 6,
+          item_count: 42,
+          most_used_folder: { name: "Recipes", count: 15 },
+        },
       };
       return delay(stats) as Promise<T>;
     }

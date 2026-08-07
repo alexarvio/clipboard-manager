@@ -718,6 +718,14 @@ struct TransformResponse {
 async fn transform_clip(
     content: String,
     instruction: String,
+    // Only set when this run was triggered by clicking an actual preset
+    // button (builtin or custom) rather than typing a freeform instruction
+    // -- see TransformBar.tsx/TransformTab.tsx's run() calls. Powers the
+    // Dashboard's "top presets" stat (db::bump_preset_usage below); a
+    // freeform run intentionally isn't counted there, so that list reflects
+    // presets people actually reach for, not every one-off instruction ever
+    // typed.
+    preset_label: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let (server_url, app_secret, auth_token, tier) = {
@@ -785,6 +793,9 @@ async fn transform_clip(
     {
         let conn = state.conn.lock().unwrap();
         db::bump_lifetime(&conn, "transforms_run");
+        if let Some(label) = preset_label.as_deref().filter(|l| !l.is_empty()) {
+            db::bump_preset_usage(&conn, label);
+        }
     }
 
     body.result.ok_or_else(|| "empty response from server".into())

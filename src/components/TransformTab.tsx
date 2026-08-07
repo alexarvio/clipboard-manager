@@ -270,7 +270,9 @@ export default function TransformTab({
     await invoke("save_settings", { settings: updated });
   }
 
-  async function run(finalInstruction: string) {
+  // `presetLabel` mirrors TransformBar.tsx's own run() -- only passed when a
+  // preset button (not the freeform instruction box) triggered this run.
+  async function run(finalInstruction: string, presetLabel?: string) {
     if (!input.trim() || !finalInstruction.trim() || loading) return;
     setLoading(true);
     setError(null);
@@ -278,6 +280,7 @@ export default function TransformTab({
       const transformed = await invoke<string>("transform_clip", {
         content: input,
         instruction: finalInstruction,
+        presetLabel: presetLabel ?? null,
       });
       setResult(transformed);
       // Logged here (not in transform_clip itself) since only this tab
@@ -592,7 +595,7 @@ export default function TransformTab({
                   disabled={loading || !input.trim()}
                   onClick={() => {
                     setInstruction(p);
-                    run(p);
+                    run(p, p);
                   }}
                   className={`text-[11px] px-2 py-1 rounded-md transition-colors disabled:opacity-40 ${
                     instruction === p
@@ -609,7 +612,7 @@ export default function TransformTab({
                     disabled={loading || !input.trim()}
                     onClick={() => {
                       setInstruction(p.instruction);
-                      run(p.instruction);
+                      run(p.instruction, p.label);
                     }}
                     title={p.instruction}
                     className={`text-[11px] pl-2 pr-5 py-1 rounded-md transition-colors disabled:opacity-40 ${

@@ -261,6 +261,25 @@ pub fn init(conn: &Connection) {
     // clip_items/folder_items: it's not meant to be a permanent archive
     // (see TRANSFORM_LOG_LIMIT below, which trims it aggressively), and
     // isn't subject to the Free/Pro history cap logic those tables have.
+    // Per-preset usage counts (2026-08-07), backing the Dashboard's "top
+    // presets" stat. Only bumped when a run was actually triggered by
+    // clicking a specific preset button (builtin or custom) -- see
+    // transform_clip's preset_label param in main.rs -- not for freeform
+    // typed instructions, so this stays an honest "which presets do you
+    // actually reach for" count rather than lumping every transform in.
+    // `label` alone (not builtin-vs-custom) is the key: a builtin's label
+    // *is* its instruction text, and a custom preset's label is whatever
+    // name it was saved under, so both already live in the same namespace
+    // (see settings.rs's own note on this).
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS preset_usage_counts (
+            label TEXT PRIMARY KEY,
+            count INTEGER NOT NULL DEFAULT 0
+        )",
+        [],
+    )
+    .expect("failed to create preset_usage_counts table");
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS transform_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -308,6 +327,20 @@ pub fn bump_lifetime(conn: &Connection, metric: &str) {
     .ok();
 }
 
+/// Same as bump_lifetime, but by an arbitrary amount rather than always 1 --
+/// used for "characters_captured" (bumped by a clip's length, not by one per
+/// clip). Kept as a separate function rather than adding an `amount` param
+/// to bump_lifetime itself so every existing call site (which only ever
+/// means "+1 event happened") stays exactly as readable as it is now.
+pub fn bump_lifetime_by(conn: &Connection, metric: &str, amount: i64) {
+    conn.execute(
+        "INSERT INTO lifetime_counters (metric, count) VALUES (?1, ?2)
+         ON CONFLICT(metric) DO UPDATE SET count = count + ?2",
+        params![metric, amount],
+    )
+    .ok();
+}
+
 fn get_lifetime(conn: &Connection, metric: &str) -> i64 {
     conn.query_row(
         "SELECT count FROM lifetime_counters WHERE metric = ?1",
@@ -338,6 +371,17 @@ fn bump_daily_activity(conn: &Connection, date: &str) {
     .ok();
 }
 
+/// Bumps a preset's usage count by 1, creating the row if it doesn't exist
+/// yet -- see the preset_usage_counts table's own doc comment in init().
+pub fn bump_preset_usage(conn: &Connection, label: &str) {
+    conn.execute(
+        "INSERT INTO preset_usage_counts (label, count) VALUES (?1, 1)
+         ON CONFLICT(label) DO UPDATE SET count = count + 1",
+        params![label],
+    )
+    .ok();
+}
+
 #[derive(Serialize, Clone)]
 pub struct CategoryCount {
     pub category: String,
@@ -351,15 +395,75 @@ pub struct DayCount {
 }
 
 #[derive(Serialize, Clone)]
+pub struct PresetUsage {
+    pub label: String,
+    pub count: i64,
+}
+
+#[derive(Serialize, Clone)]
+pub struct FolderUsage {
+    pub name: String,
+    pub count: i64,
+}
+
+#[derive(Serialize, Clone)]
+pub struct FolderStats {
+    // Every folder including subfolders -- a subfolder is a "folder" just
+    // as much as a top-level one (see the folders table's self-referential
+    // parent_id), so this is a flat COUNT(*), not just top-level rows.
+    pub folder_count: i64,
+    pub item_count: i64,
+    // None when there are no folders/items yet, rather than a fake
+    // {name: "", count: 0} entry -- lets the frontend show a clean "no
+    // folders yet" state instead of a misleading zero-count row.
+    pub most_used_folder: Option<FolderUsage>,
+}
+
+fn get_folder_stats(conn: &Connection) -> FolderStats {
+    let folder_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM folders", [], |row| row.get(0))
+        .unwrap_or(0);
+    let item_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM folder_items", [], |row| row.get(0))
+        .unwrap_or(0);
+    let most_used_folder = conn
+        .query_row(
+            "SELECT f.name, COUNT(fi.id) as c
+             FROM folders f JOIN folder_items fi ON fi.folder_id = f.id
+             GROUP BY f.id
+             ORDER BY c DESC, f.id ASC
+             LIMIT 1",
+            [],
+            |row| Ok(FolderUsage { name: row.get(0)?, count: row.get(1)? }),
+        )
+        .ok();
+    FolderStats { folder_count, item_count, most_used_folder }
+}
+
+#[derive(Serialize, Clone)]
 pub struct DashboardStats {
     pub total_clips_saved: i64,
     pub transforms_run: i64,
     pub total_screenshots_saved: i64,
+    // Total characters across every clip ever saved (see
+    // bump_lifetime_by(..., "characters_captured", ...) at the clip-insert
+    // site) -- tracked as its own running counter rather than derived from
+    // clip_items, since that table gets trimmed on Free tier and this needs
+    // to survive that, same reasoning as clips_saved/categories/daily_activity.
+    pub total_characters_captured: i64,
     pub categories: Vec<CategoryCount>,
     // Last `days` calendar days, oldest first, zero-filled for days with no
     // activity so the frontend can render a fixed-width heatmap grid without
-    // having to backfill gaps itself.
+    // having to backfill gaps itself. Also what Dashboard.tsx derives
+    // current streak, longest streak, this-week-vs-last-week, and busiest
+    // weekday from client-side -- all four are just different reductions
+    // over this same array, so none of them needed their own query here.
     pub daily_activity: Vec<DayCount>,
+    // Top custom/builtin presets by click-through usage (see
+    // preset_usage_counts), highest first. Empty until someone's actually
+    // run a preset-triggered transform at least once.
+    pub top_presets: Vec<PresetUsage>,
+    pub folders: FolderStats,
 }
 
 /// Aggregates everything the Dashboard window needs in one call. `days`
@@ -369,6 +473,7 @@ pub fn get_dashboard_stats(conn: &Connection, days: i64) -> DashboardStats {
     let total_clips_saved = get_lifetime(conn, "clips_saved");
     let transforms_run = get_lifetime(conn, "transforms_run");
     let total_screenshots_saved = get_lifetime(conn, "screenshots_saved");
+    let total_characters_captured = get_lifetime(conn, "characters_captured");
 
     let mut categories = Vec::new();
     {
@@ -413,12 +518,28 @@ pub fn get_dashboard_stats(conn: &Connection, days: i64) -> DashboardStats {
         daily_activity.push(DayCount { date, count });
     }
 
+    let mut top_presets = Vec::new();
+    {
+        let mut stmt = conn
+            .prepare("SELECT label, count FROM preset_usage_counts ORDER BY count DESC, label ASC LIMIT 8")
+            .unwrap();
+        let rows = stmt
+            .query_map([], |row| Ok(PresetUsage { label: row.get(0)?, count: row.get(1)? }))
+            .unwrap();
+        top_presets.extend(rows.filter_map(|r| r.ok()));
+    }
+
+    let folders = get_folder_stats(conn);
+
     DashboardStats {
         total_clips_saved,
         transforms_run,
         total_screenshots_saved,
+        total_characters_captured,
         categories,
         daily_activity,
+        top_presets,
+        folders,
     }
 }
 
@@ -829,6 +950,7 @@ pub fn insert_if_new(conn: &Connection, content: &str) -> Option<i64> {
     // clip_items later), since clip_items gets trimmed on Free tier and
     // these need to survive that. See the "Dashboard stats" section in init().
     bump_lifetime(conn, "clips_saved");
+    bump_lifetime_by(conn, "characters_captured", content.chars().count() as i64);
     bump_category_counter(conn, &category);
     bump_daily_activity(conn, &chrono::Local::now().format("%Y-%m-%d").to_string());
 

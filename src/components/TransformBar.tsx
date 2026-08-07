@@ -176,7 +176,12 @@ export default function TransformBar({
     await invoke("save_settings", { settings: updated });
   }
 
-  async function run(finalInstruction: string) {
+  // `presetLabel` is only passed when this run came from clicking an actual
+  // preset button (builtin or custom), not the freeform "type an
+  // instruction" box -- see transform_clip's own doc comment in main.rs for
+  // why that distinction matters (it's what "top presets" on Dashboard
+  // counts).
+  async function run(finalInstruction: string, presetLabel?: string) {
     if (!finalInstruction.trim() || loading) return;
     setLoading(true);
     setError(null);
@@ -185,6 +190,7 @@ export default function TransformBar({
       const transformed = await invoke<string>("transform_clip", {
         content,
         instruction: finalInstruction,
+        presetLabel: presetLabel ?? null,
       });
       setResult(transformed);
     } catch (e) {
@@ -254,7 +260,7 @@ export default function TransformBar({
                 disabled={loading}
                 onClick={() => {
                   setInstruction(p);
-                  run(p);
+                  run(p, p);
                 }}
                 className={`text-[11px] px-2 py-1 rounded-md transition-colors disabled:opacity-40 ${
                   instruction === p
@@ -271,7 +277,7 @@ export default function TransformBar({
                   disabled={loading}
                   onClick={() => {
                     setInstruction(p.instruction);
-                    run(p.instruction);
+                    run(p.instruction, p.label);
                   }}
                   title={p.instruction}
                   className={`text-[11px] pl-2 pr-5 py-1 rounded-md transition-colors disabled:opacity-40 ${

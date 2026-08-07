@@ -36,8 +36,21 @@ interface DashboardStats {
   total_clips_saved: number;
   transforms_run: number;
   total_screenshots_saved: number;
+  // Lifetime running total, survives history trimming (see db.rs's own
+  // comment on bump_lifetime_by) -- not derivable from the trimmed clip
+  // list itself, so it comes from the backend as its own field rather than
+  // being computed client-side like streak/weekly/busiest-day below.
+  total_characters_captured: number;
   categories: { category: string; count: number }[];
   daily_activity: { date: string; count: number }[];
+  // Highest-usage presets first, only ones that have actually been clicked
+  // at least once (see transform_clip's preset_label param in main.rs).
+  top_presets: { label: string; count: number }[];
+  folders: {
+    folder_count: number;
+    item_count: number;
+    most_used_folder: { name: string; count: number } | null;
+  };
 }
 
 interface ClipEntry {
@@ -68,6 +81,64 @@ function computeStreak(daily: { date: string; count: number }[]): number {
     i--;
   }
   return streak;
+}
+
+// Longest run of consecutive active days anywhere in the window, not just
+// the current trailing one computeStreak finds -- same zero-filled
+// daily_activity array, just scanned for the best run instead of stopping
+// at the first gap. Since the backend only ever returns 84 days (see
+// get_dashboard_stats's `days` param in main.rs), this is a "longest streak
+// in the last 12 weeks" not a true lifetime record -- a reasonable
+// approximation for a clipboard tool where streaks rarely run that long
+// anyway, and matches exactly what the heatmap below it visualizes.
+function computeLongestStreak(daily: { date: string; count: number }[]): number {
+  let longest = 0;
+  let current = 0;
+  for (const day of daily) {
+    if (day.count > 0) {
+      current++;
+      longest = Math.max(longest, current);
+    } else {
+      current = 0;
+    }
+  }
+  return longest;
+}
+
+// Trailing 7-day windows (today back 6 days vs. the 7 days before that)
+// rather than calendar weeks -- avoids a Sunday-vs-Monday start-of-week
+// argument and reads naturally either way ("the last 7 days" is
+// unambiguous, "this week" isn't for everyone).
+function computeWeeklyComparison(daily: { date: string; count: number }[]): {
+  thisWeek: number;
+  lastWeek: number;
+} {
+  const last7 = daily.slice(-7);
+  const prev7 = daily.slice(-14, -7);
+  return {
+    thisWeek: last7.reduce((sum, d) => sum + d.count, 0),
+    lastWeek: prev7.reduce((sum, d) => sum + d.count, 0),
+  };
+}
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// Which day of the week has the most total activity across the whole
+// window -- parses each YYYY-MM-DD as a local date (not UTC, to match how
+// the backend generated these dates from chrono::Local) and buckets by
+// getDay(). Returns null rather than "Sunday" by default when there's no
+// activity at all yet, so the UI can show an honest "not enough data"
+// state instead of a misleading day.
+function computeBusiestWeekday(daily: { date: string; count: number }[]): string | null {
+  const totals = new Array(7).fill(0);
+  for (const day of daily) {
+    const [y, m, d] = day.date.split("-").map(Number);
+    const weekday = new Date(y, m - 1, d).getDay();
+    totals[weekday] += day.count;
+  }
+  const max = Math.max(...totals);
+  if (max === 0) return null;
+  return WEEKDAY_NAMES[totals.indexOf(max)];
 }
 
 function heatColor(count: number, max: number, isDark: boolean): string {
@@ -169,6 +240,22 @@ export default function Dashboard() {
   }, [theme]);
 
   const streak = useMemo(() => (stats ? computeStreak(stats.daily_activity) : 0), [stats]);
+  const longestStreak = useMemo(
+    () => (stats ? computeLongestStreak(stats.daily_activity) : 0),
+    [stats]
+  );
+  const weeklyComparison = useMemo(
+    () => (stats ? computeWeeklyComparison(stats.daily_activity) : { thisWeek: 0, lastWeek: 0 }),
+    [stats]
+  );
+  const busiestWeekday = useMemo(
+    () => (stats ? computeBusiestWeekday(stats.daily_activity) : null),
+    [stats]
+  );
+  const totalCategoryCount = useMemo(
+    () => (stats?.categories ?? []).reduce((sum, c) => sum + c.count, 0),
+    [stats]
+  );
   const maxCategoryCount = useMemo(
     () => Math.max(1, ...(stats?.categories.map((c) => c.count) ?? [1])),
     [stats]
@@ -575,7 +662,7 @@ export default function Dashboard() {
               How you're using Clip, in more detail.
             </p>
 
-            <div className={`grid gap-4 mb-6 ${tier === "pro" ? "grid-cols-4" : "grid-cols-3"}`}>
+            <div className={`grid gap-4 mb-4 ${tier === "pro" ? "grid-cols-5" : "grid-cols-4"}`}>
               <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">
                   {stats ? stats.total_clips_saved.toLocaleString() : "--"}
@@ -591,8 +678,29 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+                <p className="text-[28px] font-semibold leading-none mb-1.5">
+                  {stats
+                    ? new Intl.NumberFormat(undefined, {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }).format(stats.total_characters_captured)
+                    : "--"}
+                </p>
+                <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                  characters captured
+                </p>
+              </div>
+              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">{streak}</p>
-                <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">day streak</p>
+                <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                  day streak
+                  {/* Only shown once it actually differs from the current
+                      streak -- "3 day streak, longest 3 days" is just noise
+                      the moment you're already at your record. */}
+                  {longestStreak > streak && (
+                    <span className="opacity-70"> · longest {longestStreak}</span>
+                  )}
+                </p>
               </div>
               {tier === "pro" && (
                 <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
@@ -606,8 +714,47 @@ export default function Dashboard() {
               )}
             </div>
 
+            {/* This week vs. last week + busiest day -- both pure client-side
+                reductions over the same daily_activity array the heatmap
+                below already renders (see computeWeeklyComparison/
+                computeBusiestWeekday), no extra backend query needed. */}
+            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4 flex items-center gap-6">
+              <div>
+                <p className="text-[20px] font-semibold leading-none mb-1.5 flex items-center gap-1.5">
+                  {weeklyComparison.thisWeek.toLocaleString()}
+                  {stats && weeklyComparison.thisWeek !== weeklyComparison.lastWeek && (
+                    <span
+                      className={`text-[11px] font-medium px-1.5 py-[1px] rounded-full ${
+                        weeklyComparison.thisWeek > weeklyComparison.lastWeek
+                          ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark"
+                          : "bg-black/[0.05] dark:bg-white/[0.08] text-inkMuted dark:text-inkMutedDark"
+                      }`}
+                    >
+                      {weeklyComparison.thisWeek > weeklyComparison.lastWeek ? "↑" : "↓"}{" "}
+                      {weeklyComparison.lastWeek === 0
+                        ? "new"
+                        : `${Math.round(
+                            (Math.abs(weeklyComparison.thisWeek - weeklyComparison.lastWeek) /
+                              weeklyComparison.lastWeek) *
+                              100
+                          )}%`}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                  clips saved, last 7 days ({weeklyComparison.lastWeek.toLocaleString()} the 7 days before)
+                </p>
+              </div>
+              {busiestWeekday && (
+                <div className="pl-6 border-l border-black/[0.06] dark:border-white/[0.08]">
+                  <p className="text-[20px] font-semibold leading-none mb-1.5">{busiestWeekday}</p>
+                  <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">busiest day</p>
+                </div>
+              )}
+            </div>
+
             {/* Category breakdown */}
-            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-6">
+            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4">
               <p className="text-[12px] font-medium mb-3">Where your clips come from</p>
               {(stats?.categories.length ?? 0) === 0 && (
                 <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
@@ -644,11 +791,70 @@ export default function Dashboard() {
                         }}
                       />
                     </div>
-                    <span className="text-[11px] w-8 text-right text-inkMuted dark:text-inkMutedDark">
+                    <span className="text-[11px] w-16 text-right text-inkMuted dark:text-inkMutedDark">
                       {c.count}
+                      {totalCategoryCount > 0 && (
+                        <span className="opacity-70">
+                          {" "}
+                          ({Math.round((c.count / totalCategoryCount) * 100)}%)
+                        </span>
+                      )}
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Folders + top presets, side by side -- two smaller cards
+                rather than one, since they're unrelated stats that both
+                happen to be short lists. */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+                <p className="text-[12px] font-medium mb-3">Folders</p>
+                {!stats || stats.folders.folder_count === 0 ? (
+                  <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                    No folders yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2 text-[12px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-inkMuted dark:text-inkMutedDark">Folders</span>
+                      <span className="font-medium">{stats.folders.folder_count.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-inkMuted dark:text-inkMutedDark">Items filed</span>
+                      <span className="font-medium">{stats.folders.item_count.toLocaleString()}</span>
+                    </div>
+                    {stats.folders.most_used_folder && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-inkMuted dark:text-inkMutedDark">Most used</span>
+                        <span className="font-medium truncate">
+                          {stats.folders.most_used_folder.name} ({stats.folders.most_used_folder.count})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+                <p className="text-[12px] font-medium mb-3">Top presets used</p>
+                {!stats || stats.top_presets.length === 0 ? (
+                  <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                    Not enough data yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2 text-[12px]">
+                    {stats.top_presets.slice(0, 5).map((p) => (
+                      <div key={p.label} className="flex items-center justify-between gap-2">
+                        <span className="truncate">{p.label}</span>
+                        <span className="text-inkMuted dark:text-inkMutedDark shrink-0">
+                          {p.count.toLocaleString()}×
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
