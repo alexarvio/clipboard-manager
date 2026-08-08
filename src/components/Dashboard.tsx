@@ -742,7 +742,7 @@ export default function Dashboard() {
                   )}
                 </p>
                 <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
-                  clips saved, last 7 days ({weeklyComparison.lastWeek.toLocaleString()} the 7 days before)
+                  clips saved, last 7 days
                 </p>
               </div>
               {busiestWeekday && (

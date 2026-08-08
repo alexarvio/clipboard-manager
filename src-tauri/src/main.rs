@@ -2111,7 +2111,7 @@ fn main() {
                 // right-click still opens the menu normally regardless of
                 // this setting.
                 .show_menu_on_left_click(false)
-                .tooltip("Clip")
+                .tooltip("FatClipboard")
                 .on_menu_event(move |app, event| {
                     // TEMPORARY debug logging.
                     eprintln!("[debug] on_menu_event fired, id = {:?}", event.id().as_ref());
