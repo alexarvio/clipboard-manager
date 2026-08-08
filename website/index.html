@@ -296,6 +296,7 @@
   .shot-row + .shot-row { margin-top: 2px; }
   .shot-img { position: relative; height: 108px; border-radius: 10px; overflow: hidden; margin-bottom: 8px; background: var(--creamSurface); border: 1px solid var(--borderLight); }
   .shot-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .shot-title { font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
   .shot-ocr { font-size: 11.5px; font-style: italic; color: var(--inkMuted); line-height: 1.4; margin-bottom: 8px; }
   .shot-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .shot-dims { font-size: 10.5px; color: var(--inkMuted); line-height: 1.5; }
@@ -592,14 +593,17 @@
         <div class="shot-search-lg"><i class="ti ti-search"></i> Search screenshot text…</div>
         <div class="shot-row on">
           <div class="shot-img"><img src="assets/screenshots/fake-invoice.svg" alt="" loading="lazy"></div>
-          <div class="shot-ocr">"Invoice #4471 — Total due: $1,240.00, Net 30, Bill to: Acme Corp…"</div>
+          <div class="shot-title">Invoice — Acme Corp</div>
+          <div class="shot-ocr">"INVOICE #4471 · BILL TO Nova Studio LLC · Product design retainer 1 $900.00 · Brand asset delivery 2 $260.00 · Total due $1,240.00, Net 30"</div>
           <div class="shot-bottom-row">
             <div class="shot-dims">2560×1440<br>Jun 28, 4:02 PM</div>
             <div class="shot-icons"><i class="ti ti-copy"></i><i class="ti ti-pinned-filled"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-check"></i><i class="ti ti-trash"></i></div>
           </div>
         </div>
         <div class="shot-row">
-          <div class="shot-img" style="height:60px;"><img src="assets/screenshots/fake-dashboard.svg" alt="" loading="lazy"></div>
+          <div class="shot-img" style="height:60px;"><img src="assets/screenshots/fake-notes.svg" alt="" loading="lazy"></div>
+          <div class="shot-title">Team Standup — Aug 5</div>
+          <div class="shot-ocr">"Team Standup · Ship dark mode toggle by Friday · Fix OCR crash on 4K screenshots · Review PR #182 from Jordan…"</div>
           <div class="shot-bottom-row">
             <div class="shot-dims">1920×1080<br>Jun 28, 5:14 PM</div>
             <div class="shot-icons"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-plus"></i><i class="ti ti-trash"></i></div>

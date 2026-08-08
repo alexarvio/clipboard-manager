@@ -1,0 +1,43 @@
+<svg width="800" height="480" viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="480" fill="#ffffff"/>
+  <rect x="0" y="0" width="800" height="480" fill="none" stroke="#E5E1D6" stroke-width="2"/>
+
+  <!-- Header -->
+  <rect x="48" y="42" width="34" height="34" rx="8" fill="#5EA800"/>
+  <path d="M58 59 L65 66 L76 51" stroke="#ffffff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="94" y="60" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#1A1816">Team Standup</text>
+  <text x="94" y="80" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#6E6859">Thursday, Aug 5, 2026</text>
+
+  <line x1="48" y1="100" x2="752" y2="100" stroke="#E5E1D6" stroke-width="1.5"/>
+
+  <!-- Checklist -->
+  <g>
+    <rect x="48" y="126" width="20" height="20" rx="5" fill="#5EA800"/>
+    <path d="M53 136 L59 142 L68 129" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="82" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816" text-decoration="line-through" opacity="0.55">Ship dark mode toggle by Friday</text>
+  </g>
+
+  <g>
+    <rect x="48" y="164" width="20" height="20" rx="5" fill="#5EA800"/>
+    <path d="M53 174 L59 180 L68 167" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="82" y="180" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816" text-decoration="line-through" opacity="0.55">Fix OCR crash on 4K screenshots</text>
+  </g>
+
+  <g>
+    <rect x="48" y="202" width="20" height="20" rx="5" fill="none" stroke="#B8B097" stroke-width="2"/>
+    <text x="82" y="218" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816">Review PR #182 from Jordan</text>
+  </g>
+
+  <g>
+    <rect x="48" y="240" width="20" height="20" rx="5" fill="none" stroke="#B8B097" stroke-width="2"/>
+    <text x="82" y="256" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816">Sync with design on empty states</text>
+  </g>
+
+  <g>
+    <rect x="48" y="278" width="20" height="20" rx="5" fill="none" stroke="#B8B097" stroke-width="2"/>
+    <text x="82" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816">Deploy hotfix for clipboard sync</text>
+  </g>
+
+  <line x1="48" y1="326" x2="752" y2="326" stroke="#F0ECE1" stroke-width="1.5"/>
+  <text x="48" y="356" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#6E6859">Next sync: tomorrow 9:30 AM · #eng-standup</text>
+</svg>
