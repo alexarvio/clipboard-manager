@@ -149,25 +149,29 @@
   .folder-row .fname { flex: 1; }
   .folder-row .fcount { color: var(--inkMuted); font-size: 11.5px; }
   .folder-row i.ti-pinned-filled { color: var(--accent); font-size: 12px; }
-  .folder-row i.ti-chevron-right { color: var(--inkMuted); font-size: 12px; }
-  /* "Opened folder" preview underneath the list -- shows a text clip and a
-     screenshot filed in the same folder, matching FoldersPanel.tsx's real
-     header (chevron-left, name, item count, bottom border). */
-  .folder-open { margin-top: 10px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
-  .folder-open-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--borderLight); font-size: 12px; }
-  .folder-open-head i.ti-chevron-left { color: var(--inkMuted); font-size: 13px; }
-  .folder-open-head .fname { flex: 1; font-weight: 600; }
-  .folder-open-head .fcount { color: var(--inkMuted); font-size: 11px; }
-  .folder-open-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 11.5px; color: var(--ink); line-height: 1.4; }
+  .folder-row i.ti-chevron-right, .folder-row i.ti-chevron-down { color: var(--inkMuted); font-size: 12px; }
+  /* Matches FoldersPanel.tsx's real inline-expand behavior (2026-08-08) --
+     clicking a folder expands its contents directly below its own row
+     (chevron flips down, row gets a resting tint) instead of navigating to
+     a separate screen, with a labeled Stack/New folder/New item row and
+     the item list nested inside, same structure as the app. */
+  .folder-open { margin-top: 2px; }
+  .folder-open-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 2px; }
+  .folder-open-action { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 500; padding: 6px 4px; border-radius: 999px; background: rgba(26,24,22,0.05); color: var(--ink); white-space: nowrap; }
+  .folder-open-action i { font-size: 11px; }
+  .folder-open-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
+  .folder-open-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 12px; color: var(--ink); line-height: 1.4; }
   .folder-open-item + .folder-open-item { border-top: 1px solid var(--borderLight); }
   .folder-open-item i { color: var(--accent); font-size: 13px; flex-shrink: 0; }
   .folder-open-item.shot span { margin-left: auto; color: var(--inkMuted); font-size: 10.5px; }
 
-  /* Exactly the hero panel's real item treatment (clamped text, a separate
-     "Show more" line, date + folder-check on their own row) -- the pin
-     icon itself is hover-only in the real app (being inside the Pinned
-     card is what signals pinned, same as History), so resting rows show
-     no pin icon at all, only a folder-check when saved to a folder. */
+  /* Otherwise the hero panel's real item treatment (clamped text, a
+     separate "Show more" line, date + icons on their own row) -- one
+     deliberate deviation from the real app though: the pin icon there is
+     hover-only (being inside the Pinned card is what signals pinned
+     status), but on a static marketing screenshot nobody's hovering
+     anything, so a card full of pins with no pin icon anywhere isn't
+     self-explanatory. Shown persistently here on purpose. */
   .pin-viz { width: 100%; }
   .pin-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); margin-bottom: 6px; }
   .pin-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
@@ -176,8 +180,9 @@
   .pin-item .item-text { font-size: 13px; color: var(--ink); line-height: 1.45; }
   .pin-item .show-more { display: block; color: var(--accent); font-weight: 600; font-size: 12.5px; margin-top: 4px; }
   .pin-item .item-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; font-size: 11px; color: var(--inkMuted); }
-  .pin-item .item-icons { display: flex; gap: 6px; font-size: 13px; }
+  .pin-item .item-icons { display: flex; align-items: center; gap: 6px; font-size: 13px; }
   .pin-item .item-icons i.ti-folder-check { color: var(--accent); }
+  .pin-item .item-icons i.ti-pinned-filled { color: var(--accent); font-size: 12px; }
 
   /* Rebuilt off TransformTab.tsx's actual markup (2026-08-08) -- Input,
      Instruction, and Output are each their own labeled, bordered box
@@ -440,14 +445,20 @@
       </div>
       <div class="f-visual">
         <div class="folder-viz">
-          <div class="folder-row on"><i class="ti ti-folder"></i><span class="fname">Email templates</span><span class="fcount">2</span><i class="ti ti-pinned-filled"></i><i class="ti ti-chevron-right"></i></div>
           <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Brand colors</span><span class="fcount">3</span><i class="ti ti-chevron-right"></i></div>
-          <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Snippets</span><span class="fcount">1</span><i class="ti ti-chevron-right"></i></div>
+          <div class="folder-row on"><i class="ti ti-folder"></i><span class="fname">Email templates</span><span class="fcount">2</span><i class="ti ti-pinned-filled"></i><i class="ti ti-chevron-down"></i></div>
           <div class="folder-open">
-            <div class="folder-open-head"><i class="ti ti-chevron-left"></i><span class="fname">Email templates</span><span class="fcount">2 items</span></div>
-            <div class="folder-open-item"><i class="ti ti-file-text"></i>"Hi [name], thanks for reaching out — here's the pricing sheet you asked about…"</div>
-            <div class="folder-open-item shot"><i class="ti ti-photo"></i>Signature.png<span>1200×400</span></div>
+            <div class="folder-open-actions">
+              <span class="folder-open-action"><i class="ti ti-list-numbers"></i> Stack</span>
+              <span class="folder-open-action"><i class="ti ti-folder-plus"></i> New folder</span>
+              <span class="folder-open-action"><i class="ti ti-plus"></i> New item</span>
+            </div>
+            <div class="folder-open-card">
+              <div class="folder-open-item"><i class="ti ti-file-text"></i>"Hi [name], thanks for reaching out — here's the pricing sheet you asked about…"</div>
+              <div class="folder-open-item shot"><i class="ti ti-photo"></i>Signature.png<span>1200×400</span></div>
+            </div>
           </div>
+          <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Snippets</span><span class="fcount">1</span><i class="ti ti-chevron-right"></i></div>
         </div>
       </div>
     </div>
@@ -465,15 +476,15 @@
             <div class="pin-item">
               <div class="item-text">Standard onboarding reply — thanks for signing up, here's your API key, the docs link, and how to reach support if anyth…</div>
               <span class="show-more">Show more</span>
-              <div class="item-row"><span>Jun 28, 5:27 PM</span><span class="item-icons"><i class="ti ti-folder-check"></i></span></div>
+              <div class="item-row"><span>Jun 28, 5:27 PM</span><span class="item-icons"><i class="ti ti-folder-check"></i><i class="ti ti-pinned-filled"></i></span></div>
             </div>
             <div class="pin-item">
               <div class="item-text">Best, Alex</div>
-              <div class="item-row"><span>Jun 28, 5:24 PM</span></div>
+              <div class="item-row"><span>Jun 28, 5:24 PM</span><span class="item-icons"><i class="ti ti-pinned-filled"></i></span></div>
             </div>
             <div class="pin-item">
               <div class="item-text">1234 Market St, San Francisco, CA 94103</div>
-              <div class="item-row"><span>Jun 28, 5:23 PM</span></div>
+              <div class="item-row"><span>Jun 28, 5:23 PM</span><span class="item-icons"><i class="ti ti-pinned-filled"></i></span></div>
             </div>
           </div>
         </div>
