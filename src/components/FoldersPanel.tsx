@@ -642,17 +642,19 @@ export default function FoldersPanel({
   function renderFolderDetail(path: Folder[], folder: Folder, inline: boolean) {
     return (
       <div className={inline ? "relative" : "relative flex-1 min-h-0 flex flex-col overflow-hidden"}>
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
           {/* Name, item count, and a collapse control are all redundant here
               when inline (2026-08-08) -- the row this expands from already
               shows the folder's name and count, and clicking that same row
               again already collapses it, so repeating all three right below
               it just doubled up on the same information. Full-screen (a
               drilled-into subfolder) still needs its own header since
-              there's no row above it to fall back on. */}
-          {inline ? (
-            <span className="flex-1" />
-          ) : (
+              there's no row above it to fall back on. Without the name's
+              flex-1 soaking up the row's width, the inline case also
+              switched this container to justify-between so the three icon
+              buttons below spread out across the full row instead of
+              clustering together at one edge. */}
+          {!inline && (
             <>
               <button onClick={goBack} title="Back">
                 <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
