@@ -90,10 +90,13 @@
   /* Split into two separate, more noticeable lines (2026-08-08) -- the
      hotkey and the "free forever" claim are two different pieces of
      information and were getting lost crammed onto one small muted line. */
-  .hotkey-line { font-size: 14.5px; font-weight: 500; color: var(--ink); display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
-  .hotkey-line kbd { font-size: 12px; padding: 3px 7px; }
   .free-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700; color: var(--accent); background: var(--accentFill); padding: 8px 16px; border-radius: 999px; }
   .free-badge i { font-size: 15px; }
+  /* Hotkey moved up above the mock panel as its own floating badge
+     (2026-08-08) instead of small muted text under the buttons -- stacked
+     above the existing "AI transform" tag, right-aligned to match it. */
+  .hotkey-tag { top: -60px; right: 20px; font-size: 12.5px; }
+  .hotkey-tag kbd { background: rgba(255,255,255,0.16); color: var(--cream); padding: 2px 6px; border-radius: 5px; font-size: 10.5px; border-bottom: 1px solid rgba(255,255,255,0.22); }
 
   /* Rebuilt directly off src/App.tsx's real Tailwind classes (2026-08-08)
      rather than eyeballed from screenshots -- window is 480px wide
@@ -388,11 +391,11 @@
         <a class="btn btn-primary" href="#download"><i class="ti ti-download"></i> Download for Windows</a>
         <a class="btn btn-secondary" href="#how-it-works"><i class="ti ti-player-play"></i> See how it works</a>
       </div>
-      <p class="hotkey-line">Summon it anywhere with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></p>
       <div class="free-badge"><i class="ti ti-rosette-discount-check"></i> Free forever for core features</div>
     </div>
 
     <div class="panel-mock">
+      <div class="float-tag hotkey-tag">Summon it anywhere · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></div>
       <div class="float-tag top"><i class="ti ti-sparkles"></i> AI transform in one click</div>
       <div class="panel">
         <div class="panel-brand-row">
