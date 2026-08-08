@@ -150,16 +150,52 @@
   .folder-row .fcount { color: var(--inkMuted); font-size: 11.5px; }
   .folder-row i.ti-pinned-filled { color: var(--accent); font-size: 12px; }
   .folder-row i.ti-chevron-right { color: var(--inkMuted); font-size: 12px; }
+  /* "Opened folder" preview underneath the list -- shows a text clip and a
+     screenshot filed in the same folder, matching FoldersPanel.tsx's real
+     header (chevron-left, name, item count, bottom border). */
+  .folder-open { margin-top: 10px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
+  .folder-open-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--borderLight); font-size: 12px; }
+  .folder-open-head i.ti-chevron-left { color: var(--inkMuted); font-size: 13px; }
+  .folder-open-head .fname { flex: 1; font-weight: 600; }
+  .folder-open-head .fcount { color: var(--inkMuted); font-size: 11px; }
+  .folder-open-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 11.5px; color: var(--ink); line-height: 1.4; }
+  .folder-open-item + .folder-open-item { border-top: 1px solid var(--borderLight); }
+  .folder-open-item i { color: var(--accent); font-size: 13px; flex-shrink: 0; }
+  .folder-open-item.shot span { margin-left: auto; color: var(--inkMuted); font-size: 10.5px; }
 
+  /* Matches the real Pinned card style from History (rounded card, ring +
+     shadow, divided rows) rather than individually-highlighted pills. */
+  .pin-viz { width: 100%; }
+  .pin-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); margin-bottom: 6px; }
+  .pin-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
+  .pin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; font-size: 13px; color: var(--ink); }
+  .pin-row + .pin-row { border-top: 1px solid var(--borderLight); }
+  .pin-row i.ti-pinned-filled { color: var(--accent); font-size: 13px; }
+
+  /* Rebuilt off TransformTab.tsx's actual markup (2026-08-08) -- Input,
+     Instruction, and Output are each their own labeled, bordered box
+     (bg-black/[0.03] border rounded-lg), preset chips are rounded-md (not
+     pills) in light/medium green depending on selection, and Output uses
+     the accentFill tint with Copy/Save/Retry buttons below it. */
   .transform-viz { width: 100%; font-size: 13px; }
-  .tv-toprow { display: flex; align-items: center; justify-content: space-between; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--inkMuted); margin-bottom: 8px; }
-  .tv-addimg { display: flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 11.5px; }
-  .t-line { background: #fff; border-radius: 9px; padding: 10px 12px; margin-bottom: 8px; line-height: 1.5; }
-  .tv-presets { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
-  .tv-preset { font-size: 10.5px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #fff; color: var(--inkMuted); }
-  .tv-preset.on { background: var(--accentFill); color: var(--accent); }
-  .t-arrow { text-align: center; color: var(--accent); font-size: 13px; margin: 4px 0; }
-  .t-out { background: var(--accentFill); border: 1px solid rgba(94,168,0,0.15); border-radius: 9px; padding: 10px 12px; color: var(--accent); font-weight: 500; }
+  .tv-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .tv-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--inkMuted); }
+  .tv-addimg { display: flex; align-items: center; gap: 3px; color: var(--inkMuted); font-size: 10.5px; }
+  .tv-presetcount { display: flex; align-items: center; gap: 4px; color: var(--inkMuted); font-size: 10.5px; }
+  .tv-box { background: rgba(26,24,22,0.03); border: 1px solid var(--borderLight); border-radius: 10px; padding: 10px 11px; margin-bottom: 12px; }
+  .tv-input-text { font-size: 13px; line-height: 1.5; color: var(--ink); }
+  .tv-presets { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 9px; }
+  .tv-preset { font-size: 10.5px; font-weight: 500; padding: 5px 9px; border-radius: 6px; background: rgba(94,168,0,0.1); color: var(--ink); }
+  .tv-preset.on { background: rgba(94,168,0,0.25); }
+  .tv-freeform { display: flex; align-items: center; background: var(--cream); border: 1px solid rgba(94,168,0,0.2); border-radius: 8px; padding: 7px 10px; font-size: 11.5px; color: var(--inkMuted); margin-bottom: 8px; }
+  .tv-run-row { display: flex; gap: 6px; }
+  .tv-run { flex: 1; text-align: center; font-size: 11px; font-weight: 500; padding: 7px 0; border-radius: 8px; background: rgba(94,168,0,0.15); color: var(--ink); }
+  .tv-save { padding: 7px 10px; border-radius: 8px; background: rgba(94,168,0,0.1); color: var(--ink); font-size: 12px; }
+  .tv-out-box { background: var(--accentFill); border: 1px solid rgba(94,168,0,0.2); border-radius: 10px; padding: 10px 11px; margin-bottom: 8px; color: var(--ink); font-size: 12.5px; line-height: 1.5; }
+  .tv-out-actions { display: flex; gap: 6px; }
+  .tv-copy { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--ink); color: var(--cream); font-size: 12px; font-weight: 600; padding: 8px 0; border-radius: 8px; }
+  .tv-save2 { display: flex; align-items: center; gap: 6px; background: rgba(94,168,0,0.1); color: var(--ink); font-size: 12px; padding: 8px 12px; border-radius: 8px; }
+  .tv-retry { display: flex; align-items: center; justify-content: center; width: 34px; background: rgba(26,24,22,0.05); color: var(--inkMuted); border-radius: 8px; }
 
   .settings-viz { width: 100%; }
   .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; background: #fff; margin-bottom: 6px; }
@@ -193,10 +229,6 @@
   .f-visual { background: var(--creamSurface); border: 1px solid var(--borderLight); border-radius: 16px; padding: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; }
 
   .pin-viz { width: 100%; }
-  .pin-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; background: #fff; margin-bottom: 6px; }
-  .pin-item i.ti-pinned-filled { color: var(--accent); }
-  .pin-item.faint { opacity: 0.45; background: transparent; }
-
   /* ---- dedicated Screenshots section (previously just one alternating
      feature row -- pulled out into its own showcase since it was
      under-marketed relative to how core a feature it is) ---- */
@@ -404,6 +436,11 @@
           <div class="folder-row on"><i class="ti ti-folder"></i><span class="fname">Email templates</span><span class="fcount">2</span><i class="ti ti-pinned-filled"></i><i class="ti ti-chevron-right"></i></div>
           <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Brand colors</span><span class="fcount">3</span><i class="ti ti-chevron-right"></i></div>
           <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Snippets</span><span class="fcount">1</span><i class="ti ti-chevron-right"></i></div>
+          <div class="folder-open">
+            <div class="folder-open-head"><i class="ti ti-chevron-left"></i><span class="fname">Email templates</span><span class="fcount">2 items</span></div>
+            <div class="folder-open-item"><i class="ti ti-file-text"></i>"Hi {'{'}name{'}'}, thanks for reaching out — here's the pricing sheet you asked about…"</div>
+            <div class="folder-open-item shot"><i class="ti ti-photo"></i>Signature.png<span>1200×400</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -416,10 +453,12 @@
       </div>
       <div class="f-visual">
         <div class="pin-viz">
-          <div class="pin-item"><i class="ti ti-pinned-filled"></i> api_key_live_9f2...</div>
-          <div class="pin-item"><i class="ti ti-pinned-filled"></i> Best, Alex</div>
-          <div class="pin-item faint"><i class="ti ti-pin"></i> npm run tauri dev</div>
-          <div class="pin-item faint"><i class="ti ti-pin"></i> 192.168.1.42</div>
+          <div class="pin-label">Pinned</div>
+          <div class="pin-card">
+            <div class="pin-row"><span class="pin-text">api_key_live_9f2a83…</span><i class="ti ti-pinned-filled"></i></div>
+            <div class="pin-row"><span class="pin-text">Best, Alex</span><i class="ti ti-pinned-filled"></i></div>
+            <div class="pin-row"><span class="pin-text">1234 Market St, San Francisco, CA</span><i class="ti ti-pinned-filled"></i></div>
+          </div>
         </div>
       </div>
     </div>
@@ -432,13 +471,31 @@
       </div>
       <div class="f-visual">
         <div class="transform-viz">
-          <div class="tv-toprow"><span>Input</span><span class="tv-addimg"><i class="ti ti-photo-up"></i> Add image <i class="ti ti-chevron-down" style="font-size:8px;"></i></span></div>
-          <div class="t-line">hey can u send that file over whenevr u get a chance thanks</div>
-          <div class="tv-presets">
-            <span class="tv-preset">Fix grammar</span><span class="tv-preset on">Make formal</span><span class="tv-preset">Make casual</span><span class="tv-preset">Summarize</span>
+          <div class="tv-label-row">
+            <span class="tv-label">Input</span>
+            <span class="tv-addimg"><i class="ti ti-photo-up"></i> Add image <i class="ti ti-chevron-down" style="font-size:8px;"></i></span>
           </div>
-          <div class="t-arrow"><i class="ti ti-arrow-down"></i></div>
-          <div class="t-out">Could you please send that file over whenever you get a chance? Thank you.</div>
+          <div class="tv-box"><div class="tv-input-text">People work their whole lives for what they could get in a few years if they just want to live.</div></div>
+
+          <div class="tv-label-row">
+            <span class="tv-label">Instruction</span>
+            <span class="tv-presetcount">4/6 presets <i class="ti ti-settings"></i></span>
+          </div>
+          <div class="tv-box">
+            <div class="tv-presets">
+              <span class="tv-preset">Fix grammar</span><span class="tv-preset">Make formal</span><span class="tv-preset">Make casual</span><span class="tv-preset on">Summarize</span>
+            </div>
+            <div class="tv-freeform">Summarize</div>
+            <div class="tv-run-row"><span class="tv-run">Run</span><span class="tv-save"><i class="ti ti-device-floppy"></i></span></div>
+          </div>
+
+          <div class="tv-label">Output</div>
+          <div class="tv-out-box" style="margin-top:5px;">People could achieve in a few years what they spend their whole lives working toward if they chose to simply live.</div>
+          <div class="tv-out-actions">
+            <span class="tv-copy"><i class="ti ti-copy"></i> Copy</span>
+            <span class="tv-save2"><i class="ti ti-folder-plus"></i> Save</span>
+            <span class="tv-retry"><i class="ti ti-refresh"></i></span>
+          </div>
         </div>
       </div>
     </div>
