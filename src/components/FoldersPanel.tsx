@@ -658,7 +658,7 @@ export default function FoldersPanel({
             <button
               onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
               title="Select items to paste one after another, in order"
-              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
                 stackBuilderIds !== null
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
@@ -670,7 +670,7 @@ export default function FoldersPanel({
             <button
               onClick={() => setCreatingSubfolder((c) => !c)}
               title="New subfolder"
-              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
                 creatingSubfolder
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
@@ -685,7 +685,7 @@ export default function FoldersPanel({
                 setNewItemTargetId(null);
               }}
               title="New item"
-              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
                 creatingItem
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
