@@ -163,14 +163,21 @@
   .folder-open-item i { color: var(--accent); font-size: 13px; flex-shrink: 0; }
   .folder-open-item.shot span { margin-left: auto; color: var(--inkMuted); font-size: 10.5px; }
 
-  /* Matches the real Pinned card style from History (rounded card, ring +
-     shadow, divided rows) rather than individually-highlighted pills. */
+  /* Exactly the hero panel's real item treatment (clamped text, a separate
+     "Show more" line, date + folder-check on their own row) -- the pin
+     icon itself is hover-only in the real app (being inside the Pinned
+     card is what signals pinned, same as History), so resting rows show
+     no pin icon at all, only a folder-check when saved to a folder. */
   .pin-viz { width: 100%; }
   .pin-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); margin-bottom: 6px; }
   .pin-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
-  .pin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; font-size: 13px; color: var(--ink); }
-  .pin-row + .pin-row { border-top: 1px solid var(--borderLight); }
-  .pin-row i.ti-pinned-filled { color: var(--accent); font-size: 13px; }
+  .pin-item { padding: 12px 14px; }
+  .pin-item + .pin-item { border-top: 1px solid var(--borderLight); }
+  .pin-item .item-text { font-size: 13px; color: var(--ink); line-height: 1.45; }
+  .pin-item .show-more { display: block; color: var(--accent); font-weight: 600; font-size: 12.5px; margin-top: 4px; }
+  .pin-item .item-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; font-size: 11px; color: var(--inkMuted); }
+  .pin-item .item-icons { display: flex; gap: 6px; font-size: 13px; }
+  .pin-item .item-icons i.ti-folder-check { color: var(--accent); }
 
   /* Rebuilt off TransformTab.tsx's actual markup (2026-08-08) -- Input,
      Instruction, and Output are each their own labeled, bordered box
@@ -455,9 +462,19 @@
         <div class="pin-viz">
           <div class="pin-label">Pinned</div>
           <div class="pin-card">
-            <div class="pin-row"><span class="pin-text">api_key_live_9f2a83…</span><i class="ti ti-pinned-filled"></i></div>
-            <div class="pin-row"><span class="pin-text">Best, Alex</span><i class="ti ti-pinned-filled"></i></div>
-            <div class="pin-row"><span class="pin-text">1234 Market St, San Francisco, CA</span><i class="ti ti-pinned-filled"></i></div>
+            <div class="pin-item">
+              <div class="item-text">Standard onboarding reply — thanks for signing up, here's your API key, the docs link, and how to reach support if anyth…</div>
+              <span class="show-more">Show more</span>
+              <div class="item-row"><span>Jun 28, 5:27 PM</span><span class="item-icons"><i class="ti ti-folder-check"></i></span></div>
+            </div>
+            <div class="pin-item">
+              <div class="item-text">Best, Alex</div>
+              <div class="item-row"><span>Jun 28, 5:24 PM</span></div>
+            </div>
+            <div class="pin-item">
+              <div class="item-text">1234 Market St, San Francisco, CA 94103</div>
+              <div class="item-row"><span>Jun 28, 5:23 PM</span></div>
+            </div>
           </div>
         </div>
       </div>
