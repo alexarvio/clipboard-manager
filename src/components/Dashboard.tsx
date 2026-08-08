@@ -888,7 +888,16 @@ export default function Dashboard() {
               Same folders as the quick panel -- anything you add or remove here shows up
               there too.
             </p>
-            <div className="max-w-md w-full mx-auto flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface rounded-2xl overflow-hidden">
+            {/* Full-width now (2026-08-07) -- this used to sit in a centered
+                max-w-md column (a leftover from FoldersPanel's original home,
+                the ~320px-wide docked quick panel), which left this whole
+                view looking like a narrow strip floating in the middle of an
+                otherwise full-width window, unlike Home's activity feed
+                right next to it in the sidebar. Same ring/shadow card
+                treatment as Home's activity feed now too, not just the width
+                -- bg-creamSurface + rounded-2xl alone (no ring/shadow) read
+                flatter than every other card on this page. */}
+            <div className="flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark rounded-2xl overflow-hidden">
               {/* onStartPasteQueue is required by FoldersPanel but has no
                   meaning here: sequential ("Stack") paste is driven by the
                   quick panel's hotkey/hide cycle (see App.tsx's pasteQueue),
