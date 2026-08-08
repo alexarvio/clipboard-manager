@@ -68,15 +68,17 @@
     100% { box-shadow: 0 0 0 0 rgba(94,168,0,0); }
   }
   h1 { font-size: 52px; font-weight: 500; line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.5px; }
-  /* Plain, simple underline under "elevated" -- a flat green rule, a touch
-     wider than the word on both sides, sitting clear below the baseline. */
+  /* Brush-stroke underline under "elevated" -- a filled, tapered shape
+     (thin at both ends, uneven top/bottom edges) instead of a uniform bar,
+     so it reads as one loaded-brush swipe rather than a ruled line. */
   h1 em { position: relative; display: inline-block; font-style: normal; color: var(--accent); }
   h1 em::after {
     content: "";
-    position: absolute; left: -4%; right: -4%; bottom: -0.14em;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--accent);
+    position: absolute; left: -4%; right: -4%; bottom: -0.16em;
+    height: 0.16em;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M2,11 C2,6 14,4 34,4 C90,2 180,2 250,4 C275,4.5 292,6 298,9 C296,13 288,15.5 260,16 C190,17.5 100,17.5 40,16 C18,15.5 6,14 2,11 Z' fill='%235EA800'/%3E%3C/svg%3E") no-repeat;
+    background-size: 100% 100%;
+    z-index: -1;
   }
   .sub { font-size: 17px; color: var(--inkMuted); max-width: 460px; margin: 0 0 32px; line-height: 1.6; }
   .ctaRow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
