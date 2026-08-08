@@ -68,17 +68,19 @@
     100% { box-shadow: 0 0 0 0 rgba(94,168,0,0); }
   }
   h1 { font-size: 52px; font-weight: 500; line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.5px; }
-  /* Hand-drawn marker underline under "elevated" -- thick single stroke,
-     tilted a few degrees off horizontal (not a full diagonal) so it reads
-     as one confident marker swipe rather than a typographic underline. */
+  /* Graffiti-style underline under "elevated" -- a green spray stroke with
+     a black outline (same bubble-letter treatment as the FatClipboard
+     logo), sitting clear below the baseline instead of overlapping the
+     descenders, with a couple of little spray-drip dots off the end for
+     texture. */
   h1 em { position: relative; display: inline-block; font-style: normal; color: var(--accent); }
   h1 em::after {
     content: "";
-    position: absolute; left: -3%; right: -5%; bottom: -0.16em;
-    height: 0.3em;
-    transform: rotate(-4deg);
+    position: absolute; left: -2%; right: -6%; bottom: -0.42em;
+    height: 0.34em;
+    transform: rotate(-2.5deg);
     transform-origin: left center;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26' preserveAspectRatio='none'%3E%3Cpath d='M4,15 C90,10 210,17 296,11' stroke='%235EA800' stroke-width='19' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 34' preserveAspectRatio='none'%3E%3Cpath d='M8,18 C100,12 210,20 300,14' stroke='%23000' stroke-width='15' fill='none' stroke-linecap='round'/%3E%3Cpath d='M8,18 C100,12 210,20 300,14' stroke='%235EA800' stroke-width='9.5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='308' cy='13' r='4.5' fill='%235EA800' stroke='%23000' stroke-width='2.5'/%3E%3Ccircle cx='4' cy='19' r='3' fill='%235EA800' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E") no-repeat;
     background-size: 100% 100%;
     z-index: -1;
   }
