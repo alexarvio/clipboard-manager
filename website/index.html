@@ -246,11 +246,31 @@
   .tv-save2 { display: flex; align-items: center; gap: 6px; background: rgba(94,168,0,0.1); color: var(--ink); font-size: 12px; padding: 8px 12px; border-radius: 8px; }
   .tv-retry { display: flex; align-items: center; justify-content: center; width: 34px; background: rgba(26,24,22,0.05); color: var(--inkMuted); border-radius: 8px; }
 
+  /* settings-viz rebuilt off the real SettingsPanel.tsx Section-card layout
+     (stacked icon+title cards, not a single flat row list) rather than an
+     invented summary. */
   .settings-viz { width: 100%; }
-  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; background: #fff; margin-bottom: 6px; }
-  .settings-row .lbl { display: flex; align-items: center; gap: 8px; }
-  .settings-row .lbl i { color: var(--accent); font-size: 14px; }
-  .settings-row .val { color: var(--inkMuted); font-size: 12px; }
+  .settings-card { background: #fff; border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); padding: 14px; margin-bottom: 10px; }
+  .settings-card:last-child { margin-bottom: 0; }
+  .settings-card-head { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; }
+  .settings-card-head i { color: var(--accent); font-size: 14px; }
+  .settings-card-head span { font-size: 12.5px; font-weight: 600; }
+  .settings-field-label { font-size: 10.5px; color: var(--inkMuted); margin-bottom: 5px; }
+  .settings-input { background: rgba(26,24,22,0.04); border: 1px solid var(--borderLight); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; }
+  .settings-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; margin-bottom: 11px; }
+  .settings-toggle-row:last-child { margin-bottom: 0; }
+  .settings-check { width: 15px; height: 15px; border-radius: 4px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+  .settings-check i { color: #fff; font-size: 10px; }
+  .settings-select { display: flex; align-items: center; gap: 4px; background: rgba(26,24,22,0.04); border: 1px solid var(--borderLight); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--inkMuted); }
+  .settings-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 11px; }
+  .settings-tab { padding: 6px; border-radius: 8px; font-size: 11.5px; text-align: center; }
+  .settings-tab.on { background: rgba(26,24,22,0.06); font-weight: 600; }
+  .settings-tab:not(.on) { background: rgba(26,24,22,0.02); color: var(--inkMuted); }
+  .settings-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 10px; font-size: 12px; }
+  .settings-cat { display: flex; align-items: center; gap: 6px; }
+  .settings-cat i { font-size: 13px; color: var(--accent); }
+  .settings-cat.off { color: var(--inkMuted); }
+  .settings-cat.off i { color: var(--borderLight); }
 
   /* ---- strip: real category chips, tied to an actual feature not decoration ---- */
   .strip { padding: 32px 0 8px; overflow: hidden; }
@@ -674,10 +694,26 @@
       </div>
       <div class="f-visual">
         <div class="settings-viz">
-          <div class="settings-row"><span class="lbl"><i class="ti ti-keyboard"></i> Global hotkey</span><span class="val">Ctrl+Shift+V</span></div>
-          <div class="settings-row"><span class="lbl"><i class="ti ti-sparkles"></i> AI presets shown</span><span class="val">6/6</span></div>
-          <div class="settings-row"><span class="lbl"><i class="ti ti-filter"></i> Category filters</span><span class="val">5 active</span></div>
-          <div class="settings-row"><span class="lbl"><i class="ti ti-moon"></i> Theme</span><span class="val">Light</span></div>
+          <div class="settings-card">
+            <div class="settings-card-head"><i class="ti ti-adjustments"></i><span>General</span></div>
+            <div class="settings-field-label">Global hotkey</div>
+            <div class="settings-input">Ctrl+Shift+V</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-head"><i class="ti ti-palette"></i><span>Appearance & Startup</span></div>
+            <div class="settings-toggle-row">Launch at startup <span class="settings-check"><i class="ti ti-check"></i></span></div>
+            <div class="settings-toggle-row">Theme <span class="settings-select">Light <i class="ti ti-chevron-down"></i></span></div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-head"><i class="ti ti-filter"></i><span>Filters</span></div>
+            <div class="settings-tabs"><span class="settings-tab on">Categories</span><span class="settings-tab">AI filters (3)</span></div>
+            <div class="settings-cats">
+              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Links</span>
+              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Emails</span>
+              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Code</span>
+              <span class="settings-cat off"><i class="ti ti-square-rounded"></i>Bank details</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
