@@ -182,10 +182,20 @@
   .folder-open-action { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 500; padding: 6px 4px; border-radius: 999px; background: rgba(26,24,22,0.05); color: var(--ink); white-space: nowrap; }
   .folder-open-action i { font-size: 11px; }
   .folder-open-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
-  .folder-open-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 12px; color: var(--ink); line-height: 1.4; }
+  /* Matches FolderItemRow's real structure -- a leading drag-grip handle,
+     clamped text with its own "Show more" line, then date + the
+     copy/duplicate/folder/transform/delete icon row sharing one line
+     underneath, same convention as the History/Screenshots rows. */
+  .folder-open-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; }
   .folder-open-item + .folder-open-item { border-top: 1px solid var(--borderLight); }
-  .folder-open-item i { color: var(--accent); font-size: 13px; flex-shrink: 0; }
-  .folder-open-item.shot span { margin-left: auto; color: var(--inkMuted); font-size: 10.5px; }
+  .folder-open-item .foi-grip { color: var(--inkMuted); font-size: 12px; margin-top: 2px; flex-shrink: 0; }
+  .folder-open-item .foi-body { flex: 1; min-width: 0; }
+  .folder-open-item .foi-text { font-size: 12px; color: var(--ink); line-height: 1.4; }
+  .folder-open-item .foi-text i { color: var(--accent); margin-right: 5px; }
+  .folder-open-item .show-more { display: block; color: var(--accent); font-weight: 600; font-size: 11px; margin-top: 3px; }
+  .folder-open-item .foi-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; }
+  .folder-open-item .foi-date { font-size: 10px; color: var(--inkMuted); }
+  .folder-open-item .foi-icons { display: flex; gap: 6px; color: var(--inkMuted); font-size: 12px; }
 
   /* Otherwise the hero panel's real item treatment (clamped text, a
      separate "Show more" line, date + icons on their own row) -- one
@@ -475,8 +485,26 @@
               <span class="folder-open-action"><i class="ti ti-plus"></i> New item</span>
             </div>
             <div class="folder-open-card">
-              <div class="folder-open-item"><i class="ti ti-file-text"></i>"Hi [name], thanks for reaching out — here's the pricing sheet you asked about…"</div>
-              <div class="folder-open-item shot"><i class="ti ti-photo"></i>Signature.png<span>1200×400</span></div>
+              <div class="folder-open-item">
+                <i class="ti ti-grip-vertical foi-grip"></i>
+                <div class="foi-body">
+                  <div class="foi-text">"Hi [name], thanks for reaching out — here's the pricing sheet you asked about…"</div>
+                  <span class="show-more">Show more</span>
+                  <div class="foi-meta">
+                    <span class="foi-date">Jun 28, 5:27 PM</span>
+                    <span class="foi-icons"><i class="ti ti-copy"></i><i class="ti ti-copy-plus"></i><i class="ti ti-folder-plus"></i><i class="ti ti-sparkles"></i><i class="ti ti-trash"></i></span>
+                  </div>
+                </div>
+              </div>
+              <div class="folder-open-item">
+                <i class="ti ti-grip-vertical foi-grip"></i>
+                <div class="foi-body">
+                  <div class="foi-text"><i class="ti ti-photo"></i>Signature.png</div>
+                  <div class="foi-meta">
+                    <span class="foi-date">1200×400 · Jun 28, 5:14 PM</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Snippets</span><span class="fcount">1</span><i class="ti ti-chevron-right"></i></div>
