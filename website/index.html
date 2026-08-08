@@ -176,14 +176,24 @@
   .pin-item i.ti-pin-filled { color: var(--accent); }
   .pin-item.faint { opacity: 0.45; background: transparent; }
 
-  .shot-viz { width: 100%; }
-  .shot-search { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 9px; padding: 9px 12px; font-size: 12px; color: var(--inkMuted); margin-bottom: 10px; }
-  .shot-row { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; }
-  .shot-row:hover, .shot-row.on { background: #fff; }
-  .shot-thumb { width: 60px; height: 38px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(135deg, var(--accentFill), var(--borderLight)); }
-  .shot-meta { font-size: 12.5px; color: var(--ink); line-height: 1.45; }
-  .shot-meta span { display: block; font-size: 11px; color: var(--inkMuted); margin-top: 2px; }
-  .shot-actions { margin-left: auto; display: flex; gap: 7px; color: var(--accent); font-size: 12.5px; }
+  /* ---- dedicated Screenshots section (previously just one alternating
+     feature row -- pulled out into its own showcase since it was
+     under-marketed relative to how core a feature it is) ---- */
+  .shot-showcase { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; margin-top: 56px; }
+  .shot-mock-card { background: #fff; border: 1px solid var(--borderLight); border-radius: 18px; padding: 18px; box-shadow: 0 30px 60px -20px rgba(26,24,22,0.18); transform: rotate(0.6deg); }
+  .shot-search-lg { display: flex; align-items: center; gap: 8px; background: var(--creamSurface); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--inkMuted); margin-bottom: 14px; }
+  .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shot-tile { position: relative; background: var(--creamSurface); border-radius: 10px; padding: 10px; }
+  .shot-tile.on { outline: 2px solid var(--accent); }
+  .shot-tile-img { height: 54px; border-radius: 8px; margin-bottom: 8px; background: linear-gradient(135deg, var(--accentFill), var(--borderLight)); }
+  .shot-tile-meta { font-size: 11.5px; color: var(--ink); line-height: 1.4; }
+  .shot-tile-meta span { display: block; font-size: 10px; color: var(--inkMuted); margin-top: 2px; }
+  .shot-tile-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; background: #fff; border-radius: 999px; padding: 4px 6px; box-shadow: 0 4px 10px rgba(26,24,22,0.15); color: var(--accent); font-size: 11px; }
+  .shot-points { display: flex; flex-direction: column; gap: 22px; }
+  .shot-point { display: flex; gap: 14px; align-items: flex-start; }
+  .shot-point i { color: var(--accent); font-size: 19px; margin-top: 3px; flex-shrink: 0; }
+  .shot-point h4 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  .shot-point p { font-size: 13.5px; color: var(--inkMuted); line-height: 1.55; margin: 0; }
 
   /* Dashboard feature mockup -- a few stat tiles plus a tiny heatmap
      strip, same restrained "mini recreation of the real UI" approach as
@@ -240,6 +250,7 @@
     .hero-grid { grid-template-columns: 1fr; }
     .feature-row, .feature-row.rev { grid-template-columns: 1fr; gap: 24px; }
     .feature-row.rev .f-text, .feature-row.rev .f-visual { order: unset; }
+    .shot-showcase { grid-template-columns: 1fr; margin-top: 32px; }
     .navlinks { display: none; }
     h1 { font-size: 36px; }
     .price-head, .price-row, .price-cta-row { grid-template-columns: 1fr 1fr 1fr; font-size: 12px; }
@@ -254,6 +265,7 @@
     <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
     <div class="navlinks">
       <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
       <a href="#how-it-works">How it works</a>
       <a href="#pricing">Pricing</a>
     </div>
@@ -376,28 +388,63 @@
       </div>
     </div>
 
-    <div class="feature-row rev">
-      <div class="f-text">
-        <div class="f-num">04</div>
-        <h3>Screenshots, organized like everything else</h3>
-        <p>Every screenshot you take gets saved automatically, right alongside your text clips — searchable by the text inside them, foldered, and stored entirely on your own device, nothing ever uploaded anywhere. Free on both plans; running them through AI transform is Pro.</p>
-      </div>
-      <div class="f-visual">
-        <div class="shot-viz">
-          <div class="shot-search"><i class="ti ti-search"></i> Search screenshot text…</div>
-          <div class="shot-row on">
-            <div class="shot-thumb"></div>
-            <div class="shot-meta">Dashboard mockup<span>1920×1080 · Jun 28, 5:14 PM</span></div>
-            <div class="shot-actions"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-wand"></i><i class="ti ti-folder-plus"></i></div>
+  </div>
+</section>
+
+<section class="section" id="screenshots" style="background: var(--creamSurface);">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="tag">Screenshots</span>
+      <h2 class="serif">Every screenshot, captured and searchable</h2>
+      <p>FatClipboard doesn't just remember what you type and copy — it remembers what you capture, too. Every screenshot is saved automatically, read with OCR so the text inside it is searchable, and stored entirely on your own device.</p>
+    </div>
+
+    <div class="shot-showcase">
+      <div class="shot-mock-card">
+        <div class="shot-search-lg"><i class="ti ti-search"></i> Search screenshot text…</div>
+        <div class="shot-grid">
+          <div class="shot-tile">
+            <div class="shot-tile-img"></div>
+            <div class="shot-tile-meta">Dashboard mockup<span>1920×1080</span></div>
           </div>
-          <div class="shot-row"><div class="shot-thumb"></div><div class="shot-meta">Invoice #4471<span>2560×1440 · Jun 28, 4:02 PM</span></div></div>
+          <div class="shot-tile on">
+            <div class="shot-tile-actions"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-wand"></i><i class="ti ti-folder-plus"></i></div>
+            <div class="shot-tile-img"></div>
+            <div class="shot-tile-meta">Invoice #4471<span>2560×1440</span></div>
+          </div>
+          <div class="shot-tile">
+            <div class="shot-tile-img"></div>
+            <div class="shot-tile-meta">Error log<span>1440×900</span></div>
+          </div>
+          <div class="shot-tile">
+            <div class="shot-tile-img"></div>
+            <div class="shot-tile-meta">Design spec<span>2000×1250</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="shot-points">
+        <div class="shot-point">
+          <i class="ti ti-camera"></i>
+          <div><h4>Captured automatically</h4><p>Every screenshot you take is saved the instant you take it — no manual step, nothing to remember.</p></div>
+        </div>
+        <div class="shot-point">
+          <i class="ti ti-abc"></i>
+          <div><h4>Searchable by the text inside</h4><p>OCR reads every screenshot as it comes in, so you can search "invoice #4471" and find the image, not just the filename.</p></div>
+        </div>
+        <div class="shot-point">
+          <i class="ti ti-folder"></i>
+          <div><h4>Foldered right alongside your clips</h4><p>Mix screenshots and text in the same folder — no separate app, no separate workflow.</p></div>
+        </div>
+        <div class="shot-point">
+          <i class="ti ti-device-floppy"></i>
+          <div><h4>Stored entirely on your device</h4><p>Nothing is ever uploaded anywhere. Free on both plans — running one through AI transform is Pro.</p></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="how-it-works" style="background: var(--creamSurface);">
+<section class="section" id="how-it-works">
   <div class="wrap">
     <div class="section-head center">
       <span class="tag">How it works</span>
@@ -433,7 +480,7 @@
   <div class="wrap">
     <div class="feature-row">
       <div class="f-text">
-        <div class="f-num">05</div>
+        <div class="f-num">04</div>
         <h3>Set it up the way you actually work</h3>
         <p>Pick your global hotkey, choose which AI presets and category filters show up, switch between light and dark, and keep an eye on your plan — all in one settings screen, organized into clear sections instead of one long list.</p>
       </div>
@@ -449,7 +496,7 @@
 
     <div class="feature-row rev" style="border-bottom:none;">
       <div class="f-text">
-        <div class="f-num">06</div>
+        <div class="f-num">05</div>
         <h3>A dashboard for how you actually use it</h3>
         <p>Open a full window to browse your entire history, track your daily streak, and see where your clips come from — categories, characters captured, your busiest days, folders, and which AI presets you reach for most. Not required to use FatClipboard, just there if you're curious.</p>
       </div>
@@ -525,6 +572,7 @@
     <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
     <div class="foot-links">
       <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
       <a href="#pricing">Pricing</a>
       <a href="#">Privacy</a>
       <a href="mailto:alexarvio16@gmail.com">Contact</a>
