@@ -56,7 +56,7 @@
 
   /* ---- hero: asymmetric split, not centered-stack ---- */
   .hero { padding: 88px 0 40px; }
-  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+  .hero-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 48px; align-items: center; }
   .hero-logo { height: 54px; width: auto; display: block; margin-bottom: 24px; }
   .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-bottom: 20px; }
   .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
@@ -79,6 +79,7 @@
      config in clipboard-manager/tailwind.config.js). */
   .panel-mock {
     position: relative;
+    max-width: 380px; margin-left: auto;
     --p-bg: var(--creamSurface);
     --p-surface: #ffffff;
     --p-ink: var(--ink);
@@ -105,10 +106,10 @@
   /* History / Transform / Folders tabs and the History/Screenshots sub-toggle
      underneath -- left-aligned, hugging their own text, matching the real
      app's pill nav (NOT stretched into equal grid columns). */
-  .panel-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-  .panel-tab { text-align: center; font-size: 12px; padding: 6px 14px; border-radius: 999px; font-weight: 600; color: var(--p-inkMuted); }
+  .panel-tabs { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .panel-tab { text-align: center; font-size: 12px; padding: 6px 12px; border-radius: 999px; font-weight: 600; color: var(--p-inkMuted); }
   .panel-tab.active { background: var(--p-surface); color: var(--p-ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .panel-subtabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .panel-subtabs { display: flex; justify-content: space-between; width: 66%; margin-bottom: 12px; }
   .panel-subtab { text-align: center; font-size: 11px; padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--p-inkMuted); }
   .panel-subtab.active { background: var(--p-surface); color: var(--p-ink); }
   /* Filter / Date / Stack toolbar row, left-aligned like the real app --
