@@ -642,58 +642,98 @@ export default function FoldersPanel({
   function renderFolderDetail(path: Folder[], folder: Folder, inline: boolean) {
     return (
       <div className={inline ? "relative" : "relative flex-1 min-h-0 flex flex-col overflow-hidden"}>
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
-          {/* Name, item count, and a collapse control are all redundant here
-              when inline (2026-08-08) -- the row this expands from already
-              shows the folder's name and count, and clicking that same row
-              again already collapses it, so repeating all three right below
-              it just doubled up on the same information. Full-screen (a
-              drilled-into subfolder) still needs its own header since
-              there's no row above it to fall back on. Without the name's
-              flex-1 soaking up the row's width, the inline case also
-              switched this container to justify-between so the three icon
-              buttons below spread out across the full row instead of
-              clustering together at one edge. */}
-          {!inline && (
-            <>
-              <button onClick={goBack} title="Back">
-                <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
-              </button>
-              <span className="flex-1 text-[13px] font-medium truncate">{folder.name}</span>
-              <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
-                {items.length} item{items.length === 1 ? "" : "s"}
-              </span>
-            </>
-          )}
-          <button
-            onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
-            title="Select items to paste one after another, in order"
-            className={`transition-colors ${
-              stackBuilderIds !== null
-                ? "text-accent dark:text-accentDark"
-                : "text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream"
-            }`}
-          >
-            <i className="ti ti-list-numbers text-[15px]" />
-          </button>
-          <button
-            onClick={() => setCreatingSubfolder((c) => !c)}
-            title="New subfolder"
-            className="text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
-          >
-            <i className="ti ti-folder-plus text-[15px]" />
-          </button>
-          <button
-            onClick={() => {
-              setCreatingItem((c) => !c);
-              setNewItemTargetId(null);
-            }}
-            title="New item"
-            className="text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
-          >
-            <i className="ti ti-plus text-[15px]" />
-          </button>
-        </div>
+        {/* Name, item count, and a collapse control are all redundant here
+            when inline (2026-08-08) -- the row this expands from already
+            shows the folder's name and count, and clicking that same row
+            again already collapses it, so repeating all three right below
+            it just doubled up on the same information. Full-screen (a
+            drilled-into subfolder) still needs its own header since there's
+            no row above it to fall back on, so it keeps the original
+            compact icon-only actions. The inline header instead gets full
+            labeled buttons (not just icons) in a 3-column grid, evenly
+            spanning the row -- same "grid-cols-3, centered" convention the
+            History tab's own Filter/Date/Stack row uses. */}
+        {inline ? (
+          <div className="grid grid-cols-3 gap-1.5 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
+            <button
+              onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
+              title="Select items to paste one after another, in order"
+              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+                stackBuilderIds !== null
+                  ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
+                  : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+              }`}
+            >
+              <i className="ti ti-list-numbers text-[13px]" />
+              Stack
+            </button>
+            <button
+              onClick={() => setCreatingSubfolder((c) => !c)}
+              title="New subfolder"
+              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+                creatingSubfolder
+                  ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
+                  : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+              }`}
+            >
+              <i className="ti ti-folder-plus text-[13px]" />
+              New folder
+            </button>
+            <button
+              onClick={() => {
+                setCreatingItem((c) => !c);
+                setNewItemTargetId(null);
+              }}
+              title="New item"
+              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+                creatingItem
+                  ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
+                  : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+              }`}
+            >
+              <i className="ti ti-plus text-[13px]" />
+              New item
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
+            <button onClick={goBack} title="Back">
+              <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
+            </button>
+            <span className="flex-1 text-[13px] font-medium truncate">{folder.name}</span>
+            <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
+              {items.length} item{items.length === 1 ? "" : "s"}
+            </span>
+            <button
+              onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
+              title="Select items to paste one after another, in order"
+              className={`transition-colors ${
+                stackBuilderIds !== null
+                  ? "text-accent dark:text-accentDark"
+                  : "text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream"
+              }`}
+            >
+              <i className="ti ti-list-numbers text-[15px]" />
+            </button>
+            <button
+              onClick={() => setCreatingSubfolder((c) => !c)}
+              title="New subfolder"
+              className="text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
+            >
+              <i className="ti ti-folder-plus text-[15px]" />
+            </button>
+            <button
+              onClick={() => {
+                setCreatingItem((c) => !c);
+                setNewItemTargetId(null);
+              }}
+              title="New item"
+              className="text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
+            >
+              <i className="ti ti-plus text-[15px]" />
+            </button>
+          </div>
+        )}
         <div className={inline ? "px-2 py-2" : "flex-1 overflow-y-auto px-2 py-2"}>
           {creatingSubfolder && (
             <div className="flex items-center gap-1.5 px-1 pb-1.5 mb-1">
