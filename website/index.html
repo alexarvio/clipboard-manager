@@ -172,6 +172,20 @@
   .shot-meta { font-size: 12.5px; color: var(--ink); line-height: 1.45; }
   .shot-meta span { display: block; font-size: 11px; color: var(--inkMuted); margin-top: 2px; }
 
+  /* Dashboard feature mockup -- a few stat tiles plus a tiny heatmap
+     strip, same restrained "mini recreation of the real UI" approach as
+     the other .{x}-viz blocks above rather than a literal screenshot. */
+  .dash-viz { width: 100%; }
+  .dash-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .dash-tile { background: #fff; border-radius: 9px; padding: 10px; }
+  .dash-tile .num { font-size: 17px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+  .dash-tile .lbl { font-size: 10px; color: var(--inkMuted); }
+  .dash-heat { display: flex; gap: 3px; background: #fff; border-radius: 9px; padding: 10px; }
+  .dash-heat span { width: 9px; height: 9px; border-radius: 2px; background: var(--borderLight); }
+  .dash-heat span.on1 { background: rgba(94,168,0,0.35); }
+  .dash-heat span.on2 { background: rgba(94,168,0,0.65); }
+  .dash-heat span.on3 { background: var(--accent); }
+
   /* ---- how it works: vertical connected timeline ---- */
   .timeline { max-width: 640px; margin: 0 auto; }
   .tl-item { display: grid; grid-template-columns: 44px 1fr; gap: 20px; position: relative; padding-bottom: 40px; }
@@ -346,8 +360,8 @@
     <div class="feature-row rev">
       <div class="f-text">
         <div class="f-num">04</div>
-        <h3>Screenshots, organized like everything else<span class="pro-badge">PRO</span></h3>
-        <p>Every screenshot you take gets saved automatically, right alongside your text clips — searchable, foldered, and stored entirely on your own device. Unlimited on Pro, nothing ever uploaded anywhere.</p>
+        <h3>Screenshots, organized like everything else</h3>
+        <p>Every screenshot you take gets saved automatically, right alongside your text clips — searchable by the text inside them, foldered, and stored entirely on your own device, nothing ever uploaded anywhere. Free on both plans; running them through AI transform is Pro.</p>
       </div>
       <div class="f-visual">
         <div class="shot-viz">
@@ -393,7 +407,7 @@
 
 <section class="section">
   <div class="wrap">
-    <div class="feature-row" style="border-bottom:none; padding-top:0;">
+    <div class="feature-row">
       <div class="f-text">
         <div class="f-num">05</div>
         <h3>Set it up the way you actually work</h3>
@@ -405,6 +419,27 @@
           <div class="settings-row"><span class="lbl"><i class="ti ti-sparkles"></i> AI presets shown</span><span class="val">6/6</span></div>
           <div class="settings-row"><span class="lbl"><i class="ti ti-filter"></i> Category filters</span><span class="val">5 active</span></div>
           <div class="settings-row"><span class="lbl"><i class="ti ti-moon"></i> Theme</span><span class="val">Light</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-row rev" style="border-bottom:none;">
+      <div class="f-text">
+        <div class="f-num">06</div>
+        <h3>A dashboard for how you actually use it</h3>
+        <p>Open a full window to browse your entire history, track your daily streak, and see where your clips come from — categories, characters captured, your busiest days, folders, and which AI presets you reach for most. Not required to use FatClipboard, just there if you're curious.</p>
+      </div>
+      <div class="f-visual">
+        <div class="dash-viz">
+          <div class="dash-tiles">
+            <div class="dash-tile"><div class="num">998</div><div class="lbl">clips saved</div></div>
+            <div class="dash-tile"><div class="num">26</div><div class="lbl">day streak</div></div>
+            <div class="dash-tile"><div class="num">259</div><div class="lbl">screenshots</div></div>
+          </div>
+          <div class="dash-heat">
+            <span></span><span class="on1"></span><span></span><span class="on2"></span><span class="on3"></span><span class="on1"></span><span></span>
+            <span class="on2"></span><span></span><span class="on3"></span><span class="on3"></span><span class="on1"></span><span></span><span class="on2"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -424,17 +459,21 @@
         <div><div class="plan-name">Free</div><div class="amount">$0</div></div>
         <div><div class="plan-name pro">Pro</div><div class="amount">$6<span>/mo</span></div></div>
       </div>
-      <div class="price-row"><div class="feature-name">Unlimited clipboard history</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
+      <div class="price-row"><div class="feature-name">Clipboard history</div><div style="font-size:12px;color:var(--inkMuted);">50 items / 7 days</div><div><i class="ti ti-check"></i> Unlimited</div></div>
       <div class="price-row"><div class="feature-name">Folders &amp; pinning</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-row"><div class="feature-name">Category &amp; date filters</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-row"><div class="feature-name">Global hotkey access</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">Screenshot history</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
+      <div class="price-row"><div class="feature-name">Screenshot capture, search &amp; folders</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-row"><div class="feature-name">AI transform (rewrite, summarize, translate)</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
+      <div class="price-row"><div class="feature-name">Smart (semantic) search</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-row"><div class="feature-name">Custom AI filters in plain English</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-cta-row">
         <div></div>
         <div><a class="btn btn-secondary" href="#download">Download free</a></div>
-        <div><a class="btn btn-primary" href="#download">Upgrade to Pro</a></div>
+        <div><a class="btn btn-primary" href="#download">Start 7-day free trial</a></div>
+      </div>
+      <div style="padding: 0 20px 20px; text-align: center; font-size: 12.5px; color: var(--inkMuted);">
+        Pro starts with a 7-day free trial, no card charged until it ends.
       </div>
     </div>
   </div>
@@ -447,8 +486,8 @@
       <p>FatClipboard is free to download and takes less than a minute to set up.</p>
       <div class="ctaRow" style="justify-content:center;">
         <a class="btn btn-primary" href="#"><i class="ti ti-download"></i> Download for Windows</a>
-        <a class="btn btn-secondary" href="#" style="color: var(--cream); border-color: rgba(242,238,227,0.2);">Download for Mac</a>
       </div>
+      <p style="font-size:12.5px;color:rgba(242,238,227,0.55);margin-top:14px;">Windows only for now — Mac support is on the roadmap.</p>
     </div>
   </div>
 </section>
@@ -460,7 +499,7 @@
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
       <a href="#">Privacy</a>
-      <a href="#">Contact</a>
+      <a href="mailto:alexarvio16@gmail.com">Contact</a>
     </div>
     <div class="foot-copy">© 2026 FatClipboard. All rights reserved.</div>
   </div>
