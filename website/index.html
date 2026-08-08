@@ -102,28 +102,35 @@
     box-shadow: 0 40px 70px -24px rgba(26,24,22,0.28); padding: 18px; transform: rotate(-1.2deg);
   }
   .panel-search { display: flex; align-items: center; gap: 8px; background: var(--p-search-bg); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--p-inkMuted); margin-bottom: 12px; }
-  /* Three equal-width tabs (History / Transform / Folders), matching the
-     real app's grid-cols-3 tab row, plus the History/Screenshots sub-toggle
-     underneath -- Screenshots isn't a separate top-level tab anymore. */
-  .panel-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-  .panel-tab { text-align: center; font-size: 12px; padding: 6px 0; border-radius: 999px; font-weight: 600; color: var(--p-inkMuted); }
+  /* History / Transform / Folders tabs and the History/Screenshots sub-toggle
+     underneath -- left-aligned, hugging their own text, matching the real
+     app's pill nav (NOT stretched into equal grid columns). */
+  .panel-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .panel-tab { text-align: center; font-size: 12px; padding: 6px 14px; border-radius: 999px; font-weight: 600; color: var(--p-inkMuted); }
   .panel-tab.active { background: var(--p-surface); color: var(--p-ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .panel-subtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
-  .panel-subtab { text-align: center; font-size: 11px; padding: 5px 0; border-radius: 8px; font-weight: 600; color: var(--p-inkMuted); }
+  .panel-subtabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .panel-subtab { text-align: center; font-size: 11px; padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--p-inkMuted); }
   .panel-subtab.active { background: var(--p-surface); color: var(--p-ink); }
-  /* Filter / Date / Stack toolbar row, replacing the old quick-category
-     chips -- that's not what sits under the tabs in the real app anymore. */
+  /* Filter / Date / Stack toolbar row, left-aligned like the real app --
+     replaces the old quick-category chips that used to sit here. */
   .toolbar-row { display: flex; gap: 6px; margin-bottom: 14px; }
   .tool-chip { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--p-inkMuted); background: var(--p-search-bg); padding: 6px 10px; border-radius: 999px; }
-  .tool-chip i { font-size: 12px; }
+  .tool-chip i { font-size: 11px; }
+  .tool-chip i:last-child { font-size: 9px; }
   .panel-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--p-inkMuted); margin: 4px 2px 6px; }
-  .panel-item { padding: 10px 6px; border-radius: 8px; font-size: 13px; color: var(--p-ink); }
+  /* Pinned/Today groups render as one rounded card holding all their items
+     with thin dividers between -- not per-item pill highlighting -- to
+     match how the real history list groups things. */
+  .panel-group { background: var(--p-surface); border-radius: 12px; padding: 2px 12px; margin-bottom: 12px; }
+  .panel-item { padding: 10px 0; }
   .panel-item + .panel-item { border-top: 1px solid var(--p-border); }
-  .panel-item .meta { font-size: 11px; color: var(--p-inkMuted); margin-top: 3px; }
-  .panel-item .meta-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 11px; color: var(--p-inkMuted); }
-  .panel-item .meta-row .show-more { color: var(--p-accent); font-weight: 600; }
-  .panel-item .meta-row i { margin-left: auto; color: var(--p-accent); font-size: 13px; }
-  .panel-item.pinned { background: var(--p-pinned-bg); }
+  .item-text { font-size: 13px; color: var(--p-ink); line-height: 1.45; }
+  .item-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 11px; color: var(--p-inkMuted); }
+  .item-row .show-more { color: var(--p-accent); font-weight: 600; }
+  /* Action icons are hover-only in the real app, but shown always here so
+     the mockup actually communicates the feature at a glance. */
+  .item-icons { margin-left: auto; display: flex; gap: 7px; color: var(--p-inkMuted); font-size: 12.5px; }
+  .item-icons i.ti-pin-filled, .item-icons i.ti-folder-check { color: var(--p-accent); }
 
   .folder-viz { width: 100%; }
   .folder-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; }
@@ -301,15 +308,35 @@
           <span class="panel-subtab">Screenshots</span>
         </div>
         <div class="toolbar-row">
-          <span class="tool-chip"><i class="ti ti-filter"></i> Filter</span>
-          <span class="tool-chip"><i class="ti ti-calendar"></i> Date</span>
+          <span class="tool-chip"><i class="ti ti-filter"></i> Filter <i class="ti ti-chevron-down"></i></span>
+          <span class="tool-chip"><i class="ti ti-calendar"></i> Date <i class="ti ti-chevron-down"></i></span>
           <span class="tool-chip"><i class="ti ti-list-numbers"></i> Stack</span>
         </div>
         <div class="panel-label">Pinned</div>
-        <div class="panel-item pinned">https://stripe.com/docs/api<div class="meta-row"><span class="show-more">Show more</span><span>Jun 28, 5:27 PM</span><i class="ti ti-folder-check"></i></div></div>
+        <div class="panel-group">
+          <div class="panel-item">
+            <div class="item-text">https://stripe.com/docs/api</div>
+            <div class="item-row">
+              <span class="show-more">Show more</span>
+              <span>Jun 28, 5:27 PM</span>
+              <span class="item-icons"><i class="ti ti-copy"></i><i class="ti ti-pin-filled"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-check"></i><i class="ti ti-trash"></i></span>
+            </div>
+          </div>
+        </div>
         <div class="panel-label">Today</div>
-        <div class="panel-item">Thanks for the quick turnaround — really appreciate you prioritizing this.<div class="meta">Jun 28, 5:24 PM</div></div>
-        <div class="panel-item">1234 Market St, San Francisco, CA 94103<div class="meta">Jun 28, 5:23 PM</div></div>
+        <div class="panel-group">
+          <div class="panel-item">
+            <div class="item-text">Thanks for the quick turnaround — really appreciate you prioritizing this.</div>
+            <div class="item-row">
+              <span>Jun 28, 5:24 PM</span>
+              <span class="item-icons"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-plus"></i><i class="ti ti-trash"></i></span>
+            </div>
+          </div>
+          <div class="panel-item">
+            <div class="item-text">1234 Market St, San Francisco, CA 94103</div>
+            <div class="item-row"><span>Jun 28, 5:23 PM</span></div>
+          </div>
+        </div>
       </div>
       <div class="float-tag bottom"><i class="ti ti-folder"></i> Saved to "Email templates"</div>
     </div>
