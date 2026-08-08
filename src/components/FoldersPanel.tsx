@@ -129,6 +129,16 @@ export default function FoldersPanel({
   // the effect below) rather than kept as one big flat list, mirroring how
   // list_folders/db::list_folders scope by parent_id now.
   const [folders, setFolders] = useState<Folder[]>([]);
+  // Root-level folders, kept as its own separate fetch (2026-08-08) from
+  // `folders` above -- `folders` is scoped to "children of currentParentId"
+  // (root while the list is collapsed, or a specific open folder's
+  // subfolders once one is expanded), so it can't double as "the root list
+  // to render rows for" once a folder is open. rootFolders always mirrors
+  // parentId: null regardless of what's currently expanded, so the always-
+  // visible root list (with an expanded folder's contents nested inline
+  // below its own row -- see the merged "list"/"detail at path length 1"
+  // render branch below) has something stable to map over.
+  const [rootFolders, setRootFolders] = useState<Folder[]>([]);
   const [items, setItems] = useState<FolderItem[]>([]);
   const [view, setView] = useState<View>({ kind: "list" });
   const [creating, setCreating] = useState(false);
@@ -203,6 +213,11 @@ export default function FoldersPanel({
     setFolders(result);
   }
 
+  async function refreshRootFolders() {
+    const result = await invoke<Folder[]>("list_folders", { parentId: null });
+    setRootFolders(result);
+  }
+
   async function refreshItems(folderId: number) {
     const result = await invoke<FolderItem[]>("list_folder_items", { folderId });
     setItems(result);
@@ -213,6 +228,7 @@ export default function FoldersPanel({
   // and popping back out of one.
   useEffect(() => {
     refreshFolders(currentParentId);
+    refreshRootFolders();
   }, [currentParentId]);
 
   useEffect(() => {
@@ -249,7 +265,7 @@ export default function FoldersPanel({
       await invoke("create_folder", { name, parentId: null });
       setNewName("");
       setCreating(false);
-      refreshFolders(currentParentId);
+      refreshRootFolders();
     } catch {
       // limit reached -- the card below already communicates this
       setCreating(false);
@@ -273,6 +289,22 @@ export default function FoldersPanel({
     const basePath = view.kind === "detail" ? view.path : [];
     setStackBuilderIds(null);
     setView({ kind: "detail", path: [...basePath, folder] });
+  }
+
+  // Root list rows expand/collapse in place (2026-08-08) instead of always
+  // pushing a new full-screen "detail" view -- clicking the folder that's
+  // already open collapses it back to the plain list; clicking any other
+  // root folder opens *that* one inline instead (only one expanded at a
+  // time, same as before). Subfolders reached from inside an expanded
+  // folder still use openFolder/goBack and render full-screen -- see the
+  // view.path.length > 1 render branch below.
+  function toggleRootFolder(folder: Folder) {
+    if (view.kind === "detail" && view.path.length === 1 && view.path[0].id === folder.id) {
+      setView({ kind: "list" });
+      return;
+    }
+    setStackBuilderIds(null);
+    setView({ kind: "detail", path: [folder] });
   }
 
   function goBack() {
@@ -390,6 +422,7 @@ export default function FoldersPanel({
     setNewItemTargetId(null);
     if (targetId === folder.id) refreshItems(folder.id);
     refreshFolders(currentParentId);
+    refreshRootFolders();
     onMembershipsChanged?.();
   }
 
@@ -397,6 +430,7 @@ export default function FoldersPanel({
     await invoke("delete_folder_item", { id: item.id });
     await refreshItems(path[path.length - 1].id);
     refreshFolders(currentParentId);
+    refreshRootFolders();
     onMembershipsChanged?.();
     setView({ kind: "detail", path });
   }
@@ -426,6 +460,7 @@ export default function FoldersPanel({
     }
     await refreshItems(folder.id);
     refreshFolders(currentParentId);
+    refreshRootFolders();
     onMembershipsChanged?.();
   }
 
@@ -458,6 +493,7 @@ export default function FoldersPanel({
     // item list too in the (fairly unusual) case someone picks the folder
     // they're already looking at as the destination.
     refreshFolders(currentParentId);
+    refreshRootFolders();
     if (view.kind === "detail" && targetFolderId === view.path[view.path.length - 1].id) {
       refreshItems(targetFolderId);
     }
@@ -489,29 +525,50 @@ export default function FoldersPanel({
         return;
       }
       refreshFolders(currentParentId);
+      refreshRootFolders();
     } catch {
       setPinMsg("pro");
       setTimeout(() => setPinMsg(null), 2600);
     }
   }
 
-  if (view.kind === "list") {
-    const atLimit = tier !== "pro" && folders.length >= FREE_FOLDER_LIMIT;
+  // Root list, with whichever root folder is currently "open" expanding
+  // inline directly below its own row instead of replacing the whole
+  // screen (2026-08-08) -- see toggleRootFolder above. Covers both the
+  // plain list (nothing expanded) and detail view whose path is exactly
+  // one folder deep (that folder is expanded); a path more than one deep
+  // means a subfolder was drilled into, which still gets the original
+  // full-screen treatment further down.
+  // parent_id check matters for the openFolderId jump-from-History-tab
+  // effect above, which can land on a *subfolder* directly (path.length 1
+  // doesn't necessarily mean "a root folder" there) -- those still need the
+  // full-screen treatment below since they have no row in rootFolders to
+  // nest under.
+  const expandedRootFolder =
+    view.kind === "detail" && view.path.length === 1 && view.path[0].parent_id === null
+      ? view.path[0]
+      : null;
+  if (view.kind === "list" || expandedRootFolder) {
+    const atLimit = tier !== "pro" && rootFolders.length >= FREE_FOLDER_LIMIT;
     return (
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {folders.length === 0 && !creating && (
+        {rootFolders.length === 0 && !creating && (
           <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10">
             No folders yet.
           </p>
         )}
-        {folders.map((folder) => (
-          <FolderRow
-            key={folder.id}
-            folder={folder}
-            tier={tier}
-            onOpen={() => openFolder(folder)}
-            onTogglePin={() => toggleFolderPin(folder)}
-          />
+        {rootFolders.map((folder) => (
+          <div key={folder.id}>
+            <FolderRow
+              folder={folder}
+              tier={tier}
+              expanded={expandedRootFolder?.id === folder.id}
+              onOpen={() => toggleRootFolder(folder)}
+              onTogglePin={() => toggleFolderPin(folder)}
+            />
+            {expandedRootFolder?.id === folder.id &&
+              renderFolderDetail([folder], folder, true)}
+          </div>
         ))}
 
         {pinMsg === "limit" && (
@@ -552,7 +609,7 @@ export default function FoldersPanel({
         ) : atLimit ? (
           <div className="mx-1 mt-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] px-3 py-2.5 text-center">
             <p className="text-[11px] text-inkMuted dark:text-inkMutedDark mb-0.5">
-              {folders.length} / {FREE_FOLDER_LIMIT} folders used
+              {rootFolders.length} / {FREE_FOLDER_LIMIT} folders used
             </p>
             <p className="text-[11.5px] text-accent dark:text-accentDark font-medium">
               Upgrade for unlimited folders
@@ -573,14 +630,23 @@ export default function FoldersPanel({
     );
   }
 
-  if (view.kind === "detail") {
-    const path = view.path;
-    const folder = path[path.length - 1];
+  // Extracted (2026-08-08) so the exact same body can render two ways: full
+  // screen for a subfolder drilled into from an expanded root folder (path
+  // more than one deep), or nested inline directly under a root folder's
+  // own row (path exactly one deep -- see the merged list/expanded branch
+  // above). `inline` only ever changes the outer sizing/scroll classes;
+  // every handler, form, and the drag-reorder list below are identical
+  // either way -- goBack() already collapses path-length-1 detail views
+  // back to the plain list, which is exactly "collapse" for the inline
+  // case too, so it needs no special-casing here.
+  function renderFolderDetail(path: Folder[], folder: Folder, inline: boolean) {
     return (
-      <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className={inline ? "relative" : "relative flex-1 min-h-0 flex flex-col overflow-hidden"}>
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
-          <button onClick={goBack}>
-            <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
+          <button onClick={goBack} title={inline ? "Collapse" : "Back"}>
+            <i
+              className={`ti ${inline ? "ti-chevron-up" : "ti-chevron-left"} text-[14px] text-inkMuted dark:text-inkMutedDark`}
+            />
           </button>
           <span className="flex-1 text-[13px] font-medium truncate">{folder.name}</span>
           <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
@@ -615,7 +681,7 @@ export default function FoldersPanel({
             <i className="ti ti-plus text-[15px]" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-2 py-2">
+        <div className={inline ? "px-2 py-2" : "flex-1 overflow-y-auto px-2 py-2"}>
           {creatingSubfolder && (
             <div className="flex items-center gap-1.5 px-1 pb-1.5 mb-1">
               <input
@@ -919,6 +985,15 @@ export default function FoldersPanel({
     );
   }
 
+  // Only ever reached for a subfolder drilled into from an already-expanded
+  // root folder (path more than one deep) -- path length exactly 1 returns
+  // early above via the merged list/expanded branch, rendered inline there
+  // instead.
+  if (view.kind === "detail") {
+    const path = view.path;
+    return renderFolderDetail(path, path[path.length - 1], false);
+  }
+
   if (view.kind === "fillTemplate") {
     const { path, item, placeholders } = view;
     return (
@@ -961,19 +1036,29 @@ function FolderRow({
   // against a sibling and a shared outer border. Defaults to the original
   // standalone look so the root list is unaffected.
   boxed = false,
+  // Root list only (2026-08-08) -- true while this folder's contents are
+  // expanded inline directly below this row (see toggleRootFolder/
+  // renderFolderDetail). Swaps the trailing chevron to point down and
+  // gives the row a resting tint instead of only-on-hover, so it stays
+  // visually distinct from its siblings while open, the same way the
+  // active pill treatment elsewhere in the app marks "this one's selected".
+  expanded = false,
 }: {
   folder: Folder;
   tier: "free" | "pro";
   onOpen: () => void;
   onTogglePin: () => void;
   boxed?: boolean;
+  expanded?: boolean;
 }) {
   return (
     <div
       onClick={onOpen}
-      className={`group flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors ${
-        boxed ? "" : "rounded-xl mb-1"
-      }`}
+      className={`group flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors ${
+        expanded
+          ? "bg-black/[0.03] dark:bg-white/[0.05]"
+          : "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+      } ${boxed ? "" : "rounded-xl mb-1"}`}
     >
       <i className="ti ti-folder text-[15px] text-accent dark:text-accentDark" />
       <span className="flex-1 text-[13px] truncate">{folder.name}</span>
@@ -994,7 +1079,9 @@ function FolderRow({
       >
         <i className={folder.pinned ? "ti ti-pinned-filled text-[13px]" : "ti ti-pin text-[13px]"} />
       </button>
-      <i className="ti ti-chevron-right text-[13px] text-inkMuted dark:text-inkMutedDark" />
+      <i
+        className={`ti ${expanded ? "ti-chevron-down" : "ti-chevron-right"} text-[13px] text-inkMuted dark:text-inkMutedDark`}
+      />
     </div>
   );
 }
