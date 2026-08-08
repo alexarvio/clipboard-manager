@@ -658,25 +658,25 @@ export default function FoldersPanel({
             <button
               onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
               title="Select items to paste one after another, in order"
-              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
                 stackBuilderIds !== null
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
               }`}
             >
-              <i className="ti ti-list-numbers text-[13px]" />
+              <i className="ti ti-list-numbers text-[12px]" />
               Stack
             </button>
             <button
               onClick={() => setCreatingSubfolder((c) => !c)}
               title="New subfolder"
-              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
                 creatingSubfolder
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
               }`}
             >
-              <i className="ti ti-folder-plus text-[13px]" />
+              <i className="ti ti-folder-plus text-[12px]" />
               New folder
             </button>
             <button
@@ -685,13 +685,13 @@ export default function FoldersPanel({
                 setNewItemTargetId(null);
               }}
               title="New item"
-              className={`flex items-center justify-center gap-1.5 text-[11.5px] py-1.5 rounded-full transition-colors ${
+              className={`flex items-center justify-center gap-1 text-[10.5px] px-1.5 py-1.5 rounded-full transition-colors ${
                 creatingItem
                   ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                   : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
               }`}
             >
-              <i className="ti ti-plus text-[13px]" />
+              <i className="ti ti-plus text-[12px]" />
               New item
             </button>
           </div>
