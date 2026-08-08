@@ -68,15 +68,17 @@
     100% { box-shadow: 0 0 0 0 rgba(94,168,0,0); }
   }
   h1 { font-size: 52px; font-weight: 500; line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.5px; }
-  /* Hand-drawn marker underline under "elevated" -- a rough, slightly wavy
-     stroke (not a straight ruled line) so it reads as a marker swipe rather
-     than a typographic underline. */
+  /* Hand-drawn marker underline under "elevated" -- thick single stroke,
+     tilted a few degrees off horizontal (not a full diagonal) so it reads
+     as one confident marker swipe rather than a typographic underline. */
   h1 em { position: relative; display: inline-block; font-style: normal; color: var(--accent); }
   h1 em::after {
     content: "";
-    position: absolute; left: -3%; right: -5%; bottom: -0.09em;
-    height: 0.22em;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26' preserveAspectRatio='none'%3E%3Cpath d='M4,16 C60,4 110,22 160,10 C200,1 250,20 296,9' stroke='%235EA800' stroke-width='11' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
+    position: absolute; left: -3%; right: -5%; bottom: -0.16em;
+    height: 0.3em;
+    transform: rotate(-4deg);
+    transform-origin: left center;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26' preserveAspectRatio='none'%3E%3Cpath d='M4,15 C90,10 210,17 296,11' stroke='%235EA800' stroke-width='19' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
     background-size: 100% 100%;
     z-index: -1;
   }
