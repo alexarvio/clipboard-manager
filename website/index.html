@@ -68,21 +68,15 @@
     100% { box-shadow: 0 0 0 0 rgba(94,168,0,0); }
   }
   h1 { font-size: 52px; font-weight: 500; line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.5px; }
-  /* Graffiti-style underline under "elevated" -- a green spray stroke with
-     a black outline (same bubble-letter treatment as the FatClipboard
-     logo), sitting clear below the baseline instead of overlapping the
-     descenders, with a couple of little spray-drip dots off the end for
-     texture. */
+  /* Plain, simple underline under "elevated" -- a flat green rule, a touch
+     wider than the word on both sides, sitting clear below the baseline. */
   h1 em { position: relative; display: inline-block; font-style: normal; color: var(--accent); }
   h1 em::after {
     content: "";
-    position: absolute; left: -2%; right: -6%; bottom: -0.42em;
-    height: 0.34em;
-    transform: rotate(-2.5deg);
-    transform-origin: left center;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 34' preserveAspectRatio='none'%3E%3Cpath d='M8,18 C100,12 210,20 300,14' stroke='%23000' stroke-width='15' fill='none' stroke-linecap='round'/%3E%3Cpath d='M8,18 C100,12 210,20 300,14' stroke='%235EA800' stroke-width='9.5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='308' cy='13' r='4.5' fill='%235EA800' stroke='%23000' stroke-width='2.5'/%3E%3Ccircle cx='4' cy='19' r='3' fill='%235EA800' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E") no-repeat;
-    background-size: 100% 100%;
-    z-index: -1;
+    position: absolute; left: -4%; right: -4%; bottom: -0.14em;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--accent);
   }
   .sub { font-size: 17px; color: var(--inkMuted); max-width: 460px; margin: 0 0 32px; line-height: 1.6; }
   .ctaRow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
