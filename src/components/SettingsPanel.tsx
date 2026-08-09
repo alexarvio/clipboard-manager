@@ -64,7 +64,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark p-4">
+    // White in light mode (2026-08-09, was bg-creamSurface) -- matches the
+    // website mockup's card treatment, which reads as a cleaner "card
+    // sitting on the cream page" than blending into a same-toned surface.
+    <div className="rounded-2xl bg-white dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark p-4">
       <div className="flex items-center gap-2 mb-1">
         <i className={`ti ${icon} text-accent dark:text-accentDark text-[15px]`} />
         <p className="text-[13px] font-medium">{title}</p>
