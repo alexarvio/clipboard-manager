@@ -266,11 +266,17 @@
   .settings-tab { padding: 6px; border-radius: 8px; font-size: 11.5px; text-align: center; }
   .settings-tab.on { background: rgba(26,24,22,0.06); font-weight: 600; }
   .settings-tab:not(.on) { background: rgba(26,24,22,0.02); color: var(--inkMuted); }
-  .settings-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 10px; font-size: 12px; }
-  .settings-cat { display: flex; align-items: center; gap: 6px; }
-  .settings-cat i { font-size: 13px; color: var(--accent); }
-  .settings-cat.off { color: var(--inkMuted); }
-  .settings-cat.off i { color: var(--borderLight); }
+  /* Category chips styled as selectable toggle buttons (2026-08-09 redesign)
+     -- matches ALL_CATEGORIES in lib/categories.ts (all 10, not a partial
+     list), with icons borrowed from the marquee chips further up the page
+     since the real Settings checkbox list has no icons of its own. */
+  .settings-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .settings-cat { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; border-radius: 10px; font-size: 12px; text-align: center; }
+  .settings-cat i { font-size: 13px; }
+  .settings-cat.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .settings-cat.on i { color: #fff; }
+  .settings-cat.off { background: rgba(26,24,22,0.04); color: var(--inkMuted); border: 1px solid var(--borderLight); }
+  .settings-cat.off i { color: var(--inkMuted); opacity: 0.7; }
 
   /* ---- strip: real category chips, tied to an actual feature not decoration ---- */
   .strip { padding: 32px 0 8px; overflow: hidden; }
@@ -493,7 +499,7 @@
 
 <section class="section" id="features">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head center">
       <span class="tag">Features</span>
       <h2 class="serif">FatClipboard turns your clipboard from a one-item junk drawer into a searchable, organized library</h2>
     </div>
@@ -713,10 +719,16 @@
             <div class="settings-card-head"><i class="ti ti-filter"></i><span>Filters</span></div>
             <div class="settings-tabs"><span class="settings-tab on">Categories</span><span class="settings-tab">AI filters (3)</span></div>
             <div class="settings-cats">
-              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Links</span>
-              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Emails</span>
-              <span class="settings-cat"><i class="ti ti-square-rounded-check"></i>Code</span>
-              <span class="settings-cat off"><i class="ti ti-square-rounded"></i>Bank details</span>
+              <span class="settings-cat on"><i class="ti ti-link"></i>Link</span>
+              <span class="settings-cat on"><i class="ti ti-mail"></i>Email</span>
+              <span class="settings-cat on"><i class="ti ti-phone"></i>Phone</span>
+              <span class="settings-cat on"><i class="ti ti-map-pin"></i>Address</span>
+              <span class="settings-cat on"><i class="ti ti-building-bank"></i>Bank account</span>
+              <span class="settings-cat off"><i class="ti ti-calendar"></i>Date & time</span>
+              <span class="settings-cat off"><i class="ti ti-currency-dollar"></i>Price</span>
+              <span class="settings-cat off"><i class="ti ti-code"></i>Code</span>
+              <span class="settings-cat off"><i class="ti ti-network"></i>IP address</span>
+              <span class="settings-cat off"><i class="ti ti-route"></i>File path</span>
             </div>
           </div>
         </div>
