@@ -1,0 +1,32 @@
+<svg width="800" height="480" viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="480" fill="#ffffff"/>
+  <rect x="0" y="0" width="800" height="480" fill="none" stroke="#E5E1D6" stroke-width="2"/>
+
+  <!-- masthead -->
+  <text x="48" y="52" font-family="Georgia, 'Times New Roman', serif" font-size="14" fill="#6E6859">From the Open Encyclopedia, a free reference</text>
+  <line x1="48" y1="66" x2="752" y2="66" stroke="#A2A9B1" stroke-width="1.5"/>
+
+  <!-- title -->
+  <text x="48" y="118" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#1A1816">Photosynthesis</text>
+  <line x1="48" y1="132" x2="752" y2="132" stroke="#A2A9B1" stroke-width="1"/>
+
+  <!-- body paragraph, with a couple of wiki-blue linked terms -->
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#242424">
+    <tspan x="48" y="170">Photosynthesis is the process used by </tspan><tspan fill="#3366CC">plants</tspan><tspan>, algae, and some</tspan>
+    <tspan x="48" y="198">bacteria to convert light energy into chemical energy stored in</tspan>
+    <tspan x="48" y="226"><tspan fill="#3366CC">glucose</tspan><tspan>. Using sunlight, water, and carbon dioxide, these organisms</tspan></tspan>
+    <tspan x="48" y="254">produce oxygen as a byproduct, a reaction that underpins nearly</tspan>
+    <tspan x="48" y="282">every food chain on Earth.</tspan>
+  </text>
+
+  <text x="48" y="326" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="#1A1816">Overview</text>
+  <line x1="48" y1="336" x2="752" y2="336" stroke="#A2A9B1" stroke-width="1"/>
+
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#242424">
+    <tspan x="48" y="370">The reaction takes place mainly in the leaves, within structures</tspan>
+    <tspan x="48" y="398">called chloroplasts, and can be split into light-dependent and</tspan>
+    <tspan x="48" y="426">light-independent stages.</tspan>
+  </text>
+
+  <text x="48" y="460" font-family="Georgia, 'Times New Roman', serif" font-size="12.5" fill="#6E6859">Last edited 2 days ago</text>
+</svg>
