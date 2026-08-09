@@ -4,16 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FatClipboard: Your clipboard, elevated.</title>
-<!-- Sets html[data-theme] before first paint so a saved/system dark
-     preference doesn't flash light for a frame -- the actual toggle button
-     wiring lives in a second script near the end of <body>. -->
+<!-- Sets html[data-theme] before first paint so a saved preference doesn't
+     flash light for a frame -- the actual toggle button wiring lives in a
+     second script near the end of <body>. Always defaults to light on a
+     first visit regardless of the visitor's OS setting -- only a manual
+     click of the toggle (saved to localStorage) switches it to dark. -->
 <script>
   (function () {
     try {
       var saved = localStorage.getItem("fc-theme");
-      var theme = saved === "dark" || saved === "light"
-        ? saved
-        : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      var theme = saved === "dark" || saved === "light" ? saved : "light";
       document.documentElement.setAttribute("data-theme", theme);
     } catch (e) {}
   })();
