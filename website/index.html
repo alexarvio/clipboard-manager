@@ -681,7 +681,7 @@
             <span class="tv-label">Input</span>
             <span class="tv-addimg"><i class="ti ti-photo-up"></i> Add image <i class="ti ti-chevron-down" style="font-size:8px;"></i></span>
           </div>
-          <div class="tv-box"><div class="tv-input-text">People work their whole lives for what they could get in a few years if they just want to live.</div></div>
+          <div class="tv-box"><div class="tv-input-text">Our team will follow up with next steps by end of week.</div></div>
 
           <div class="tv-label-row">
             <span class="tv-label">Instruction</span>
@@ -689,14 +689,19 @@
           </div>
           <div class="tv-box">
             <div class="tv-presets">
-              <span class="tv-preset">Fix grammar</span><span class="tv-preset">Make formal</span><span class="tv-preset">Make casual</span><span class="tv-preset on">Summarize</span>
+              <span class="tv-preset">Fix grammar</span><span class="tv-preset">Make formal</span><span class="tv-preset">Make casual</span><span class="tv-preset">Summarize</span>
             </div>
-            <div class="tv-freeform">Summarize</div>
+            <!-- Deliberately no preset chip highlighted -- "Translate into
+                 Spanish" isn't one of BUILTIN_PRESETS (see lib/presets.ts),
+                 it's exactly the kind of free-typed instruction the
+                 freeform box exists for, same example SettingsPanel's own
+                 "New preset" placeholder uses ("Translate into French"). -->
+            <div class="tv-freeform">Translate into Spanish</div>
             <div class="tv-run-row"><span class="tv-run">Run</span><span class="tv-save"><i class="ti ti-device-floppy"></i></span></div>
           </div>
 
           <div class="tv-label">Output</div>
-          <div class="tv-out-box" style="margin-top:5px;">People could achieve in a few years what they spend their whole lives working toward if they chose to simply live.</div>
+          <div class="tv-out-box" style="margin-top:5px;">Nuestro equipo dará seguimiento con los próximos pasos antes de que termine la semana.</div>
           <div class="tv-out-actions">
             <span class="tv-copy"><i class="ti ti-copy"></i> Copy</span>
             <span class="tv-save2"><i class="ti ti-folder-plus"></i> Save</span>
