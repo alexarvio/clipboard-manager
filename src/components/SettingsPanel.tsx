@@ -753,7 +753,7 @@ export default function SettingsPanel({
                   className={`flex items-center justify-center gap-1 h-11 px-2 rounded-full text-[11.5px] leading-tight text-center border transition-colors ${
                     checked
                       ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
-                      : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                      : "bg-white dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
                 >
                   <i className={`ti ${c.icon} text-accent dark:text-accentDark text-[12px] shrink-0`} />
@@ -812,7 +812,7 @@ export default function SettingsPanel({
                             className={`group rounded-xl border transition-colors ${
                               active
                                 ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30"
-                                : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                                : "bg-white dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                             }`}
                           >
                             <div
