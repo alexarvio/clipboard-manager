@@ -439,7 +439,17 @@
   .shot-points-head .tag { display: inline-block; margin-bottom: 10px; }
   .shot-points-head h2 { font-size: 26px; margin: 0 0 10px; letter-spacing: -0.4px; font-weight: 500; }
   .shot-points-head p { color: var(--inkMuted); font-size: 14.5px; line-height: 1.6; margin: 0 0 4px; }
-  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--cream); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(26,24,22,0.06); padding: 16px; pointer-events: none; }
+  /* background: var(--surface), not var(--cream) (2026-08-09 dark-mode fix)
+     -- the mockup now lives inside the plain-cream Features section, so a
+     var(--cream) card was the exact same color as the page behind it and
+     vanished entirely (worst in dark mode, where the big drop shadow below
+     is also a fixed dark color that reads as nothing against an already-dark
+     page). var(--surface) matches the white/charcoalSurface cards used
+     elsewhere (.settings-card, .pin-card) for real separation in both
+     themes, and the shadow's flat rgba(26,24,22,..) is now backed by a
+     theme-aware hairline ring (rgba(var(--ink-rgb),..)) so there's still a
+     visible edge even where the shadow itself goes flat against dark. */
+  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08); padding: 16px; pointer-events: none; }
   /* Real app's top toolbar (2026-08-09) -- History/Transform/Folders tab row
      + the Text/Screenshots sub-toggle sit above the search bar in the actual
      app (see App.tsx's grid-cols-3 tab row and the grid-cols-2 sub-toggle
