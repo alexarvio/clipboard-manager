@@ -115,8 +115,17 @@
      language the app itself uses (marquee chips, settings tabs, toolbar
      chips) rather than plain underline-free text links. */
   .navlinks { display: flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--inkMuted); }
-  .navlinks a { padding: 8px 16px; border-radius: 999px; transition: background-color 0.15s, color 0.15s; }
+  .navlinks a { padding: 8px 16px; border-radius: 999px; transition: background-color 0.15s, color 0.15s, border-color 0.15s; border: 1px solid transparent; }
   .navlinks a:hover { background: rgba(var(--ink-rgb),0.06); color: var(--ink); }
+  /* Active-section pill (2026-08-09) -- a scroll-spy toggles this class onto
+     whichever nav link matches the section currently in view, styled as the
+     same accent-tinted green pill as the "Try dark mode" toggle so the nav
+     itself becomes the "you are here" indicator. */
+  .navlinks a.active {
+    background: rgba(var(--accent-rgb),0.1); color: var(--accent);
+    border-color: rgba(var(--accent-rgb),0.3); font-weight: 600;
+  }
+  .navlinks a.active:hover { background: rgba(var(--accent-rgb),0.18); }
   .navcta { background: var(--ink); color: var(--cream); padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .navcta:hover { opacity: 0.85; }
   .nav-right { display: flex; align-items: center; gap: 10px; justify-self: end; }
@@ -591,11 +600,16 @@
   </div>
 </section>
 
-<section class="section" id="screenshots" style="background: var(--creamSurface);">
+<section class="section" id="features">
   <div class="wrap">
     <div class="section-head center">
+      <span class="tag">Features</span>
+      <h2 class="serif">FatClipboard turns your clipboard from a one-item junk drawer into a searchable, organized library</h2>
+    </div>
+
+    <div id="screenshots" class="section-head center" style="margin-top: 4px;">
       <span class="tag">Screenshots</span>
-      <h2 class="serif">Every screenshot, captured and searchable</h2>
+      <h2 class="serif" style="font-size: 28px;">Every screenshot, captured and searchable</h2>
       <p>FatClipboard doesn't just remember what you type and copy. It remembers what you capture, too. Every screenshot is saved automatically and read with OCR the instant it lands, so the text inside it is searchable, can be copied out on its own, cleaned up or rewritten with AI, and stored entirely on your own device.</p>
     </div>
 
@@ -641,15 +655,6 @@
           <div><h4>Stored entirely on your device</h4><p>Nothing is ever uploaded anywhere. Free on both plans, though running one through AI transform is Pro.</p></div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="features">
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="tag">Features</span>
-      <h2 class="serif">FatClipboard turns your clipboard from a one-item junk drawer into a searchable, organized library</h2>
     </div>
 
     <div class="feature-row">
@@ -933,6 +938,50 @@
       } catch (e) {}
       syncButton();
     });
+  })();
+</script>
+
+<script>
+  // Active-section nav pill (2026-08-09) -- highlights whichever nav link
+  // matches the section currently scrolled into view, using the same green
+  // pill styling as the "Try dark mode" toggle (see .navlinks a.active).
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.navlinks a'));
+    if (!links.length) return;
+
+    var sections = links
+      .map(function (a) {
+        var id = a.getAttribute('href').replace('#', '');
+        var el = document.getElementById(id);
+        return el ? { link: a, el: el } : null;
+      })
+      .filter(Boolean);
+    if (!sections.length) return;
+
+    function setActive(link) {
+      links.forEach(function (a) { a.classList.toggle('active', a === link); });
+    }
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        // Pick whichever tracked section has the most of itself inside the
+        // viewport's middle band right now, so the pill only ever names one
+        // section at a time even while scrolling past a boundary.
+        var best = null;
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting && (!best || entry.intersectionRatio > best.intersectionRatio)) {
+            best = entry;
+          }
+        });
+        if (best) {
+          var match = sections.find(function (s) { return s.el === best.target; });
+          if (match) setActive(match.link);
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+
+    sections.forEach(function (s) { observer.observe(s.el); });
   })();
 </script>
 
