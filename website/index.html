@@ -672,6 +672,14 @@
 
     <div id="screenshots" class="shot-showcase" style="margin-top: 32px;">
       <div class="shot-mock-card">
+        <!-- Search bar first, then the tab row, then the sub-toggle (2026-08-09)
+             -- matches the real app's actual top-to-bottom order (search input
+             directly under the logo row, tabs below that), which had gotten
+             reversed here with the search bar sitting last. -->
+        <div class="shot-search-lg">
+          <span class="shot-search-text"><i class="ti ti-search"></i> Search screenshot text…</span>
+          <span class="shot-search-toggle"><span class="on"><i class="ti ti-search"></i></span><span><i class="ti ti-sparkles"></i></span></span>
+        </div>
         <div class="shot-tabs">
           <div class="shot-tab on">History</div>
           <div class="shot-tab">Transform</div>
@@ -680,10 +688,6 @@
         <div class="shot-subtabs">
           <div class="shot-subtab">Text</div>
           <div class="shot-subtab on">Screenshots</div>
-        </div>
-        <div class="shot-search-lg">
-          <span class="shot-search-text"><i class="ti ti-search"></i> Search screenshot text…</span>
-          <span class="shot-search-toggle"><span class="on"><i class="ti ti-search"></i></span><span><i class="ti ti-sparkles"></i></span></span>
         </div>
         <div class="shot-row on">
           <div class="shot-img"><img src="assets/screenshots/fake-invoice.svg" alt="" loading="lazy"></div>
