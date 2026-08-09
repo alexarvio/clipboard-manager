@@ -725,13 +725,18 @@ export default function SettingsPanel({
                       : [...settings.visible_categories, c.value];
                     update({ visible_categories: next });
                   }}
-                  className={`flex items-center justify-center gap-1.5 rounded-full py-2 px-2 text-[12.5px] border transition-colors ${
+                  // Fixed height (2026-08-09) -- "Bank account" wraps to two
+                  // lines while every other label fits on one, which made
+                  // that button taller than the rest of the grid. A set
+                  // height plus wrapping keeps every pill identically sized
+                  // regardless of label length.
+                  className={`flex items-center justify-center gap-1 h-11 px-2 rounded-full text-[11.5px] leading-tight text-center border transition-colors ${
                     checked
                       ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
                       : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
                 >
-                  <i className={`ti ${c.icon} text-accent dark:text-accentDark text-[13px]`} />
+                  <i className={`ti ${c.icon} text-accent dark:text-accentDark text-[12px] shrink-0`} />
                   {c.label}
                 </button>
               );
