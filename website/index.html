@@ -118,13 +118,18 @@
      the nav's rounded-full chip language, swaps its icon (moon/sun) and
      flips html[data-theme] via the two <script> blocks near the top/bottom
      of <body>. */
+  /* Labeled pill (2026-08-09, was an icon-only circle) -- accent-tinted so
+     it actually reads as an inviting thing to click rather than blending
+     into the nav as a stray icon. */
   .theme-toggle {
-    width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--borderLight);
-    background: rgba(var(--ink-rgb),0.04); color: var(--inkMuted);
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px;
+    border: 1px solid rgba(var(--accent-rgb),0.3);
+    background: rgba(var(--accent-rgb),0.1); color: var(--accent);
+    font-size: 13px; font-weight: 600; white-space: nowrap;
     cursor: pointer; flex-shrink: 0;
   }
-  .theme-toggle:hover { background: rgba(var(--ink-rgb),0.08); color: var(--ink); }
+  .theme-toggle:hover { background: rgba(var(--accent-rgb),0.18); }
+  .theme-toggle i { font-size: 14px; }
 
   /* ---- hero: asymmetric split, not centered-stack ---- */
   .hero { padding: 88px 0 40px; }
@@ -497,7 +502,7 @@
       <a href="#pricing">Pricing</a>
     </div>
     <div class="nav-right">
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i></button>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
       <a class="navcta" href="#download"><i class="ti ti-download"></i> Download free</a>
     </div>
   </nav>
@@ -920,16 +925,20 @@
       return theme === "dark" ? "ti-sun" : "ti-moon";
     }
 
-    function syncIcon() {
+    function labelFor(theme) {
+      return theme === "dark" ? "Light mode" : "Try dark mode";
+    }
+
+    function syncButton() {
       var theme = document.documentElement.getAttribute("data-theme") || "light";
-      btn.innerHTML = '<i class="ti ' + iconFor(theme) + '"></i>';
+      btn.innerHTML = '<i class="ti ' + iconFor(theme) + '"></i> ' + labelFor(theme);
       btn.setAttribute(
         "aria-label",
         theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
       );
     }
 
-    syncIcon();
+    syncButton();
 
     btn.addEventListener("click", function () {
       var current = document.documentElement.getAttribute("data-theme") || "light";
@@ -938,7 +947,7 @@
       try {
         localStorage.setItem("fc-theme", next);
       } catch (e) {}
-      syncIcon();
+      syncButton();
     });
   })();
 </script>
