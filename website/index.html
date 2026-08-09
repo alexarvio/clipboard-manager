@@ -435,7 +435,12 @@
   .shot-row { border-radius: 12px; padding: 10px; margin: 0 -10px; }
   .shot-row.on { background: rgba(var(--ink-rgb),0.02); }
   .shot-row + .shot-row { margin-top: 2px; }
-  .shot-img { position: relative; height: 132px; border-radius: 10px; overflow: hidden; margin-bottom: 8px; background: var(--creamSurface); border: 1px solid var(--borderLight); }
+  /* Full aspect ratio (2026-08-09, was a fixed short height that cropped
+     off most of the invoice table / wiki paragraph the OCR caption below
+     actually claims to have read) -- matches the underlying SVG's 800x480
+     canvas exactly so nothing gets cropped out, and scales cleanly with the
+     card's actual rendered width instead of a guessed pixel height. */
+  .shot-img { position: relative; aspect-ratio: 5 / 3; border-radius: 10px; overflow: hidden; margin-bottom: 8px; background: var(--creamSurface); border: 1px solid var(--borderLight); }
   .shot-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
   .shot-ocr { font-size: 11.5px; font-style: italic; color: var(--inkMuted); line-height: 1.4; margin-bottom: 8px; }
   .shot-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -618,14 +623,14 @@
         <div class="shot-search-lg"><i class="ti ti-search"></i> Search screenshot text…</div>
         <div class="shot-row on">
           <div class="shot-img"><img src="assets/screenshots/fake-invoice.svg" alt="" loading="lazy"></div>
-          <div class="shot-ocr">"INVOICE #4471 · BILL TO Nova Studio LLC · Product design retainer 1 $900.00 · Brand asset delivery 2 $260.00 · Total due $1,240.00, Net 30"</div>
+          <div class="shot-ocr">"INVOICE #4471 · BILL TO Nova Studio LLC · Product design retainer 1 $900.00 · Brand asset delivery 2 $260.00 · Rush delivery fee 1 $80.00 · Total due $1,240.00, Net 30"</div>
           <div class="shot-bottom-row">
             <div class="shot-dims">2560×1440<br>Jun 28, 4:02 PM</div>
             <div class="shot-icons"><i class="ti ti-copy"></i><i class="ti ti-pinned-filled"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-check"></i><i class="ti ti-trash"></i></div>
           </div>
         </div>
         <div class="shot-row">
-          <div class="shot-img" style="height:104px;"><img src="assets/screenshots/fake-wiki.svg" alt="" loading="lazy"></div>
+          <div class="shot-img"><img src="assets/screenshots/fake-wiki.svg" alt="" loading="lazy"></div>
           <div class="shot-ocr">"Photosynthesis is the process used by plants, algae, and some bacteria to convert light energy into chemical energy stored in glucose…"</div>
           <div class="shot-bottom-row">
             <div class="shot-dims">1920×1080<br>Jun 28, 5:14 PM</div>
