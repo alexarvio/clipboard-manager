@@ -456,7 +456,19 @@
      themes, and the shadow's flat rgba(26,24,22,..) is now backed by a
      theme-aware hairline ring (rgba(var(--ink-rgb),..)) so there's still a
      visible edge even where the shadow itself goes flat against dark. */
-  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08); padding: 16px; pointer-events: none; }
+  /* background: var(--creamSurface), not var(--surface) (2026-08-09) -- the
+     real app's own root window is bg-cream, and its active tab pill is
+     bg-white, a real color difference the active pill pops against. Our
+     mockup card was standing in for that whole app window but used
+     var(--surface) (pure white) for itself, the exact same color as the
+     "on" pill below, so the active tab read as invisible -- the previous
+     fix papered over that by adding a tinted track behind the tab row,
+     which doesn't exist in the real app and looked like a different
+     control entirely. Using var(--creamSurface) for the card itself (still
+     distinct from the plain var(--cream) Features section behind it, same
+     as .price-table) restores the actual white-pill-on-cream contrast the
+     real app has, with no extra track needed. */
+  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--creamSurface); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08); padding: 16px; pointer-events: none; }
   /* Real app's top toolbar (2026-08-09) -- History/Transform/Folders tab row
      + the Text/Screenshots sub-toggle sit above the search bar in the actual
      app (see App.tsx's grid-cols-3 tab row and the grid-cols-2 sub-toggle
@@ -464,18 +476,10 @@
      straight to the search bar and the screenshot list. Active-pill styling
      (white surface + soft shadow) matches the real app's
      `bg-white dark:bg-charcoalSurface shadow-sm ring-1` treatment. */
-  /* Track background behind the tab/subtab rows (2026-08-09) -- the mockup
-     card itself is var(--surface) (white in light mode), same color as the
-     "on" pill below, so the active tab was invisible against the card. The
-     real app's tabs sit on the app's cream page background, not on a white
-     card, which is what actually makes the white active pill read as
-     highlighted. Adding a tinted track (same rgba(ink,0.05) language as
-     .shot-search-toggle just below, which already got this right) restores
-     that contrast here without changing the card's own background. */
-  .shot-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-bottom: 6px; background: rgba(var(--ink-rgb),0.05); border-radius: 999px; padding: 3px; }
+  .shot-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
   .shot-tab { text-align: center; font-size: 11px; padding: 7px 0; border-radius: 999px; color: var(--inkMuted); }
   .shot-tab.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(26,24,22,0.08); }
-  .shot-subtabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; margin-bottom: 10px; background: rgba(var(--ink-rgb),0.05); border-radius: 999px; padding: 3px; }
+  .shot-subtabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
   .shot-subtab { text-align: center; font-size: 10.5px; padding: 6px 0; border-radius: 999px; color: var(--inkMuted); }
   .shot-subtab.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(26,24,22,0.08); }
   .shot-search-lg { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(var(--ink-rgb),0.05); border-radius: 999px; padding: 9px 9px 9px 13px; font-size: 12.5px; color: var(--inkMuted); margin-bottom: 10px; }
