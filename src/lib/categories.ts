@@ -7,15 +7,21 @@
 // SettingsPanel.tsx); this list is the full catalog they're picking from.
 // Lives in its own module (rather than being exported from App.tsx) so both
 // App.tsx and SettingsPanel.tsx can import it without a circular dependency.
-export const ALL_CATEGORIES: { label: string; value: string }[] = [
-  { label: "Link", value: "link" },
-  { label: "Email", value: "email" },
-  { label: "Phone", value: "phone" },
-  { label: "Address", value: "address" },
-  { label: "Bank account", value: "bank_account" },
-  { label: "Date & time", value: "date_time" },
-  { label: "Price", value: "price" },
-  { label: "Code", value: "code" },
-  { label: "IP address", value: "ip_address" },
-  { label: "File path", value: "file_path" },
+// `icon` is a Tabler Icons class suffix (e.g. "ti-link" -> "ti ti-link") --
+// added 2026-08-09 alongside SettingsPanel's Categories grid redesign
+// (checkbox list -> icon + label toggle buttons) so this one shared list
+// stays the single source of truth for both the label *and* the icon,
+// rather than a second lookup table living next to whichever component
+// happens to render icons this week.
+export const ALL_CATEGORIES: { label: string; value: string; icon: string }[] = [
+  { label: "Link", value: "link", icon: "ti-link" },
+  { label: "Email", value: "email", icon: "ti-mail" },
+  { label: "Phone", value: "phone", icon: "ti-phone" },
+  { label: "Address", value: "address", icon: "ti-map-pin" },
+  { label: "Bank account", value: "bank_account", icon: "ti-building-bank" },
+  { label: "Date & time", value: "date_time", icon: "ti-calendar" },
+  { label: "Price", value: "price", icon: "ti-currency-dollar" },
+  { label: "Code", value: "code", icon: "ti-code" },
+  { label: "IP address", value: "ip_address", icon: "ti-network" },
+  { label: "File path", value: "file_path", icon: "ti-route" },
 ];

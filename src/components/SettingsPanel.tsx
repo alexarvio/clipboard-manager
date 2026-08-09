@@ -706,24 +706,34 @@ export default function SettingsPanel({
         </div>
 
         {filterTab === "categories" && (
-          <div className="grid grid-cols-2 gap-y-1.5">
+          // Redesigned 2026-08-09 from a checkbox list to a grid of toggle
+          // buttons -- same on/off semantics (still just writing
+          // visible_categories), but each category now reads as a single
+          // tappable icon+label chip instead of a separate checkbox input
+          // next to plain text.
+          <div className="grid grid-cols-2 gap-2">
             {ALL_CATEGORIES.map((c) => {
               const checked = settings.visible_categories.includes(c.value);
               return (
-                <label key={c.value} className="flex items-center gap-2 text-[13px] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => {
-                      const next = e.target.checked
-                        ? [...settings.visible_categories, c.value]
-                        : settings.visible_categories.filter((v) => v !== c.value);
-                      update({ visible_categories: next });
-                    }}
-                    className="w-4 h-4 accent-accent dark:accent-accentDark"
-                  />
+                <button
+                  key={c.value}
+                  type="button"
+                  aria-pressed={checked}
+                  onClick={() => {
+                    const next = checked
+                      ? settings.visible_categories.filter((v) => v !== c.value)
+                      : [...settings.visible_categories, c.value];
+                    update({ visible_categories: next });
+                  }}
+                  className={`flex items-center justify-center gap-1.5 rounded-full py-2 px-2 text-[12.5px] transition-colors ${
+                    checked
+                      ? "bg-accent dark:bg-accentDark text-white font-medium"
+                      : "bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.07] dark:hover:bg-white/[0.1]"
+                  }`}
+                >
+                  <i className={`ti ${c.icon} text-[13px] ${checked ? "text-white" : "opacity-70"}`} />
                   {c.label}
-                </label>
+                </button>
               );
             })}
           </div>
