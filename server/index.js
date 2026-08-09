@@ -22,6 +22,7 @@ const jwt = require("jsonwebtoken");
 const { pool, initDb } = require("./db");
 const { sendWelcomeEmail, sendPasswordResetEmail } = require("./email");
 const billing = require("./billing");
+const admin = require("./admin");
 
 const PORT = process.env.PORT || 8787;
 const APP_SHARED_SECRET = process.env.APP_SHARED_SECRET || "";
@@ -75,6 +76,15 @@ app.post(
 );
 
 app.use(express.json({ limit: "200kb" }));
+
+// --- Admin dashboard -------------------------------------------------------
+//
+// Internal-only: total users, Free vs Pro split, signups, and real revenue
+// pulled live from Stripe. Gated by its own HTTP Basic Auth check inside
+// admin.js (ADMIN_PASSWORD env var) -- deliberately not behind requireAuth/
+// requirePro, since this has nothing to do with a Clip user's own session,
+// it's a separate, single-owner surface.
+app.use("/admin", admin.router);
 
 // --- Accounts -----------------------------------------------------------
 //

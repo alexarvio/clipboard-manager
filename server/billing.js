@@ -222,4 +222,9 @@ module.exports = {
   createPortalSession,
   handleWebhookEvent,
   cancelSubscriptionImmediately,
+  // Exported so admin.js can pull real revenue numbers straight from Stripe
+  // (paid invoices, active subscriptions) without spinning up a second
+  // Stripe client with its own separate config/API-version pinning to keep
+  // in sync with this one.
+  stripe,
 };
