@@ -143,6 +143,12 @@ export default function SettingsPanel({
   // Single string, not a Set -- one filter's prompt open at a time is
   // plenty for a "quickly check what this one says" action.
   const [expandedFilterName, setExpandedFilterName] = useState<string | null>(null);
+  // Mirrors expandedFilterName, but for the "Your presets" list below
+  // (2026-08-09 redesign) -- a custom preset's instruction is now hidden by
+  // default and only shown on expand, same "click to see the rest" pattern
+  // as an AI filter's prompt, rather than always visible via a title=
+  // tooltip.
+  const [expandedPresetLabel, setExpandedPresetLabel] = useState<string | null>(null);
   const [addingFilter, setAddingFilter] = useState(false);
   const [newFilterName, setNewFilterName] = useState("");
   const [newFilterPrompt, setNewFilterPrompt] = useState("");
@@ -946,22 +952,35 @@ export default function SettingsPanel({
           <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1.5">
             Built-in
           </p>
-          <div className="space-y-0.5 mb-4">
+          {/* Redesigned 2026-08-09 -- capsule toggle buttons (same
+              selected/unselected color language as the Categories grid
+              above) instead of a checkbox list. A builtin's label doubles
+              as its own instruction (see BUILTIN_PRESETS's doc comment), so
+              there's nothing to expand here -- unlike "Your presets" below,
+              which does get an expand chevron for its separate instruction
+              text. */}
+          <div className="space-y-1.5 mb-4">
             {eligibleBuiltins.map((label) => {
               const checked = activeVisiblePresets.includes(label);
               return (
-                <label
+                <button
                   key={label}
-                  className="flex items-center justify-between gap-2 text-[13px] py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.04] cursor-pointer"
+                  type="button"
+                  aria-pressed={checked}
+                  onClick={() => togglePresetVisible(label, !checked)}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] border transition-colors ${
+                    checked
+                      ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
+                      : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-ink dark:text-cream hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                  }`}
                 >
-                  <span>{label}</span>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => togglePresetVisible(label, e.target.checked)}
-                    className="w-4 h-4 accent-accent dark:accent-accentDark shrink-0"
+                  <i
+                    className={`ti ti-sparkles text-[12px] shrink-0 ${
+                      checked ? "text-accent dark:text-accentDark" : "text-inkMuted dark:text-inkMutedDark opacity-70"
+                    }`}
                   />
-                </label>
+                  {label}
+                </button>
               );
             })}
           </div>
@@ -1071,27 +1090,63 @@ export default function SettingsPanel({
                     "keep a dozen custom presets from burying the fixed
                     defaults" job now that both sections are always visible
                     at once. */}
-                <div className="max-h-48 overflow-y-auto overflow-x-hidden space-y-0.5 pr-1">
+                {/* Redesigned 2026-08-09 -- same capsule + color-on-select
+                    language as Built-in above, plus an expand chevron
+                    (mirrors the AI filters list further up) since a custom
+                    preset, unlike a builtin, has a separate instruction
+                    worth revealing on demand instead of only via a title=
+                    tooltip. Clicking the row body toggles selected; the
+                    chevron and trash are their own hit targets. */}
+                <div className="max-h-56 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1">
                   {activeCustomPresets
                     .filter((p) => p.label.toLowerCase().includes(presetSearch.trim().toLowerCase()))
                     .map((p) => {
                       const checked = activeVisiblePresets.includes(p.label);
+                      const expanded = expandedPresetLabel === p.label;
                       return (
-                        <label
+                        <div
                           key={p.label}
-                          className="group flex items-center justify-between gap-2 text-[13px] py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.04] cursor-pointer"
-                          title={p.instruction}
+                          className={`group rounded-xl border transition-colors ${
+                            checked
+                              ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30"
+                              : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                          }`}
                         >
-                          <span className="flex items-center gap-1.5 min-w-0">
-                            <i className="ti ti-bookmark text-[11px] opacity-60 shrink-0" />
-                            <span className="truncate">{p.label}</span>
-                          </span>
-                          <span className="flex items-center gap-2 shrink-0">
+                          <div
+                            onClick={() => togglePresetVisible(p.label, !checked)}
+                            className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+                          >
+                            <i
+                              className={`ti ti-sparkles text-[12px] shrink-0 ${
+                                checked ? "text-accent dark:text-accentDark" : "text-inkMuted dark:text-inkMutedDark opacity-70"
+                              }`}
+                            />
+                            <span
+                              className={`flex-1 min-w-0 truncate text-[13px] ${
+                                checked ? "text-accent dark:text-accentDark font-medium" : "text-ink dark:text-cream"
+                              }`}
+                            >
+                              {p.label}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setExpandedPresetLabel(expanded ? null : p.label);
+                              }}
+                              title={expanded ? "Hide prompt" : "Show prompt"}
+                              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                            >
+                              <i
+                                className={`ti ti-chevron-down text-[11px] transition-transform ${
+                                  expanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
                             {/* Hover-reveal, same convention as every other
-                                row action in the app -- preventDefault stops
-                                the click from also toggling the label's own
-                                checkbox (a bare label click always fires the
-                                associated input otherwise). */}
+                                row action in the app -- preventDefault/
+                                stopPropagation stops the click from also
+                                toggling the row's own selected state. */}
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
@@ -1101,18 +1156,17 @@ export default function SettingsPanel({
                                 setDeleteConfirmLabel(p.label);
                               }}
                               title="Delete preset"
-                              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 text-inkMuted dark:text-inkMutedDark transition-opacity"
+                              className="shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 text-inkMuted dark:text-inkMutedDark transition-opacity"
                             >
                               <i className="ti ti-trash text-[12px]" />
                             </button>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) => togglePresetVisible(p.label, e.target.checked)}
-                              className="w-4 h-4 accent-accent dark:accent-accentDark shrink-0"
-                            />
-                          </span>
-                        </label>
+                          </div>
+                          {expanded && (
+                            <p className="px-3 pb-2.5 -mt-0.5 text-[11.5px] text-inkMuted dark:text-inkMutedDark whitespace-pre-wrap break-words">
+                              {p.instruction}
+                            </p>
+                          )}
+                        </div>
                       );
                     })}
                   {presetSearch.trim() &&
