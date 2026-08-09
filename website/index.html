@@ -49,8 +49,12 @@
   nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; max-width: 1120px; margin: 0 auto; }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16.5px; }
   .brand img { height: 26px; width: auto; display: block; }
-  .navlinks { display: flex; gap: 30px; font-size: 13.5px; color: var(--inkMuted); }
-  .navlinks a:hover { color: var(--ink); }
+  /* Nav links as rounded pill buttons (2026-08-09), same rounded-full chip
+     language the app itself uses (marquee chips, settings tabs, toolbar
+     chips) rather than plain underline-free text links. */
+  .navlinks { display: flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--inkMuted); }
+  .navlinks a { padding: 8px 16px; border-radius: 999px; transition: background-color 0.15s, color 0.15s; }
+  .navlinks a:hover { background: rgba(26,24,22,0.06); color: var(--ink); }
   .navcta { background: var(--ink); color: var(--cream); padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .navcta:hover { opacity: 0.85; }
 
