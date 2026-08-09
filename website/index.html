@@ -533,13 +533,22 @@
 
   /* ---- pricing: inline comparison, not floating cards ---- */
   .price-table { max-width: 720px; margin: 0 auto; border: 1px solid var(--borderLight); border-radius: 18px; overflow: hidden; background: var(--creamSurface); }
-  .price-head { display: grid; grid-template-columns: 1.4fr 1fr 1fr; border-bottom: 1px solid var(--borderLight); }
-  .price-head > div { padding: 22px 20px; }
-  .price-head > div:not(:first-child) { text-align: center; }
+  /* Three separate grid rows (2026-08-09), not one grid item per column
+     with plan-name/amount/subtext block-stacked inside it -- nesting them
+     let the extra "or $29.99/yr…" line in Pro's column push things around
+     with no cross-column guarantee, and $0 vs $3.99 ended up a couple
+     pixels off from each other. Each row here is its own grid with the
+     exact same grid-template-columns as .price-row below, which is how
+     .price-row's checkmarks already line up perfectly across Free/Pro --
+     giving the price row that same real, not just visual, alignment. */
+  .price-head-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; padding: 0 20px; }
+  .price-head-row > div:not(:first-child) { text-align: center; }
+  .price-head { border-bottom: 1px solid var(--borderLight); padding: 22px 0 20px; }
   .price-head .plan-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); }
   .price-head .plan-name.pro { color: var(--accent); }
   .price-head .amount { font-size: 26px; font-weight: 700; margin-top: 6px; }
   .price-head .amount span { font-size: 13px; font-weight: 500; color: var(--inkMuted); }
+  .price-head .subtext { font-size: 11.5px; color: var(--inkMuted); margin-top: 4px; }
   .price-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; }
   .price-row:not(:last-child) { border-bottom: 1px solid var(--borderLight); }
   .price-row > div { padding: 14px 20px; font-size: 13.5px; display: flex; align-items: center; justify-content: center; }
@@ -567,7 +576,7 @@
     .shot-showcase { grid-template-columns: 1fr; margin-top: 32px; }
     .navlinks { display: none; }
     h1 { font-size: 36px; }
-    .price-head, .price-row { grid-template-columns: 1fr 1fr 1fr; font-size: 12px; }
+    .price-head-row, .price-row { grid-template-columns: 1fr 1fr 1fr; font-size: 12px; }
     .price-cta-row { flex-wrap: wrap; }
   }
 </style>
@@ -956,12 +965,20 @@
 
     <div class="price-table">
       <div class="price-head">
-        <div></div>
-        <div><div class="plan-name">Free</div><div class="amount">$0</div></div>
-        <div>
+        <div class="price-head-row">
+          <div></div>
+          <div class="plan-name">Free</div>
           <div class="plan-name pro">Pro</div>
+        </div>
+        <div class="price-head-row">
+          <div></div>
+          <div class="amount">$0</div>
           <div class="amount">$3.99<span>/mo</span></div>
-          <div style="font-size:11.5px;color:var(--inkMuted);margin-top:4px;">or $29.99/yr ($2.50/mo)</div>
+        </div>
+        <div class="price-head-row">
+          <div></div>
+          <div></div>
+          <div class="subtext">or $29.99/yr ($2.50/mo)</div>
         </div>
       </div>
       <div class="price-row"><div class="feature-name">Clipboard history</div><div style="font-size:12px;color:var(--inkMuted);">100 items / 7 days</div><div>Unlimited</div></div>
