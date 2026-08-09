@@ -105,6 +105,31 @@ async function initDb() {
   // fallback (see Dashboard.tsx) rather than needing a backfill.
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;`);
 
+  // Voyage usage log (2026-08-09) -- Voyage has no usage/cost API of its
+  // own (checked their full API reference: just embeddings/files/batch,
+  // nothing for billing), so this is the only way to show a real cost
+  // figure for it on the admin dashboard. One row per /embed call, logging
+  // the real total_tokens Voyage's own response reports -- see voyageEmbed
+  // in index.js. admin.js multiplies the sum by Voyage's published
+  // per-token price to get an estimate; it's an estimate of *our* usage
+  // against *their* list price, not something pulled from Voyage directly.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ai_usage_events (
+      id SERIAL PRIMARY KEY,
+      provider TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      tokens INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  // admin.js's cost estimate always filters by provider + a recent date
+  // range (e.g. "last 30 days") -- a composite index on exactly those two
+  // columns is what that query actually needs, rather than a sequential
+  // scan that grows with every embed call.
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ai_usage_events_provider_created ON ai_usage_events(provider, created_at);
+  `);
+
   console.log("[clip-server] Postgres schema ready");
 }
 

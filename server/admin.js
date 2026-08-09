@@ -24,10 +24,30 @@ const billing = require("./billing");
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 
+// Admin API key for Anthropic's Usage & Cost API -- NOT the same as
+// ANTHROPIC_API_KEY (that one only calls /v1/messages). This one starts
+// with sk-ant-admin01- and only exists once an "Organization" has been set
+// up in the Anthropic Console (Console -> Settings -> Organization);
+// individual accounts can't generate one. See
+// https://platform.claude.com/docs/en/manage-claude/usage-cost-api.
+const ANTHROPIC_ADMIN_KEY = process.env.ANTHROPIC_ADMIN_KEY || "";
+// $/1K tokens for voyage-3.5-lite (the model /embed actually calls, see
+// index.js's voyageEmbed) -- from https://docs.voyageai.com/docs/pricing.
+// Hardcoded rather than fetched anywhere because there's nowhere to fetch
+// it from; update this by hand if Voyage ever changes the price for this
+// model.
+const VOYAGE_PRICE_PER_1K_TOKENS = 0.00002;
+
 if (!ADMIN_PASSWORD) {
   console.warn(
     "[clip-server] WARNING: ADMIN_PASSWORD is not set. /admin will refuse all requests until it is. " +
       "Generate one with: openssl rand -hex 20"
+  );
+}
+if (!ANTHROPIC_ADMIN_KEY) {
+  console.warn(
+    "[clip-server] NOTE: ANTHROPIC_ADMIN_KEY is not set. /admin will show Anthropic cost as unavailable " +
+      "-- see the comment above this warning for how to get one."
   );
 }
 
@@ -199,6 +219,80 @@ async function allSubscriptionsEver() {
   return subs;
 }
 
+// --- AI provider costs (Anthropic real, Voyage estimated) -----------------
+//
+// Not the same kind of number as the revenue figures above -- there's no
+// single "source of truth" API covering both providers the way Stripe is
+// for money coming in. Anthropic has a real Cost API (below); Voyage has
+// none at all (confirmed against their full API reference -- just
+// embeddings/files/batch, nothing for billing), so its figure is an
+// estimate built from what we log ourselves in ai_usage_events (see db.js
+// and index.js's /embed route) multiplied by Voyage's published price.
+
+// Real $ spend from Anthropic's Cost API
+// (/v1/organizations/cost_report) for the given date range. Requires an
+// Admin API key (ANTHROPIC_ADMIN_KEY) -- a different, more powerful key
+// than ANTHROPIC_API_KEY, only available once an Organization exists in the
+// Anthropic Console. Throws (rather than returning null) on failure so the
+// caller can surface the actual error message -- "key missing," "no
+// organization set up yet," and "key lacks the right scope" all look
+// different to someone debugging this, and swallowing the distinction
+// wouldn't help them.
+async function anthropicCostUSD(startingAtISO, endingAtISO) {
+  if (!ANTHROPIC_ADMIN_KEY) return null;
+
+  let totalUSD = 0;
+  let page;
+  for (;;) {
+    const url = new URL("https://api.anthropic.com/v1/organizations/cost_report");
+    url.searchParams.set("starting_at", startingAtISO);
+    url.searchParams.set("ending_at", endingAtISO);
+    url.searchParams.append("group_by[]", "description");
+    if (page) url.searchParams.set("page", page);
+
+    const resp = await fetch(url, {
+      headers: {
+        "anthropic-version": "2023-06-01",
+        "x-api-key": ANTHROPIC_ADMIN_KEY,
+      },
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`Anthropic cost report failed (${resp.status}): ${body}`);
+    }
+
+    const data = await resp.json();
+    // Each entry in `data` is one time bucket (this call doesn't set
+    // bucket_width, so the API's own default applies); each bucket's
+    // `results` holds one or more cost line items, each with an `amount`
+    // that's a decimal-string dollar figure (e.g. "0.45" -> $0.45) per the
+    // Cost API docs.
+    for (const bucket of data.data || []) {
+      for (const result of bucket.results || []) {
+        const amount = parseFloat(result.amount);
+        if (!Number.isNaN(amount)) totalUSD += amount;
+      }
+    }
+    if (!data.has_more) break;
+    page = data.next_page;
+  }
+  return totalUSD;
+}
+
+// Estimated $ spend on Voyage over the last `days` days, from our own
+// ai_usage_events log rather than anything Voyage reports back -- see the
+// section comment above.
+async function voyageCostEstimateUSD(days) {
+  const { rows } = await pool.query(
+    `SELECT COALESCE(SUM(tokens), 0)::bigint AS tokens
+     FROM ai_usage_events
+     WHERE provider = 'voyage' AND created_at >= now() - ($1 || ' days')::interval`,
+    [days]
+  );
+  const totalTokens = Number(rows[0].tokens);
+  return (totalTokens / 1000) * VOYAGE_PRICE_PER_1K_TOKENS;
+}
+
 // --- Time series (users / Pro subscribers / MRR, by day) ------------------
 //
 // Users: exact, straight from Postgres created_at -- a real signup date per
@@ -283,6 +377,24 @@ function formatUSD(cents) {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
+// Same as formatUSD, but for values already in dollars (Anthropic's Cost
+// API and the Voyage estimate both work in dollars, not cents) --
+// formatting a $0.0034-sized number needs more than the usual 2 decimal
+// places or it just renders as "$0.00" for anyone still on a handful of
+// cheap embed calls.
+function formatUSDPrecise(dollars) {
+  if (dollars == null) return "—";
+  if (dollars > 0 && dollars < 0.01) {
+    return dollars.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    });
+  }
+  return dollars.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
@@ -306,6 +418,10 @@ function renderDashboard({
   trialingCount,
   totalRevenueCents,
   stripeConfigured,
+  anthropicCostUSD30d,
+  anthropicConfigured,
+  anthropicError,
+  voyageCostUSD30d,
   series,
 }) {
   const free = userStats.total - userStats.pro;
@@ -361,6 +477,8 @@ function renderDashboard({
     <p class="subtitle">Live account and revenue snapshot. <span class="refresh"><a href="/admin">Refresh</a></span></p>
 
     ${!stripeConfigured ? `<div class="warning">Stripe isn't configured on this server (STRIPE_SECRET_KEY missing) -- revenue figures and the Pro/MRR charts below are unavailable.</div>` : ""}
+    ${!anthropicConfigured ? `<div class="warning">ANTHROPIC_ADMIN_KEY isn't set -- Anthropic cost is unavailable. This is a separate key from ANTHROPIC_API_KEY, and needs an Organization set up in the Anthropic Console first. See server/.env.example.</div>` : ""}
+    ${anthropicConfigured && anthropicError ? `<div class="warning">Couldn't reach Anthropic's Cost API: ${escapeHtml(anthropicError)}</div>` : ""}
 
     <div class="section-title">Accounts</div>
     <div class="grid">
@@ -376,6 +494,12 @@ function renderDashboard({
     <div class="grid">
       ${statCard("MRR", formatUSD(mrrCents), `${activeCount} paying subscriptions`)}
       ${statCard("Total revenue (all-time)", formatUSD(totalRevenueCents))}
+    </div>
+
+    <div class="section-title">AI costs (30d)</div>
+    <div class="grid">
+      ${statCard("Anthropic", formatUSDPrecise(anthropicCostUSD30d), "real, from Anthropic's Cost API")}
+      ${statCard("Voyage", formatUSDPrecise(voyageCostUSD30d), "estimated from logged usage × list price")}
     </div>
 
     <div class="section-title">Over time</div>
@@ -444,31 +568,68 @@ function renderDashboard({
 </html>`;
 }
 
+// Runs one external-provider call and never lets it reject -- a bad/missing
+// key or a transient outage on Anthropic's or Stripe's side should degrade
+// that one section of the page (with a warning banner explaining why,
+// rendered by renderDashboard), not 500 the whole dashboard including the
+// account numbers that came straight from our own database.
+async function safe(fn, fallback) {
+  try {
+    return { value: await fn(), error: null };
+  } catch (err) {
+    console.error("[clip-server] /admin: a data source failed:", err);
+    return { value: fallback, error: err.message || String(err) };
+  }
+}
+
 const router = express.Router();
 
 router.get("/", requireAdmin, async (_req, res) => {
   try {
     const stripeConfigured = !!billing.stripe;
-    const [userStats, signupRows, revenueResult, mrrResult, subsEver] = await Promise.all([
+    const anthropicConfigured = !!ANTHROPIC_ADMIN_KEY;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * DAY_MS);
+
+    const [
+      userStats,
+      signupRows,
+      revenue,
+      mrr,
+      subsEver,
+      anthropicCost,
+      voyageCost,
+    ] = await Promise.all([
       getUserStats(),
       dailySignupCounts(),
-      stripeConfigured ? totalRevenueCentsAllTime() : Promise.resolve(null),
       stripeConfigured
-        ? mrrCentsAndCounts()
-        : Promise.resolve({ mrrCents: null, activeCount: 0, trialingCount: 0 }),
-      stripeConfigured ? allSubscriptionsEver() : Promise.resolve([]),
+        ? safe(totalRevenueCentsAllTime, null)
+        : { value: null, error: null },
+      stripeConfigured
+        ? safe(mrrCentsAndCounts, { mrrCents: null, activeCount: 0, trialingCount: 0 })
+        : { value: { mrrCents: null, activeCount: 0, trialingCount: 0 }, error: null },
+      stripeConfigured ? safe(allSubscriptionsEver, []) : { value: [], error: null },
+      anthropicConfigured
+        ? safe(() => anthropicCostUSD(thirtyDaysAgo.toISOString(), now.toISOString()), null)
+        : { value: null, error: null },
+      safe(() => voyageCostEstimateUSD(30), null),
     ]);
 
-    const series = buildTimeSeries(signupRows, subsEver);
+    const series = buildTimeSeries(signupRows, subsEver.value);
 
     res.set("Content-Type", "text/html; charset=utf-8").send(
       renderDashboard({
         userStats,
-        totalRevenueCents: revenueResult,
-        mrrCents: mrrResult.mrrCents,
-        activeCount: mrrResult.activeCount,
-        trialingCount: mrrResult.trialingCount,
+        totalRevenueCents: revenue.value,
+        mrrCents: mrr.value.mrrCents,
+        activeCount: mrr.value.activeCount,
+        trialingCount: mrr.value.trialingCount,
         stripeConfigured,
+        anthropicCostUSD30d: anthropicCost.value,
+        anthropicConfigured,
+        anthropicError: anthropicCost.error,
+        voyageCostUSD30d: voyageCost.value,
         series,
       })
     );

@@ -745,7 +745,15 @@ async function voyageEmbed(texts, inputType) {
   // rather than trusting array order, then strip back down to just the
   // vectors so the Rust side gets a plain array-of-arrays lined up with the
   // input texts it sent.
-  return [...data.data].sort((a, b) => a.index - b.index).map((d) => d.embedding);
+  const embeddings = [...data.data].sort((a, b) => a.index - b.index).map((d) => d.embedding);
+  // `usage.total_tokens` (same field name as the Python client's
+  // EmbeddingsObject.total_tokens, per Voyage's own docs) is the real
+  // billed token count for this call -- logged by the /embed route below so
+  // the admin dashboard can estimate actual Voyage spend, since Voyage has
+  // no cost API of its own to read this back from later.
+  const totalTokens =
+    data.usage && typeof data.usage.total_tokens === "number" ? data.usage.total_tokens : null;
+  return { embeddings, totalTokens };
 }
 
 app.post("/embed", requireAppSecret, requireAuth, requirePro, dailyCap("embed"), async (req, res) => {
@@ -771,7 +779,18 @@ app.post("/embed", requireAppSecret, requireAuth, requirePro, dailyCap("embed"),
   }
 
   try {
-    const embeddings = await voyageEmbed(texts, input_type);
+    const { embeddings, totalTokens } = await voyageEmbed(texts, input_type);
+    // Fire-and-forget, same pattern as sendWelcomeEmail -- logging usage for
+    // the admin dashboard shouldn't make the person waiting on search
+    // results wait on an extra DB round-trip too, and a logging failure
+    // here shouldn't turn a successful embed call into a failed response.
+    if (totalTokens != null) {
+      pool
+        .query("INSERT INTO ai_usage_events (provider, kind, tokens) VALUES ('voyage', 'embed', $1)", [
+          totalTokens,
+        ])
+        .catch((err) => console.error("[clip-server] failed to log voyage usage:", err));
+    }
     res.json({ embeddings });
   } catch (err) {
     console.error("[clip-server] /embed failed:", err);
