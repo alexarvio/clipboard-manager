@@ -205,7 +205,13 @@
   }
   .float-tag.top { top: -16px; right: 20px; }
   .float-tag.bottom { bottom: -14px; left: -14px; }
-  .float-tag i { color: var(--accent); font-size: 13px; }
+  /* Fixed literal, not var(--accent) -- .float-tag's own background/text
+     (var(--ink)/var(--cream)) is a deliberately self-contained inverted
+     pair that flips independently of the rest of the page in dark mode
+     (see the .float-tag rule above), so pairing its icon with the
+     separately-flipping --accent could land it on a background of a
+     similar brightness (nearly invisible) depending on theme. */
+  .float-tag i { color: #5EA800; font-size: 13px; }
   .panel {
     background: var(--p-bg); border-radius: 20px; overflow: hidden;
     box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(26,24,22,0.06);
@@ -620,7 +626,7 @@
               <div class="folder-open-item">
                 <i class="ti ti-grip-vertical foi-grip"></i>
                 <div class="foi-body">
-                  <div class="foi-text">"Hi [name], thanks for reaching out: here's the pricing sheet you asked about…"</div>
+                  <div class="foi-text">"Hi {{name}}, thanks for reaching out: here's the pricing sheet you asked about…"</div>
                   <span class="show-more">Show more</span>
                   <div class="foi-meta">
                     <span class="foi-date">Jun 28, 5:27 PM</span>
