@@ -429,7 +429,16 @@
   /* Widened (2026-08-09) -- no longer cramped to a narrow phone-ish column,
      the showcase now gives the mockup roughly as much room as the copy
      beside it. */
-  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-top: 56px; }
+  /* align-items: start (2026-08-09, was center) -- the intro copy now lives
+     inside .shot-points-head at the top of the right column instead of its
+     own centered block above the showcase, so the two columns need to share
+     a top edge (leveled with the mockup) rather than being vertically
+     centered against each other. */
+  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 56px; }
+  .shot-points-head { margin-bottom: 6px; }
+  .shot-points-head .tag { display: inline-block; margin-bottom: 10px; }
+  .shot-points-head h2 { font-size: 26px; margin: 0 0 10px; letter-spacing: -0.4px; font-weight: 500; }
+  .shot-points-head p { color: var(--inkMuted); font-size: 14.5px; line-height: 1.6; margin: 0 0 4px; }
   .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--cream); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(26,24,22,0.06); padding: 16px; pointer-events: none; }
   /* Real app's top toolbar (2026-08-09) -- History/Transform/Folders tab row
      + the Text/Screenshots sub-toggle sit above the search bar in the actual
@@ -634,13 +643,7 @@
       <h2 class="serif">FatClipboard turns your clipboard from a one-item junk drawer into a searchable, organized library</h2>
     </div>
 
-    <div id="screenshots" class="section-head center" style="margin-top: 4px;">
-      <span class="tag">Screenshots</span>
-      <h2 class="serif" style="font-size: 28px;">Every screenshot, captured and searchable</h2>
-      <p>FatClipboard doesn't just remember what you type and copy. It remembers what you capture, too. Every screenshot is saved automatically and read with OCR the instant it lands, so the text inside it is searchable, can be copied out on its own, cleaned up or rewritten with AI, and stored entirely on your own device.</p>
-    </div>
-
-    <div class="shot-showcase">
+    <div id="screenshots" class="shot-showcase" style="margin-top: 32px;">
       <div class="shot-mock-card">
         <div class="shot-tabs">
           <div class="shot-tab on">History</div>
@@ -675,6 +678,11 @@
         </div>
       </div>
       <div class="shot-points">
+        <div class="shot-points-head">
+          <span class="tag">Screenshots</span>
+          <h2 class="serif">Every screenshot, captured and searchable</h2>
+          <p>FatClipboard doesn't just remember what you type and copy. It remembers what you capture, too. Every screenshot is saved automatically and read with OCR the instant it lands, so the text inside it is searchable, can be copied out on its own, cleaned up or rewritten with AI, and stored entirely on your own device.</p>
+        </div>
         <div class="shot-point">
           <i class="ti ti-camera"></i>
           <div><h4>Captured automatically</h4><p>Every screenshot you take is saved the instant you take it. No manual step, nothing to remember.</p></div>
