@@ -558,6 +558,13 @@
   .price-cta-row { display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; }
   .price-cta-row > div:first-child { display: none; }
   .price-cta-row .btn { justify-content: center; padding: 11px 22px; font-size: 13.5px; }
+  /* "Download free" solid ink/cream instead of the plain outline
+     .btn-secondary elsewhere (2026-08-09) -- var(--ink)/var(--cream) flip
+     with the theme (near-black on cream in light mode, near-white on
+     charcoal in dark mode, same pairing as .tl-dot), so this reads as solid
+     black in light mode and solid white in dark mode automatically. */
+  .price-cta-row .btn-secondary { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .price-cta-row .btn-secondary:hover { filter: brightness(1.15); border-color: var(--ink); }
 
   /* ---- cta band ---- */
   .cta-band { background: var(--ink); color: var(--cream); border-radius: 24px; padding: 60px 48px; text-align: center; }
