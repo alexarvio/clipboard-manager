@@ -102,8 +102,14 @@
 
   /* ---- nav ---- */
   header { position: sticky; top: 0; z-index: 50; background: rgba(var(--cream-rgb),0.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--borderLight); }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; max-width: 1120px; margin: 0 auto; }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16.5px; }
+  /* 3-column grid, not flex + space-between (2026-08-09) -- space-between
+     positioned .navlinks based on the *relative* width of .brand vs.
+     .nav-right, which drifted off-center as .nav-right grew (theme toggle
+     button added). Two equal 1fr side tracks force the middle "auto" track
+     (.navlinks) to sit at the true horizontal center regardless of how wide
+     the logo or the toggle+download group are. */
+  nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 16px 28px; max-width: 1120px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16.5px; justify-self: start; }
   .brand img { height: 26px; width: auto; display: block; }
   /* Nav links as rounded pill buttons (2026-08-09), same rounded-full chip
      language the app itself uses (marquee chips, settings tabs, toolbar
@@ -113,7 +119,7 @@
   .navlinks a:hover { background: rgba(var(--ink-rgb),0.06); color: var(--ink); }
   .navcta { background: var(--ink); color: var(--cream); padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .navcta:hover { opacity: 0.85; }
-  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .nav-right { display: flex; align-items: center; gap: 10px; justify-self: end; }
   /* Dark mode toggle (2026-08-09) -- a plain icon pill matching the rest of
      the nav's rounded-full chip language, swaps its icon (moon/sun) and
      flips html[data-theme] via the two <script> blocks near the top/bottom
