@@ -1591,7 +1591,7 @@ export default function App() {
                       <p className="text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-3 pb-1.5">
                         Pinned
                       </p>
-                      <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+                      <div className="rounded-2xl bg-white/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
                         {pinnedEntries.map((entry, idx) =>
                           renderRow(entry, idx === pinnedEntries.length - 1)
                         )}
@@ -1603,7 +1603,7 @@ export default function App() {
                       <p className="text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-3 pb-1.5">
                         {group.label}
                       </p>
-                      <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+                      <div className="rounded-2xl bg-white/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
                         {group.entries.map((entry, idx) =>
                           renderRow(entry, idx === group.entries.length - 1)
                         )}
