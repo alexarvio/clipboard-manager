@@ -721,6 +721,9 @@ export default function App() {
           onScrolledToPresets={() => setJumpToPresets(false)}
           initialPresetContext={presetsJumpContext}
           onLoggedOut={() => setAuthToken("")}
+          activeCustomFilter={activeCustomFilter}
+          onApplyCustomFilter={applyCustomFilter}
+          onClearCustomFilter={clearCustomFilter}
         />
       ) : (
         <>

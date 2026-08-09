@@ -87,10 +87,21 @@ export default function SettingsPanel({
   onScrolledToPresets,
   initialPresetContext,
   onLoggedOut,
+  activeCustomFilter,
+  onApplyCustomFilter,
+  onClearCustomFilter,
 }: {
   onClose: () => void;
   onThemeChange?: (theme: "dark" | "light") => void;
   onTierChange?: (tier: "free" | "pro") => void;
+  // Which AI filter (if any) is currently applied in the main window --
+  // App.tsx owns this state (activeCustomFilter) since it's also what the
+  // Filter dropdown there reads/sets; Settings just needs to know it to
+  // highlight the matching row and to toggle it on/off (2026-08-09, so a
+  // filter can be selected from Settings, not only from that dropdown).
+  activeCustomFilter?: string | null;
+  onApplyCustomFilter?: (filter: CustomFilter) => void;
+  onClearCustomFilter?: () => void;
   // Fired after update_first_name succeeds (see saveName below) -- lets
   // Dashboard's greeting update immediately instead of waiting for the next
   // full get_settings load.
@@ -778,41 +789,78 @@ export default function SettingsPanel({
                 )}
 
                 {settings.custom_filters.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto overflow-x-hidden space-y-1 pr-1 mb-2">
+                  // Redesigned 2026-08-09 -- same capsule + color-on-select
+                  // language as Categories/AI Transform above. Clicking the
+                  // row body now actually applies it as the active filter
+                  // (activeCustomFilter, same one the main window's Filter
+                  // dropdown sets), rather than Settings only being a
+                  // create/delete/view surface for filters with no way to
+                  // turn one on from here. Chevron and trash stay separate
+                  // hit targets so expand and delete don't fight with that.
+                  <div className="max-h-48 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 mb-2">
                     {settings.custom_filters
                       .filter((f) => f.name.toLowerCase().includes(filterSearch.trim().toLowerCase()))
                       .map((f) => {
                         const expanded = expandedFilterName === f.name;
+                        const active = activeCustomFilter === f.name;
                         return (
                           <div
                             key={f.name}
-                            onClick={() => setExpandedFilterName(expanded ? null : f.name)}
-                            className="group rounded-lg px-2.5 py-1.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer"
+                            className={`group rounded-xl border transition-colors ${
+                              active
+                                ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30"
+                                : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                            }`}
                           >
-                            <div className="flex items-center gap-2">
-                              <i className="ti ti-sparkles text-[11px] text-accent dark:text-accentDark shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[13px] truncate">{f.name}</p>
-                                <p
-                                  className={`text-inkMuted dark:text-inkMutedDark text-[11px] ${
-                                    expanded ? "whitespace-pre-wrap break-words" : "truncate"
-                                  }`}
-                                >
-                                  {f.prompt}
-                                </p>
-                              </div>
+                            <div
+                              onClick={() => {
+                                if (active) onClearCustomFilter?.();
+                                else onApplyCustomFilter?.(f);
+                              }}
+                              className="flex items-center gap-2 px-2.5 py-2 cursor-pointer"
+                            >
                               <i
-                                className={`ti ti-chevron-down text-[11px] text-inkMuted dark:text-inkMutedDark shrink-0 opacity-0 group-hover:opacity-60 transition-all ${
-                                  expanded ? "rotate-180 !opacity-60" : ""
+                                className={`ti ti-sparkles text-[11px] shrink-0 ${
+                                  active ? "text-accent dark:text-accentDark" : "text-inkMuted dark:text-inkMutedDark opacity-70"
                                 }`}
                               />
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={`text-[13px] truncate ${
+                                    active ? "text-accent dark:text-accentDark font-medium" : ""
+                                  }`}
+                                >
+                                  {f.name}
+                                </p>
+                                {expanded && (
+                                  <p className="text-inkMuted dark:text-inkMutedDark text-[11px] whitespace-pre-wrap break-words mt-0.5">
+                                    {f.prompt}
+                                  </p>
+                                )}
+                              </div>
                               <button
                                 onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setExpandedFilterName(expanded ? null : f.name);
+                                }}
+                                title={expanded ? "Hide prompt" : "Show prompt"}
+                                className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                              >
+                                <i
+                                  className={`ti ti-chevron-down text-[11px] transition-transform ${
+                                    expanded ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
                                   e.stopPropagation();
                                   deleteFilter(f.name);
                                 }}
                                 title="Delete filter"
-                                className="shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
+                                className="shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 text-inkMuted dark:text-inkMutedDark transition-opacity"
                               >
                                 <i className="ti ti-trash text-[12px]" />
                               </button>
