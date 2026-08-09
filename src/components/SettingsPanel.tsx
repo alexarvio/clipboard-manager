@@ -1022,7 +1022,7 @@ export default function SettingsPanel({
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] border transition-colors ${
                     checked
                       ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
-                      : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-ink dark:text-cream hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                      : "bg-white dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-ink dark:text-cream hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
                 >
                   <i
