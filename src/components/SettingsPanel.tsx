@@ -725,13 +725,13 @@ export default function SettingsPanel({
                       : [...settings.visible_categories, c.value];
                     update({ visible_categories: next });
                   }}
-                  className={`flex items-center justify-center gap-1.5 rounded-full py-2 px-2 text-[12.5px] transition-colors ${
+                  className={`flex items-center justify-center gap-1.5 rounded-full py-2 px-2 text-[12.5px] border transition-colors ${
                     checked
-                      ? "bg-accent dark:bg-accentDark text-white font-medium"
-                      : "bg-black/[0.04] dark:bg-white/[0.06] border border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.07] dark:hover:bg-white/[0.1]"
+                      ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
+                      : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
                 >
-                  <i className={`ti ${c.icon} text-[13px] ${checked ? "text-white" : "opacity-70"}`} />
+                  <i className={`ti ${c.icon} text-accent dark:text-accentDark text-[13px]`} />
                   {c.label}
                 </button>
               );

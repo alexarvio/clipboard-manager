@@ -274,13 +274,15 @@
      -- matches ALL_CATEGORIES in lib/categories.ts (all 10, not a partial
      list), with icons borrowed from the marquee chips further up the page
      since the real Settings checkbox list has no icons of its own. */
+  /* Toned down (2026-08-09) to match the real app's redesigned Categories
+     buttons -- a tinted accent/15-style fill for "on" instead of a solid
+     accent block, icons always green like the marquee chips above, borders
+     on both states so the grid reads as a consistent set of pills. */
   .settings-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .settings-cat { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; border-radius: 10px; font-size: 12px; text-align: center; }
-  .settings-cat i { font-size: 13px; }
-  .settings-cat.on { background: var(--accent); color: #fff; font-weight: 600; }
-  .settings-cat.on i { color: #fff; }
-  .settings-cat.off { background: rgba(26,24,22,0.04); color: var(--inkMuted); border: 1px solid var(--borderLight); }
-  .settings-cat.off i { color: var(--inkMuted); opacity: 0.7; }
+  .settings-cat { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; border-radius: 999px; font-size: 12px; text-align: center; border: 1px solid; }
+  .settings-cat i { font-size: 13px; color: var(--accent); }
+  .settings-cat.on { background: rgba(94,168,0,0.13); border-color: rgba(94,168,0,0.25); color: var(--accent); font-weight: 600; }
+  .settings-cat.off { background: var(--creamSurface); border-color: var(--borderLight); color: var(--inkMuted); }
 
   /* ---- strip: real category chips, tied to an actual feature not decoration ---- */
   .strip { padding: 32px 0 8px; overflow: hidden; }
