@@ -1781,12 +1781,20 @@ async fn refresh_account_status(
 /// like the left-hand nav rail in Claude's desktop app. Recomputed against
 /// whichever monitor the window currently lives on, so it still looks right
 /// on unusual resolutions or if the window gets dragged to another monitor.
+///
+/// This is the *actual* source of the panel's on-screen size -- it runs
+/// unconditionally in setup() on every launch and overwrites whatever width/
+/// height is sitting in tauri.conf.json's "main" window entry before the
+/// window is ever shown, so changing those conf.json numbers alone has no
+/// visible effect. 2026-08-09: widened 20% (1/5 -> 1/5*1.2 of screen width)
+/// as a one-off experiment to see how the panel's own components look with
+/// more horizontal room.
 fn dock_to_left_edge(window: &tauri::WebviewWindow) {
     if let Ok(Some(monitor)) = window.current_monitor() {
         let size = monitor.size(); // physical pixels
         let position = monitor.position();
         let scale = monitor.scale_factor();
-        let sidebar_width = (size.width as f64 / 5.0).round() as u32;
+        let sidebar_width = (size.width as f64 / 5.0 * 1.2).round() as u32;
 
         // 2026-07-21: monitor.size() is the *full* display resolution,
         // including the strip of screen the Windows taskbar sits on --
