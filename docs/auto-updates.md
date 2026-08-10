@@ -41,9 +41,10 @@ place). Before the first real release:
 2. Add it to this repo's GitHub Actions secrets: **Settings → Secrets and
    variables → Actions → New repository secret**, name
    `TAURI_SIGNING_PRIVATE_KEY`, value = the full contents of the key file.
-3. Also add `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` as a secret -- leave the
-   value empty, since this key wasn't generated with a password. (The
-   workflow expects the secret to exist either way.)
+   That's the only secret needed -- this key wasn't generated with a
+   password, and GitHub won't let you save a secret with a blank value
+   anyway, so `release.yml` deliberately doesn't reference a
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secret at all.
 
 ## Cutting a release
 

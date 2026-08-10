@@ -29,11 +29,14 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set both of these as repo secrets (Settings -> Secrets and
-          # variables -> Actions) before the first run -- see
-          # docs/auto-updates.md for where the private key file itself is.
+          # Set this as a repo secret (Settings -> Secrets and variables ->
+          # Actions) before the first run -- see docs/auto-updates.md for
+          # where the private key file itself is. No
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD entry here on purpose: this
+          # key was generated without a password, and GitHub doesn't allow
+          # saving a secret with a blank value -- omitting the env var
+          # entirely has the same effect as an empty password would.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: app-v__VERSION__
           releaseName: "FatClipboard v__VERSION__"
