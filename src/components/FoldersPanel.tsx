@@ -653,47 +653,36 @@ export default function FoldersPanel({
   function renderFolderDetail(path: Folder[], folder: Folder, inline: boolean) {
     return (
       <div className={inline ? "relative" : "relative flex-1 min-h-0 flex flex-col overflow-hidden"}>
-        {/* Name/item-count/back row is redundant when inline (2026-08-08) --
+        {/* Name/item-count/pin row is redundant when inline (2026-08-08) --
             the row this expands from already shows the folder's name and
             count, and clicking that same row again already collapses it.
             Full-screen (a drilled-into subfolder) still needs its own
             identity row since there's no row above it to fall back on.
-            2026-08-10: that identity row used to also carry its own set of
-            compact icon-only actions (a second, differently-styled copy of
-            Stack/New folder/New item) -- reported as inconsistent with the
-            labeled pill-button grid the inline/root view gets. Both views
-            now share the exact same 3-column labeled-button grid below.
-            The identity row itself was also restyled this same pass to
-            match FolderRow's own look (folder icon, name, plain item-count
-            number, pin toggle) instead of a plain "Name — N items" text
-            line -- reported as still reading as "the old one" next to a
-            root folder's row once the button grid below it already
-            matched. Only the leading Back control (there's no row above a
-            drilled-into subfolder to collapse back into) and using
-            items.length (this folder's freshly-fetched item list, not the
-            possibly-stale item_count off the Folder object) differ from an
-            actual FolderRow. */}
+            2026-08-10: previously a hand-styled row that only echoed
+            FolderRow's look -- reported as still not actually matching
+            (no rounded highlighted background, different spacing) next to
+            a real expanded root folder's row. Now renders the *actual*
+            FolderRow component, so it's pixel-identical and stays that way
+            automatically if FolderRow's styling changes later, instead of
+            a second copy that can drift. expanded is always true here (a
+            drilled-into subfolder is, definitionally, open), and onOpen is
+            goBack -- clicking this row to leave, same gesture as clicking
+            an expanded root folder's row to collapse it. */}
         {!inline && (
-          <div className="flex items-center gap-1 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
-            <button onClick={goBack} title="Back" className="shrink-0 p-1 -ml-1">
-              <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
-            </button>
-            <div className="group flex-1 flex items-center gap-2.5 min-w-0">
-              <i className="ti ti-folder text-[15px] text-accent dark:text-accentDark" />
-              <span className="flex-1 text-[13px] truncate">{folder.name}</span>
-              <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">{items.length}</span>
-              <button
-                onClick={() => toggleFolderPin(folder)}
-                className={`text-xs shrink-0 transition-opacity ${
-                  folder.pinned
-                    ? "opacity-100 text-accent dark:text-accentDark"
-                    : "opacity-0 group-hover:opacity-60 text-inkMuted dark:text-inkMutedDark"
-                }`}
-                title={folder.pinned ? "Unpin" : tier === "pro" ? "Pin" : "Pin folders — Pro only"}
-              >
-                <i className={folder.pinned ? "ti ti-pinned-filled text-[13px]" : "ti ti-pin text-[13px]"} />
-              </button>
-            </div>
+          <div className="px-2 pt-2">
+            {/* item_count overridden with items.length (this folder's live,
+                freshly-fetched item list) -- folder.item_count only gets
+                refreshed via refreshFolders/refreshRootFolders, which cover
+                a *parent's* children list, not the folder currently open,
+                so it'd otherwise go stale right after adding/removing an
+                item here until backing out and back in. */}
+            <FolderRow
+              folder={{ ...folder, item_count: items.length }}
+              tier={tier}
+              expanded
+              onOpen={goBack}
+              onTogglePin={() => toggleFolderPin(folder)}
+            />
           </div>
         )}
         <div className="grid grid-cols-3 gap-1.5 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
