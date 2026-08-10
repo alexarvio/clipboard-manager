@@ -346,7 +346,18 @@ export default function App() {
   useEffect(() => {
     if (!showCategoryMenu) return;
     function onClickAway(e: MouseEvent) {
-      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Also excludes the trigger button itself, not just the dropdown --
+      // without this, clicking "Filter" again while it's open closed the
+      // menu here (mousedown fires first) and then the button's own onClick
+      // toggle immediately reopened it (since by the time click fires,
+      // state already reads closed), netting out to "never closes."
+      if (
+        categoryMenuRef.current &&
+        !categoryMenuRef.current.contains(target) &&
+        filterBtnRef.current &&
+        !filterBtnRef.current.contains(target)
+      ) {
         setShowCategoryMenu(false);
       }
     }
@@ -357,7 +368,16 @@ export default function App() {
   useEffect(() => {
     if (!showDateMenu) return;
     function onClickAway(e: MouseEvent) {
-      if (dateMenuRef.current && !dateMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Same fix as the category menu above -- exclude the "Date" trigger
+      // button so its own onClick toggle is what closes the menu on a
+      // second click, instead of racing this mousedown handler.
+      if (
+        dateMenuRef.current &&
+        !dateMenuRef.current.contains(target) &&
+        dateBtnRef.current &&
+        !dateBtnRef.current.contains(target)
+      ) {
         setShowDateMenu(false);
       }
     }
