@@ -1128,38 +1128,73 @@ export default function App() {
                   backgroundColor: theme === "dark" ? "#262320" : "#F2EEE3",
                   opacity: 1,
                 }}
-                className="z-[9999] w-60 rounded-2xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] py-1.5 text-ink dark:text-cream"
+                className="z-[9999] w-64 rounded-2xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] py-1.5 text-ink dark:text-cream"
               >
                 <p className="px-3.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
                   Presets
                 </p>
 
-                {[{ label: "All", value: null as string | null }, ...ALL_CATEGORIES.filter((f) => visibleCategories.includes(f.value))].map((f) => {
-                  const active = activeCustomFilter === null && categoryFilter === f.value;
+                {/* "All" stays a full-width row (same list style as "Your
+                    filters" below) so it reads as "clear the grid below"
+                    rather than being just another same-sized bubble. */}
+                {(() => {
+                  const allActive = activeCustomFilter === null && categoryFilter === null;
                   return (
                     <button
-                      key={f.label}
                       onClick={() => {
                         clearCustomFilter();
-                        setCategoryFilter(f.value);
+                        setCategoryFilter(null);
                         setShowCategoryMenu(false);
                       }}
-                      className={`flex items-center gap-2 px-3.5 py-1.5 mx-1 rounded-full text-[12px] text-left transition-colors ${
-                        active
+                      className={`flex items-center gap-2 px-3.5 py-1.5 mx-1 mb-1.5 rounded-full text-[12px] text-left transition-colors ${
+                        allActive
                           ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
                           : "hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
                       }`}
                       style={{ width: "calc(100% - 0.5rem)" }}
                     >
-                      {active ? (
+                      {allActive ? (
                         <i className="ti ti-check text-[11px]" />
                       ) : (
                         <span className="w-[11px]" />
                       )}
-                      <span className="flex-1 truncate">{f.label}</span>
+                      <span className="flex-1 truncate">All</span>
                     </button>
                   );
-                })}
+                })()}
+
+                {/* Category presets, redesigned 2026-08-10 to match
+                    SettingsPanel's Categories grid -- icon + label bubbles,
+                    2 per row, same color-on-select language. Scaled down
+                    from Settings' h-11/text-[11.5px] to fit this dropdown's
+                    narrower width, and capped at 6 regardless of how many a
+                    user has enabled in Settings -- this is a quick-access
+                    menu, not the full list (which still lives in Settings). */}
+                <div className="grid grid-cols-2 gap-1.5 px-1 mb-1">
+                  {ALL_CATEGORIES.filter((f) => visibleCategories.includes(f.value))
+                    .slice(0, 6)
+                    .map((f) => {
+                      const active = activeCustomFilter === null && categoryFilter === f.value;
+                      return (
+                        <button
+                          key={f.value}
+                          onClick={() => {
+                            clearCustomFilter();
+                            setCategoryFilter(f.value);
+                            setShowCategoryMenu(false);
+                          }}
+                          className={`flex items-center justify-center gap-1 h-9 px-1.5 rounded-full text-[10.5px] leading-tight text-center border transition-colors ${
+                            active
+                              ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
+                              : "bg-white dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <i className={`ti ${f.icon} text-accent dark:text-accentDark text-[11px] shrink-0`} />
+                          <span className="truncate">{f.label}</span>
+                        </button>
+                      );
+                    })}
+                </div>
 
                 <div className="my-1.5 border-t border-black/[0.06] dark:border-white/[0.08]" />
                 <p className="px-3.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
