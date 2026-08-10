@@ -526,6 +526,17 @@ export default function FoldersPanel({
       }
       refreshFolders(currentParentId);
       refreshRootFolders();
+      // 2026-08-10: also patch view.path in place when the toggled folder is
+      // the currently-open one -- added so the new subfolder-detail identity
+      // row's own pin button (mirrors FolderRow's) reflects the change
+      // immediately, rather than only updating once refreshFolders'
+      // *children* list comes back (which doesn't include this folder
+      // itself, only its subfolders) or the user backs out and back in.
+      setView((v) =>
+        v.kind === "detail"
+          ? { ...v, path: v.path.map((f) => (f.id === folder.id ? { ...f, pinned: !f.pinned } : f)) }
+          : v
+      );
     } catch {
       setPinMsg("pro");
       setTimeout(() => setPinMsg(null), 2600);
@@ -651,17 +662,38 @@ export default function FoldersPanel({
             compact icon-only actions (a second, differently-styled copy of
             Stack/New folder/New item) -- reported as inconsistent with the
             labeled pill-button grid the inline/root view gets. Both views
-            now share the exact same 3-column labeled-button grid below;
-            only the identity row on top is conditional. */}
+            now share the exact same 3-column labeled-button grid below.
+            The identity row itself was also restyled this same pass to
+            match FolderRow's own look (folder icon, name, plain item-count
+            number, pin toggle) instead of a plain "Name — N items" text
+            line -- reported as still reading as "the old one" next to a
+            root folder's row once the button grid below it already
+            matched. Only the leading Back control (there's no row above a
+            drilled-into subfolder to collapse back into) and using
+            items.length (this folder's freshly-fetched item list, not the
+            possibly-stale item_count off the Folder object) differ from an
+            actual FolderRow. */}
         {!inline && (
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
-            <button onClick={goBack} title="Back">
+          <div className="flex items-center gap-1 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
+            <button onClick={goBack} title="Back" className="shrink-0 p-1 -ml-1">
               <i className="ti ti-chevron-left text-[14px] text-inkMuted dark:text-inkMutedDark" />
             </button>
-            <span className="flex-1 text-[13px] font-medium truncate">{folder.name}</span>
-            <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
-              {items.length} item{items.length === 1 ? "" : "s"}
-            </span>
+            <div className="group flex-1 flex items-center gap-2.5 min-w-0">
+              <i className="ti ti-folder text-[15px] text-accent dark:text-accentDark" />
+              <span className="flex-1 text-[13px] truncate">{folder.name}</span>
+              <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">{items.length}</span>
+              <button
+                onClick={() => toggleFolderPin(folder)}
+                className={`text-xs shrink-0 transition-opacity ${
+                  folder.pinned
+                    ? "opacity-100 text-accent dark:text-accentDark"
+                    : "opacity-0 group-hover:opacity-60 text-inkMuted dark:text-inkMutedDark"
+                }`}
+                title={folder.pinned ? "Unpin" : tier === "pro" ? "Pin" : "Pin folders — Pro only"}
+              >
+                <i className={folder.pinned ? "ti ti-pinned-filled text-[13px]" : "ti ti-pin text-[13px]"} />
+              </button>
+            </div>
           </div>
         )}
         <div className="grid grid-cols-3 gap-1.5 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
