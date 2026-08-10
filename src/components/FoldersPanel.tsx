@@ -1290,7 +1290,13 @@ function FolderItemRow({
     <Reorder.Item as="div" value={item} dragListener={false} dragControls={dragControls}>
       <div
         onClick={() => (stackMode ? onToggleStack(item.id) : onEditItem(item))}
-        className="group flex items-start gap-2 px-3 py-2.5 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors"
+        // Bottom padding trimmed from the original uniform py-2.5
+        // (2026-08-10) -- with the timestamp line gone, the icon row sat
+        // noticeably far from the content above it (that spacing used to
+        // read as "content, timestamp, icons", now it was just "content,
+        // ...gap..., icons"). Top padding is untouched since that spacing
+        // is still doing its original job (room above the title/content).
+        className="group flex items-start gap-2 px-3 pt-2.5 pb-1.5 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors"
       >
         {stackMode ? (
           <span
@@ -1410,7 +1416,7 @@ function FolderItemRow({
               whole reason for showing it) and there's no other per-item
               metadata worth a line here, so this is just the icon cluster,
               right-aligned. */}
-          <div className="mt-1 flex items-center justify-end gap-1.5">
+          <div className="mt-0.5 flex items-center justify-end gap-1.5">
             {/* Copy + delete for every item, folder-add (2026-07-28, copy
                 this item into another folder) right after Duplicate since
                 they're both "make another copy of this" actions, just
