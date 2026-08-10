@@ -721,7 +721,19 @@ export default function FoldersPanel({
             />
           </div>
         )}
-        <div className="grid grid-cols-3 gap-1.5 px-3 py-2.5 border-b border-borderLight dark:border-borderDark">
+        {/* mx-2 only when !inline (2026-08-10): the inline case sits inside
+            the root list's own px-2-padded container (see the "list" branch
+            above), so this row's own px-3 already lands at the same total
+            inset as a root FolderRow. The full-screen case has no such
+            ancestor padding, so without this margin the grid measured
+            visibly wider and its three buttons came out a noticeably
+            different size than the inline version -- reported as "changes
+            slightly in size" between a folder and its subfolder. */}
+        <div
+          className={`grid grid-cols-3 gap-1.5 px-3 py-2.5 border-b border-borderLight dark:border-borderDark ${
+            inline ? "" : "mx-2"
+          }`}
+        >
           <button
             onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
             title="Select items to paste one after another, in order"
