@@ -140,6 +140,15 @@ export default function FoldersPanel({
   // render branch below) has something stable to map over.
   const [rootFolders, setRootFolders] = useState<Folder[]>([]);
   const [items, setItems] = useState<FolderItem[]>([]);
+  // Text/Screenshots split (2026-08-10) -- same "Text | Screenshots" toggle
+  // convention as the History tab, scoped to whichever folder is currently
+  // open. Text items and screenshots used to always render together in one
+  // undifferentiated "Items" list; this splits them into two views you
+  // switch between instead. Resets to "text" whenever the open folder
+  // changes (see the effect alongside refreshItems below) so switching
+  // folders doesn't carry over a filter that might hide everything in the
+  // new one.
+  const [itemsFilter, setItemsFilter] = useState<"text" | "screenshots">("text");
   const [view, setView] = useState<View>({ kind: "list" });
   const [creating, setCreating] = useState(false);
   const newItemContentRef = useRef<HTMLTextAreaElement>(null);
@@ -256,6 +265,7 @@ export default function FoldersPanel({
 
   useEffect(() => {
     if (view.kind === "detail") refreshItems(view.path[view.path.length - 1].id);
+    setItemsFilter("text");
   }, [view.kind === "detail" ? view.path[view.path.length - 1].id : null]);
 
   async function createFolder() {
@@ -504,12 +514,25 @@ export default function FoldersPanel({
   // then persist in the background. A failed persist just means the order
   // reverts next time this folder is reopened, which isn't worth surfacing
   // an error for.
+  //
+  // 2026-08-10: `newOrder` is now the reordered *visible* subset (text-only
+  // or screenshots-only, per the Text/Screenshots toggle below) rather than
+  // every item in the folder -- reorder_folder_items persists a single
+  // flat order for the whole folder, so the other kind's items (not part
+  // of this drag) need to be spliced back in rather than dropped. Since the
+  // two kinds are never shown interleaved anymore, their relative order
+  // doesn't matter for display -- they're just appended as an untouched
+  // block, on whichever side keeps the merge simple.
   async function reorderItems(folder: Folder, newOrder: FolderItem[]) {
-    setItems(newOrder);
+    const otherKindItems = items.filter(
+      (it) => it.kind !== (itemsFilter === "text" ? "text" : "screenshot")
+    );
+    const merged = itemsFilter === "text" ? [...newOrder, ...otherKindItems] : [...otherKindItems, ...newOrder];
+    setItems(merged);
     try {
       await invoke("reorder_folder_items", {
         folderId: folder.id,
-        orderedIds: newOrder.map((i) => i.id),
+        orderedIds: merged.map((i) => i.id),
       });
     } catch {
       // best effort, see above
@@ -651,6 +674,19 @@ export default function FoldersPanel({
   // back to the plain list, which is exactly "collapse" for the inline
   // case too, so it needs no special-casing here.
   function renderFolderDetail(path: Folder[], folder: Folder, inline: boolean) {
+    // Text/Screenshots split (2026-08-10) -- see itemsFilter's declaration
+    // above for why. Computed here rather than as a top-level useMemo since
+    // it only needs to exist while a folder's detail view is actually being
+    // rendered.
+    const textItems = items.filter((it) => it.kind === "text");
+    const screenshotItems = items.filter((it) => it.kind === "screenshot");
+    // The toggle (and the filtering it drives) only kicks in once there's
+    // an actual mix -- a folder with only one kind shows everything
+    // regardless of itemsFilter's value, so a folder made entirely of
+    // screenshots (say) doesn't render as empty just because itemsFilter
+    // defaulted to "text".
+    const hasBothKinds = textItems.length > 0 && screenshotItems.length > 0;
+    const visibleItems = hasBothKinds ? (itemsFilter === "text" ? textItems : screenshotItems) : items;
     return (
       <div className={inline ? "relative" : "relative flex-1 min-h-0 flex flex-col overflow-hidden"}>
         {/* Name/item-count/pin row is redundant when inline (2026-08-08) --
@@ -786,12 +822,44 @@ export default function FoldersPanel({
                   </div>
                 </>
               )}
-              {items.length > 0 && (
-                <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-1 mt-2 mb-1">
-                  Items
-                </p>
-              )}
             </div>
+          )}
+          {/* Text/Screenshots toggle (2026-08-10) -- same convention as the
+              History tab's own Text/Screenshots pill row, scoped to this
+              folder. Replaces the old plain "Items" label -- text items and
+              screenshots used to always render together in one list, which
+              got confusing once a folder had a mix of both; now you switch
+              between them instead. Only shown once there's a mix worth
+              switching between -- a folder with nothing but text items (the
+              common case) doesn't need a toggle for a view it'll never use. */}
+          {textItems.length > 0 && screenshotItems.length > 0 && (
+            <div className="grid grid-cols-2 gap-1.5 bg-black/[0.04] dark:bg-white/[0.06] rounded-full p-1 mb-2">
+              <button
+                onClick={() => setItemsFilter("text")}
+                className={`text-center text-[11px] py-1 rounded-full transition-all ${
+                  itemsFilter === "text"
+                    ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
+                    : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                }`}
+              >
+                Text ({textItems.length})
+              </button>
+              <button
+                onClick={() => setItemsFilter("screenshots")}
+                className={`text-center text-[11px] py-1 rounded-full transition-all ${
+                  itemsFilter === "screenshots"
+                    ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
+                    : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                }`}
+              >
+                Screenshots ({screenshotItems.length})
+              </button>
+            </div>
+          )}
+          {items.length > 0 && visibleItems.length > 0 && (
+            <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-1 mb-1">
+              Items
+            </p>
           )}
           {creatingItem && (
             <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.05] px-3 py-2.5 mb-1.5 space-y-1.5">
@@ -877,30 +945,39 @@ export default function FoldersPanel({
               Nothing saved here yet.
             </p>
           )}
-          {/* Drag-to-reorder (2026-07-19): Reorder.Group tracks `items` by
-              object identity, so onReorder just needs to persist whatever
-              order it hands back. Dragging is initiated only from the grip
-              handle (see FolderItemRow) so it doesn't fight with the row's
-              click-to-edit or the paste button's own click handler.
+          {/* No separate "filter hides everything" empty state needed here:
+              the toggle above only renders (and visibleItems only narrows)
+              once both kinds actually exist, so a filtered view can never
+              come up empty -- if one kind runs out, hasBothKinds goes
+              false and visibleItems falls back to showing everything. */}
+          {/* Drag-to-reorder (2026-07-19): Reorder.Group tracks `visibleItems`
+              (2026-08-10: the Text/Screenshots-filtered subset, not every
+              item in the folder -- see reorderItems' own comment for how a
+              drag within this filtered view still persists a correct order
+              for the whole folder) by object identity, so onReorder just
+              needs to persist whatever order it hands back. Dragging is
+              initiated only from the grip handle (see FolderItemRow) so it
+              doesn't fight with the row's click-to-edit or the paste
+              button's own click handler.
               2026-07-27: wrapped in the same bordered-card container as the
               Folders section above, with hairline dividers between rows
               (rendered inside each FolderItemRow, since Reorder.Item has to
               stay the direct child here) instead of each row floating with
               its own margin/rounded corners. */}
-          {items.length > 0 && (
+          {visibleItems.length > 0 && (
             <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
               <Reorder.Group
                 as="div"
                 axis="y"
-                values={items}
+                values={visibleItems}
                 onReorder={(newOrder) => reorderItems(folder, newOrder)}
               >
-                {items.map((item, idx) => (
+                {visibleItems.map((item, idx) => (
                   <FolderItemRow
                     key={item.id}
                     item={item}
                     tier={tier}
-                    isLast={idx === items.length - 1}
+                    isLast={idx === visibleItems.length - 1}
                     stackMode={stackBuilderIds !== null}
                     stackPos={stackBuilderIds?.indexOf(item.id) ?? -1}
                     onToggleStack={toggleStackItem}
