@@ -1403,13 +1403,14 @@ function FolderItemRow({
             />
           )}
 
-          {/* Metadata (left) + quick actions (right), sharing one row below
-              the content -- same layout History/Screenshots use, so the
-              icon cluster never competes with the title/content for width. */}
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <p className="text-[10.5px] text-inkMuted dark:text-inkMutedDark min-w-0">
-              {formatTimestamp(item.created_at)}
-            </p>
+          {/* Quick actions row below the content -- same position
+              History/Screenshots use for their metadata-left/icons-right
+              row, minus the metadata: when an item's saved to a folder,
+              *when it was copied* stops being interesting (that's History's
+              whole reason for showing it) and there's no other per-item
+              metadata worth a line here, so this is just the icon cluster,
+              right-aligned. */}
+          <div className="mt-1 flex items-center justify-end gap-1.5">
             {/* Copy + delete for every item, folder-add (2026-07-28, copy
                 this item into another folder) right after Duplicate since
                 they're both "make another copy of this" actions, just
