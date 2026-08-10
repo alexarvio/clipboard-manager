@@ -8,3 +8,8 @@ src-tauri/target
 .agents
 .neon
 skills-lock.json
+
+# Auto-updater signing key (see docs/auto-updates.md) -- the private half
+# must never be committed. Only the public key belongs in tauri.conf.json.
+*.key
+*.key.pub

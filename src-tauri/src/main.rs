@@ -21,6 +21,7 @@ use tauri::{
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use tauri_plugin_updater::UpdaterExt;
 
 pub struct AppState {
     pub conn: Mutex<Connection>,
@@ -1890,7 +1891,53 @@ fn main() {
         // the JS->Rust IPC boundary; a plugin's Rust API called from inside
         // one of our own #[tauri::command] functions isn't an IPC call).
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            // --- auto-update check (see docs/auto-updates.md) --------------
+            // Fire-and-forget on startup: check the endpoint configured in
+            // tauri.conf.json (a GitHub Release's latest.json), and if it
+            // points at a newer version, silently download, verify against
+            // the public key in that same config, install, and relaunch
+            // into the new build. Every step logs and returns instead of
+            // panicking -- a flaky network on startup should never stop the
+            // app from opening normally on the version already installed.
+            let updater_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let updater = match updater_handle.updater() {
+                    Ok(u) => u,
+                    Err(e) => {
+                        eprintln!("[updater] not configured: {e}");
+                        return;
+                    }
+                };
+                match updater.check().await {
+                    Ok(Some(update)) => {
+                        println!(
+                            "[updater] update {} -> {} available, downloading",
+                            update.current_version, update.version
+                        );
+                        match update
+                            .download_and_install(|_chunk_len, _total| {}, || {})
+                            .await
+                        {
+                            Ok(()) => {
+                                println!("[updater] installed, relaunching");
+                                // request_restart() (not the older restart())
+                                // is the one that reliably fires our own
+                                // WindowEvent/RunEvent handlers on the way
+                                // out -- see tauri-apps/tauri#11392, a bug
+                                // report where using the older call left the
+                                // app closed instead of relaunching.
+                                updater_handle.request_restart();
+                            }
+                            Err(e) => eprintln!("[updater] download/install failed: {e}"),
+                        }
+                    }
+                    Ok(None) => println!("[updater] already on latest version"),
+                    Err(e) => eprintln!("[updater] check failed: {e}"),
+                }
+            });
+
             let conn = Connection::open(db::db_path()).expect("failed to open db");
             db::init(&conn);
 

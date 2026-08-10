@@ -15,6 +15,13 @@ tauri-plugin-autostart = "2"
 # main.rs::ocr_uploaded_image) -- only its Rust API is used (app.dialog()),
 # never invoked from JS, so no capabilities/ACL entry is needed for it.
 tauri-plugin-dialog = "2"
+# Auto-updates (see docs/auto-updates.md): checks a GitHub Release's
+# latest.json on startup, and if it's a newer version than this build,
+# downloads + verifies it against the public key in tauri.conf.json, then
+# installs and relaunches. Only used from Rust (main.rs's setup()), never
+# invoked from JS, so no capabilities/ACL entry is needed -- same reasoning
+# as tauri-plugin-dialog above.
+tauri-plugin-updater = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }

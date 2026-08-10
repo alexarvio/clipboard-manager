@@ -1,0 +1,41 @@
+name: Release
+
+# Builds a signed Windows installer and publishes it, along with the
+# latest.json the app's auto-updater polls, to a GitHub Release -- see
+# docs/auto-updates.md. Triggered by pushing a tag like "app-v0.2.0" (this
+# workflow's own tag prefix; tauri.conf.json's "version" field is what
+# actually determines the app version baked into the build, so bump that
+# first, commit, then tag).
+on:
+  push:
+    tags:
+      - "app-v*"
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set both of these as repo secrets (Settings -> Secrets and
+          # variables -> Actions) before the first run -- see
+          # docs/auto-updates.md for where the private key file itself is.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: app-v__VERSION__
+          releaseName: "FatClipboard v__VERSION__"
+          releaseDraft: true
+          prerelease: false
