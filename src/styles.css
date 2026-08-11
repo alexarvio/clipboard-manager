@@ -16,17 +16,27 @@ body,
    match the FatClipboard accent green (2026-07-27, was a leftover pink from
    before the rebrand) -- separate light/dark rules since this is plain CSS,
    not a Tailwind class, so it can't just reference accent/dark:accentDark
-   the way everything else does. Bumped opacity up from the original 0.25 --
-   that was tuned for the old pink and read as basically invisible here. */
+   the way everything else does. Opacity bumped again 2026-08-10 (0.45 ->
+   0.65, plus a brighter :hover state) -- 0.45 still read as too faint
+   against the cream/charcoal backgrounds. If it still looks pink after this
+   change ships, the installed build predates it -- this CSS only takes
+   effect on the next `npm run tauri build` (or a `tauri dev` restart), not
+   in an already-running installed binary. */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(94, 168, 0, 0.45);
+  background: rgba(94, 168, 0, 0.65);
   border-radius: 999px;
 }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 168, 0, 0.85);
+}
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(193, 255, 114, 0.45);
+  background: rgba(193, 255, 114, 0.65);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(193, 255, 114, 0.85);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
