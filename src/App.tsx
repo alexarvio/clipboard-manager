@@ -881,8 +881,8 @@ export default function App() {
               tier={tier}
               pendingInput={pendingTransformInput}
               onConsumedPendingInput={() => setPendingTransformInput(null)}
-              onManagePresets={() => {
-                setPresetsJumpContext("text");
+              onManagePresets={(context) => {
+                setPresetsJumpContext(context);
                 setJumpToPresets(true);
                 setShowSettings(true);
               }}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "../lib/tauriShim";
 import {
-  BUILTIN_PRESETS,
+  DEFAULT_SCREENSHOT_PRESETS,
   TEXT_ELIGIBLE_PRESETS,
   MAX_VISIBLE_PRESETS,
   MAX_PRESET_LABEL_LENGTH,
@@ -22,7 +22,17 @@ interface CustomPreset {
 // typed, the rest round-trips untouched through get/save_settings).
 interface Settings {
   custom_presets: CustomPreset[];
+  // Screenshots' own fully separate custom-preset pool (2026-08-06 split,
+  // see TransformBar.tsx's matching field and settings.rs::Settings) --
+  // 2026-08-10: this tab never read either screenshot-context field despite
+  // handling screenshot-sourced input (see screenshotSource below) ever
+  // since it took over from TransformBar as where every transform happens
+  // (2026-08-03) -- reported as "presets I picked for Screenshots in
+  // Settings don't show up here." Only read/written when presetContext
+  // (derived from screenshotSource, below) is "screenshot".
+  custom_presets_screenshots?: CustomPreset[];
   visible_presets?: string[];
+  visible_presets_screenshots?: string[];
   [key: string]: unknown;
 }
 
@@ -49,7 +59,13 @@ interface TransformLogEntry {
 
 interface Props {
   tier: "free" | "pro";
-  onManagePresets: () => void;
+  // 2026-08-10: now takes which preset context ("text" vs "screenshot",
+  // see presetContext below) was active when clicked, so App.tsx can jump
+  // Settings' Presets section to the tab that actually matches -- clicking
+  // this while a screenshot's OCR'd text was loaded used to always jump to
+  // Settings' *Text* presets tab regardless, same root cause as this tab
+  // never reading visible_presets_screenshots in the first place.
+  onManagePresets: (context: "text" | "screenshot") => void;
   onOpenFolder: (folderId: number) => void;
   onCreateNewFolder: () => void;
   // Set by App.tsx when the user clicks "Transform" on an existing History
@@ -215,7 +231,13 @@ export default function TransformTab({
   useEffect(() => {
     if (tier !== "pro") return;
     invoke<Settings>("get_settings")
-      .then((s) => setLoadedSettings({ ...s, custom_presets: s.custom_presets ?? [] }))
+      .then((s) =>
+        setLoadedSettings({
+          ...s,
+          custom_presets: s.custom_presets ?? [],
+          custom_presets_screenshots: s.custom_presets_screenshots ?? [],
+        })
+      )
       .catch(console.error);
     refreshLog();
   }, [tier]);
@@ -224,14 +246,26 @@ export default function TransformTab({
     invoke<TransformLogEntry[]>("get_transform_log").then(setLog).catch(console.error);
   }
 
-  const customPresets = loadedSettings?.custom_presets ?? [];
-  const visiblePresetLabels = new Set(loadedSettings?.visible_presets ?? TEXT_ELIGIBLE_PRESETS);
-  // Filtered against TEXT_ELIGIBLE_PRESETS (not the full BUILTIN_PRESETS) so
-  // an OCR-oriented preset like "Clean up OCR errors" can never render as a
-  // chip here -- this tab always operates on plain text (pasted, typed, or
-  // History's own clips), never OCR'd screenshot content, so it was never
-  // eligible to begin with (2026-08-03 fix).
-  const visibleBuiltins = TEXT_ELIGIBLE_PRESETS.filter((p) => visiblePresetLabels.has(p));
+  // Text vs. screenshot preset context (2026-08-10) -- same split
+  // TransformBar.tsx already had (via its own `context` prop), ported here
+  // since this tab took over as where *every* transform happens, including
+  // screenshot-sourced ones (screenshotSource is only ever set for those).
+  // Derived rather than a prop since this is one shared screen, not two
+  // separate instances -- the same session can go from transforming a
+  // screenshot to transforming pasted text without remounting.
+  const presetContext: "text" | "screenshot" = screenshotSource ? "screenshot" : "text";
+  const visibleField = presetContext === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
+  const visibleFallback = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  // Filtered against the context-appropriate eligible list (not the full
+  // BUILTIN_PRESETS) so e.g. an OCR-oriented preset like "Clean up OCR
+  // errors" can never render as a chip while transforming plain text, and
+  // vice versa (2026-08-03 fix, ported alongside the rest of this split).
+  const eligibleBuiltins = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  const customField = presetContext === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
+
+  const customPresets = loadedSettings?.[customField] ?? [];
+  const visiblePresetLabels = new Set(loadedSettings?.[visibleField] ?? visibleFallback);
+  const visibleBuiltins = eligibleBuiltins.filter((p) => visiblePresetLabels.has(p));
   const visibleCustomPresets = customPresets.filter((p) => visiblePresetLabels.has(p.label));
   const visibleCount = visibleBuiltins.length + visibleCustomPresets.length;
 
@@ -244,14 +278,16 @@ export default function TransformTab({
   async function confirmSavePreset() {
     const label = presetLabel.trim();
     if (!label || !loadedSettings) return;
-    const nextVisible =
-      visibleCount < MAX_VISIBLE_PRESETS
-        ? [...(loadedSettings.visible_presets ?? BUILTIN_PRESETS), label]
-        : loadedSettings.visible_presets ?? BUILTIN_PRESETS;
+    // Only this instant's own context list gets the new label added -- a
+    // preset saved while transforming a screenshot shows up in the
+    // Screenshots preset pool, not text's, until manually enabled for both
+    // from Settings (same behavior as TransformBar always had).
+    const currentVisible = loadedSettings[visibleField] ?? visibleFallback;
+    const nextVisible = visibleCount < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
     const updated = {
       ...loadedSettings,
-      custom_presets: [...customPresets, { label, instruction: instruction.trim() }],
-      visible_presets: nextVisible,
+      [customField]: [...customPresets, { label, instruction: instruction.trim() }],
+      [visibleField]: nextVisible,
     };
     setLoadedSettings(updated);
     await invoke("save_settings", { settings: updated });
@@ -263,8 +299,8 @@ export default function TransformTab({
     if (!loadedSettings) return;
     const updated = {
       ...loadedSettings,
-      custom_presets: customPresets.filter((p) => p.label !== label),
-      visible_presets: (loadedSettings.visible_presets ?? BUILTIN_PRESETS).filter((l) => l !== label),
+      [customField]: customPresets.filter((p) => p.label !== label),
+      [visibleField]: (loadedSettings[visibleField] ?? visibleFallback).filter((l) => l !== label),
     };
     setLoadedSettings(updated);
     await invoke("save_settings", { settings: updated });
@@ -576,7 +612,7 @@ export default function TransformTab({
               Instruction
             </p>
             <button
-              onClick={onManagePresets}
+              onClick={() => onManagePresets(presetContext)}
               title="Choose which presets show up here"
               className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
             >
