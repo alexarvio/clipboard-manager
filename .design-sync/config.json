@@ -4,10 +4,22 @@
   "pkg": "clipboard-manager",
   "globalName": "ClipboardManager",
   "cssEntry": ".design-sync/.cache/compiled.css",
+  "srcDir": "src/components",
+  "entry": ".design-sync/entry.ts",
   "componentSrcMap": {
-    "App": null
+    "AuthGate": "src/components/AuthGate.tsx",
+    "ClampedText": "src/components/ClampedText.tsx",
+    "ConfirmPopover": "src/components/ConfirmPopover.tsx",
+    "Dashboard": "src/components/Dashboard.tsx",
+    "FolderPicker": "src/components/FolderPicker.tsx",
+    "FoldersPanel": "src/components/FoldersPanel.tsx",
+    "Onboarding": "src/components/Onboarding.tsx",
+    "PasteQueue": "src/components/PasteQueue.tsx",
+    "ScreenshotsPanel": "src/components/ScreenshotsPanel.tsx",
+    "SettingsPanel": "src/components/SettingsPanel.tsx",
+    "TransformBar": "src/components/TransformBar.tsx",
+    "TransformTab": "src/components/TransformTab.tsx"
   },
-  "extraEntries": ["./src/lib/tauriShim.ts"],
   "readmeHeader": ".design-sync/conventions.md",
   "docsMap": {
     "AuthGate": ".design-sync/docs-stubs/AuthGate.md",
