@@ -59,6 +59,15 @@ const startNeedsOnboarding =
   (typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("onboarding") === "0");
 
+// Browser preview defaults to free tier, same reasoning as startLoggedOut
+// above -- visit `/?tier=pro` to preview Pro-gated UI (Screenshots,
+// AI Transform, Smart search, unlimited folders/pins, etc.) without a real
+// account. Also settable at runtime via __setMockTier (see exports below),
+// for design-system previews that can't pass URL query params themselves.
+const startAsPro =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("tier") === "pro";
+
 let settings: MockSettings = {
   hotkey: "Ctrl+Shift+V",
   max_history: 200,
@@ -66,7 +75,7 @@ let settings: MockSettings = {
   theme: "light",
   server_url: "http://localhost:8787",
   app_secret: "",
-  tier: "free",
+  tier: startAsPro ? "pro" : "free",
   custom_presets: [],
   custom_presets_screenshots: [],
   custom_filters: [],
@@ -172,12 +181,38 @@ let screenshots: {
   pinned: boolean;
   created_at: string;
   thumb_data_uri: string;
+  // Was missing from this mock entirely (undefined for every item) --
+  // list_screenshots' real shape always includes it (see ocr.rs), and
+  // ScreenshotsPanel's OCR-text search/display/Transform hand-off all read
+  // it directly. Added while fixing semantic_search_screenshots below, which
+  // needs real text to match against.
+  ocr_text: string | null;
 }[] = [
-  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#6B46C1", "Screenshot 1") },
-  { id: 2, width: 1440, height: 900, pinned: false, created_at: minutesAgo(20), thumb_data_uri: fakeThumb("#B9A6F0", "Screenshot 2") },
-  { id: 3, width: 1920, height: 1080, pinned: false, created_at: daysAgo(1), thumb_data_uri: fakeThumb("#1A1816", "Screenshot 3") },
+  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#6B46C1", "Screenshot 1"), ocr_text: "Invoice #4471 — Total due: $1,240.00 — Due Jun 30, 2026" },
+  { id: 2, width: 1440, height: 900, pinned: false, created_at: minutesAgo(20), thumb_data_uri: fakeThumb("#B9A6F0", "Screenshot 2"), ocr_text: "Flight confirmation: SFO → JFK, Jun 14, 7:45 AM, Seat 14C" },
+  { id: 3, width: 1920, height: 1080, pinned: false, created_at: daysAgo(1), thumb_data_uri: fakeThumb("#1A1816", "Screenshot 3"), ocr_text: null },
 ];
 let pinnedScreenshotCount = 1;
+
+interface MockTransformLogEntry {
+  id: number;
+  input: string;
+  instruction: string;
+  output: string;
+  created_at: string;
+}
+
+// Recent-transforms log shown in TransformTab (Pro-only) -- was entirely
+// unhandled here (fell through to the generic default case, which resolves
+// `undefined` for any unrecognized command), so `get_transform_log`'s result
+// silently became `undefined` instead of `[]` and every Pro-tier TransformTab
+// render crashed on `log.length` a few lines later. Found while authoring
+// design-system previews for the Pro-tier state (2026-08-12).
+let transformLog: MockTransformLogEntry[] = [
+  { id: 1, input: "hey can u send over the doc when u get a sec", instruction: "Make formal", output: "Please be advised: hey can u send over the doc when u get a sec", created_at: minutesAgo(8) },
+  { id: 2, input: "Meeting moved to 3pm. Same room. Bring the slides.", instruction: "To bullet points", output: "• Meeting moved to 3pm\n• Same room\n• Bring the slides", created_at: minutesAgo(45) },
+];
+let nextTransformLogId = 3;
 
 const TRANSFORM_RESPONSES: Record<string, (s: string) => string> = {
   "Fix grammar": (s) => s,
@@ -370,6 +405,32 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       })) as unknown as T;
     }
 
+    // Was entirely unhandled (fell to the generic default case below, which
+    // resolves `undefined`) -- ScreenshotsPanel.tsx unconditionally does
+    // `setSmartResults(matches)` off this call's result, so any Pro-tier
+    // Smart search on the Screenshots tab crashed in browser preview. Same
+    // keyword-overlap approach as semantic_search above, matched against
+    // each screenshot's OCR'd text instead of clip content -- see
+    // ScreenshotSemanticMatch in ScreenshotsPanel.tsx for the returned shape
+    // ({ screenshot, score }, not { id, score } like the text version).
+    case "semantic_search_screenshots": {
+      await delay(null, 400);
+      if (settings.tier !== "pro") throw "upgrade to Pro to use semantic search";
+      const q = ((args.query as string) ?? "").toLowerCase();
+      const words = q.match(/[a-z0-9]+/g) ?? [];
+      const stop = new Set(["a", "an", "the", "is", "of", "for", "that", "with", "to", "and", "or", "this", "my"]);
+      const keywords = words.filter((w) => w.length > 2 && !stop.has(w));
+      if (keywords.length === 0) return [] as unknown as T;
+      const matches = screenshots.filter((s) => {
+        const text = (s.ocr_text ?? "").toLowerCase();
+        return text && !text.includes(q) && keywords.some((k) => text.includes(k));
+      });
+      return matches.map((s, i) => ({
+        screenshot: s,
+        score: Math.max(0.5, 0.92 - i * 0.05),
+      })) as unknown as T;
+    }
+
     case "list_folders": {
       const parentId = (args.parentId ?? null) as number | null;
       return delay(
@@ -528,6 +589,26 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       return `[${args.instruction}] ${args.content}` as unknown as T;
     }
 
+    case "get_transform_log":
+      return delay([...transformLog]) as Promise<T>;
+
+    case "log_transform": {
+      const entry: MockTransformLogEntry = {
+        id: nextTransformLogId++,
+        input: args.input as string,
+        instruction: args.instruction as string,
+        output: args.output as string,
+        created_at: new Date().toISOString(),
+      };
+      transformLog = [entry, ...transformLog];
+      return delay(undefined as T);
+    }
+
+    case "delete_transform_log_entry": {
+      transformLog = transformLog.filter((l) => l.id !== args.id);
+      return delay(undefined as T);
+    }
+
     case "paste_text":
       console.log("[mock] paste_text", args.text);
       return delay(undefined as T);
@@ -671,4 +752,12 @@ export async function invoke<T>(cmd: string, args?: Record<string, unknown>): Pr
 export function getCurrentWindow() {
   if (isTauri) return tauriGetCurrentWindow();
   return createMockWindow() as unknown as ReturnType<typeof tauriGetCurrentWindow>;
+}
+
+// Runtime companion to the `?tier=pro` URL override above -- for callers that
+// render this app's components directly (e.g. design-system preview stories)
+// rather than loading index.html with a query string. No-ops under real
+// Tauri, same as the rest of this file's mock surface.
+export function __setMockTier(tier: "free" | "pro") {
+  if (!isTauri) settings = { ...settings, tier };
 }

@@ -1,0 +1,44 @@
+{
+  "projectId": "4db6ff14-3b69-4c8c-a5b6-bc8f282125e9",
+  "shape": "package",
+  "pkg": "clipboard-manager",
+  "globalName": "ClipboardManager",
+  "cssEntry": ".design-sync/.cache/compiled.css",
+  "componentSrcMap": {
+    "App": null
+  },
+  "extraEntries": ["./src/lib/tauriShim.ts"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "docsMap": {
+    "AuthGate": ".design-sync/docs-stubs/AuthGate.md",
+    "Onboarding": ".design-sync/docs-stubs/Onboarding.md",
+    "Dashboard": ".design-sync/docs-stubs/Dashboard.md",
+    "FoldersPanel": ".design-sync/docs-stubs/FoldersPanel.md",
+    "FolderPicker": ".design-sync/docs-stubs/FolderPicker.md",
+    "ScreenshotsPanel": ".design-sync/docs-stubs/ScreenshotsPanel.md",
+    "SettingsPanel": ".design-sync/docs-stubs/SettingsPanel.md",
+    "TransformBar": ".design-sync/docs-stubs/TransformBar.md",
+    "TransformTab": ".design-sync/docs-stubs/TransformTab.md",
+    "PasteQueue": ".design-sync/docs-stubs/PasteQueue.md",
+    "ClampedText": ".design-sync/docs-stubs/ClampedText.md",
+    "ConfirmPopover": ".design-sync/docs-stubs/ConfirmPopover.md"
+  },
+  "dtsPropsFor": {
+    "ClampedText": "text: string; className: string; lines?: 2 | 3 | 4; icon?: React.ReactNode; expanded?: boolean; onToggleExpanded?: () => void;",
+    "PasteQueue": "items: { id: number; content: string }[]; index: number; onPasteNext: () => void; onCancel: () => void;",
+    "ConfirmPopover": "position: { top: number; left: number }; message: string; confirmLabel?: string; onConfirm: () => void; onCancel: () => void;",
+    "FolderPicker": "position: { top: number; left: number }; savedIn?: { id: number; name: string }[]; onClose: () => void; onAdd: (folderId: number) => void | Promise<void>; onOpenFolder?: (folderId: number) => void; onCreateNewFolder?: () => void;",
+    "AuthGate": "onAuthenticated: (settings: { auth_token: string; user_email: string; first_name: string; onboarding_complete: boolean; [key: string]: unknown }) => void;",
+    "Onboarding": "onDone: (theme: \"dark\" | \"light\") => void;",
+    "Dashboard": "",
+    "TransformBar": "content: string; onDone: () => void; onCancel: () => void; onManagePresets?: () => void; context?: \"text\" | \"screenshot\"; showInputPreview?: boolean;",
+    "TransformTab": "tier: \"free\" | \"pro\"; onManagePresets: (context: \"text\" | \"screenshot\") => void; onOpenFolder: (folderId: number) => void; onCreateNewFolder: () => void; pendingInput?: { content: string; seed: number; sourceImage?: { thumb_data_uri: string; width: number; height: number; screenshot_id: number } } | null; onConsumedPendingInput?: () => void;",
+    "ScreenshotsPanel": "tier: \"free\" | \"pro\"; query?: string; searchMode?: \"text\" | \"smart\"; onPasted?: () => void; onOpenFolder?: (folderId: number) => void; onCreateNewFolder?: () => void; onTransformItem?: (content: string) => void;",
+    "FoldersPanel": "onPasted: () => void; tier: \"free\" | \"pro\"; openFolderId?: number | null; onOpenedFolder?: () => void; onMembershipsChanged?: () => void; startCreating?: boolean; onStartedCreating?: () => void; onStartPasteQueue: (entries: { id: number; content: string }[]) => void; onTransformItem?: (content: string) => void;",
+    "SettingsPanel": "onClose: () => void; onThemeChange?: (theme: \"dark\" | \"light\") => void; onTierChange?: (tier: \"free\" | \"pro\") => void; onFirstNameChange?: (name: string) => void; onVisibleCategoriesChange?: (categories: string[]) => void; scrollToPresets?: boolean; onScrolledToPresets?: () => void; initialPresetContext?: \"text\" | \"screenshot\"; onLoggedOut?: () => void; activeCustomFilter?: string | null; onApplyCustomFilter?: (filter: { name: string; prompt: string }) => void; onClearCustomFilter?: () => void;"
+  },
+  "overrides": {
+    "ConfirmPopover": { "cardMode": "single", "viewport": "320x220" },
+    "FolderPicker": { "cardMode": "single", "viewport": "320x420" }
+  }
+}
