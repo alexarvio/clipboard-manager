@@ -245,7 +245,14 @@
     position: relative;
     width: 430px; margin-left: auto;
     pointer-events: none;
-    --p-bg: var(--creamSurface);
+    /* var(--cream), not var(--creamSurface) (2026-08-13 fix) -- this
+       represents the app's actual root window, which is bg-cream (pure
+       white in light mode) per App.tsx, not a tan creamSurface tone. The
+       Pinned/date-group cards inside are pillTint now (see --p-pillTint
+       above), which already contrasts fine against a plain white window --
+       no separate tan "frame" color is needed, and the real app doesn't
+       have one either. */
+    --p-bg: var(--cream);
     --p-surface: var(--surface);
     --p-pillTint: var(--pillTint);
     --p-ink: var(--ink);
@@ -505,7 +512,19 @@
      pin, transform, settings) visibly wider than every other mockup on the
      page. margin-left/right: auto keeps it centered in its column same as
      before now that it isn't forced to fill it. */
-  .f-visual { width: 100%; max-width: 440px; margin: 0 auto; background: var(--creamSurface); border: 1px solid var(--borderLight); border-radius: 16px; padding: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  /* background: var(--cream), not var(--creamSurface) (2026-08-13 fix) --
+     this is a generic device-frame wrapper around each feature's mockup
+     (folder-viz/pin-viz/transform-viz/settings-viz), and none of those have
+     their own solid background -- they're either transparent (settings-viz,
+     transform-viz) or already carry their own card fill (folder-viz/
+     pin-viz are pillTint cards now). A creamSurface frame behind them added
+     a tan "card behind the card" look with no equivalent anywhere in the
+     real app, which never wraps a screen's content in an extra colored
+     frame -- everything just sits on the plain page background. Matches
+     that now: var(--cream) is the same color as the page itself, so this
+     reads as a plain bordered box, not a second surface layered underneath
+     the real cards inside it. */
+  .f-visual { width: 100%; max-width: 440px; margin: 0 auto; background: var(--cream); border: 1px solid var(--borderLight); border-radius: 16px; padding: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
   .pin-viz { width: 100%; }
   /* ---- dedicated Screenshots section (previously just one alternating
@@ -539,19 +558,20 @@
      themes, and the shadow's flat rgba(26,24,22,..) is now backed by a
      theme-aware hairline ring (rgba(var(--ink-rgb),..)) so there's still a
      visible edge even where the shadow itself goes flat against dark. */
-  /* background: var(--creamSurface), not var(--surface) (2026-08-09) -- the
-     real app's own root window is bg-cream, and its active tab pill is
-     bg-white, a real color difference the active pill pops against. Our
-     mockup card was standing in for that whole app window but used
-     var(--surface) (pure white) for itself, the exact same color as the
-     "on" pill below, so the active tab read as invisible -- the previous
-     fix papered over that by adding a tinted track behind the tab row,
-     which doesn't exist in the real app and looked like a different
-     control entirely. Using var(--creamSurface) for the card itself (still
-     distinct from the plain var(--cream) Features section behind it, same
-     as .price-table) restores the actual white-pill-on-cream contrast the
-     real app has, with no extra track needed. */
-  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--creamSurface); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08); padding: 16px; pointer-events: none; }
+  /* background: var(--cream), not var(--creamSurface) (2026-08-13 fix, was
+     var(--surface) before an 2026-08-09 fix, see the superseded reasoning
+     below) -- this card stands in for the app's actual root window, which
+     is bg-cream, not a tan creamSurface tone (same fix as .panel's --p-bg
+     above). The 2026-08-09 change to creamSurface was making up for
+     var(--cream) and var(--surface) being two different colors *at the
+     time* (pre-rebrand cream was still tan, so a white active tab pill
+     genuinely vanished against it) -- post-rebrand, --cream is pure white,
+     identical to --surface, so that gap no longer exists: the active tab's
+     own box-shadow below is what actually defines it, same "white-on-white,
+     ring-defined" pattern the rest of the app relies on (see
+     SettingsPanel.tsx's Section card doc comment for the real-app version
+     of this same reasoning). */
+  .shot-mock-card { width: 100%; max-width: 440px; margin-left: auto; background: var(--cream); border-radius: 20px; box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08); padding: 16px; pointer-events: none; }
   /* Real app's top toolbar (2026-08-09) -- History/Transform/Folders tab row
      + the Text/Screenshots sub-toggle sit above the search bar in the actual
      app (see App.tsx's grid-cols-3 tab row and the grid-cols-2 sub-toggle
