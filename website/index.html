@@ -32,6 +32,13 @@
     --accent: #7C6FE3;
     --accentFill: #EDEAFB;
     --charcoal: #1C1A17;
+    /* Matches the app's own pillTint/charcoalSurface token (2026-08-13,
+       new) -- for item-list/pill-shaped containers (the Transform mockup's
+       freeform instruction box below) that need a light lavender tint
+       distinct from both plain --cream and the stronger --accentFill used
+       for genuine accent-highlight boxes. See tailwind.config.js's pillTint
+       comment for the same distinction in the real app. */
+    --pillTint: #F6F4FB;
     /* Companion rgb-triplet vars (2026-08-09, dark mode) -- lets literal
        rgba(...) tints elsewhere in this file (hover backgrounds, chip
        fills, translucent overlays) flip alongside --ink/--cream/--accent
@@ -67,6 +74,9 @@
     --borderLight: rgba(255,255,255,0.08);
     --accent: #B7A9FF;
     --accentFill: #332B4D;
+    /* Dark equivalent of pillTint above -- matches the app's own
+       dark:bg-charcoalSurface pairing wherever bg-pillTint is used. */
+    --pillTint: #262320;
     --ink-rgb: 242,238,227;
     --cream-rgb: 28,26,23;
     /* Same stale-leftover fix as :root above -- this was rgb of the old
@@ -272,12 +282,19 @@
   .panel-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 16px 0; }
   .panel-tab { text-align: center; font-size: 11.5px; font-weight: 500; padding: 6px 0; border-radius: 999px; color: var(--p-ink); }
   .panel-tab.active { background: var(--p-surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .panel-subtabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px 16px 2px; }
-  .panel-subtab { text-align: center; font-size: 10.5px; font-weight: 500; padding: 5px 0; border-radius: 999px; color: var(--p-ink); }
-  .panel-subtab.active { background: var(--p-surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .toolbar-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 16px 6px; }
-  .tool-chip { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--p-ink); background: var(--p-search-bg); padding: 6px 8px; border-radius: 999px; }
-  .tool-chip i:last-child { font-size: 9px; }
+  /* Rebuilt off App.tsx's actual redesign (2026-08-13) -- Text/Screenshots
+     used to be a small fully-round "History/Screenshots" pill pair
+     (.panel-subtabs/.panel-subtab) with a separate always-visible Filter/
+     Date/Stack toolbar row underneath (.toolbar-row/.tool-chip) -- both
+     replaced by the rules below. The real app now has one bigger,
+     less-rounded split-button row, each pill holding its own trailing
+     chevron that opens a dropdown for Filter/Date/Stack (Text) or just Date
+     (Screenshots) -- nothing to show open on a static mockup, so this just
+     renders the collapsed row. */
+  .text-ss-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px 16px 6px; }
+  .text-ss-pill { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 8px 0; border-radius: 8px; color: var(--p-ink); }
+  .text-ss-pill.on { background: var(--p-surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .text-ss-pill i { font-size: 9px; opacity: 0.65; }
   .panel-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--p-inkMuted); padding: 6px 16px 6px; }
   .panel-group { margin: 0 16px 12px; border-radius: 16px; background: var(--p-surface); box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); overflow: hidden; }
   .panel-item { padding: 12px 14px; }
@@ -357,10 +374,25 @@
   .tv-presetcount { display: flex; align-items: center; gap: 4px; color: var(--inkMuted); font-size: 10.5px; }
   .tv-box { background: rgba(var(--ink-rgb),0.03); border: 1px solid var(--borderLight); border-radius: 10px; padding: 10px 11px; margin-bottom: 12px; }
   .tv-input-text { font-size: 13px; line-height: 1.5; color: var(--ink); }
-  .tv-presets { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 9px; }
-  .tv-preset { font-size: 10.5px; font-weight: 500; padding: 5px 9px; border-radius: 6px; background: rgba(var(--accent-rgb),0.1); color: var(--ink); }
-  .tv-preset.on { background: rgba(var(--accent-rgb),0.25); }
-  .tv-freeform { display: flex; align-items: center; background: var(--cream); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 8px; padding: 7px 10px; font-size: 11.5px; color: var(--inkMuted); margin-bottom: 8px; }
+  /* Rebuilt off TransformTab.tsx's redesign (2026-08-13) -- Instruction is
+     now a Presets/Custom tab switcher (.tv-instr-tabs/.tv-instr-tab, new)
+     with only one group's chips visible at a time, instead of every builtin
+     and custom preset thrown into one loose flex-wrap row together. Chips
+     themselves are also now a uniform 2-column grid, fixed height, centered
+     text (.tv-preset below) rather than each one sized to its own label. */
+  .tv-instr-tabs { display: flex; gap: 3px; background: rgba(var(--ink-rgb),0.05); border-radius: 8px; padding: 3px; width: fit-content; margin-bottom: 9px; }
+  .tv-instr-tab { font-size: 10.5px; font-weight: 500; padding: 5px 10px; border-radius: 6px; color: var(--inkMuted); }
+  .tv-instr-tab.on { background: var(--p-surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .tv-presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 9px; }
+  .tv-preset { display: flex; align-items: center; justify-content: center; height: 28px; font-size: 10.5px; font-weight: 500; border-radius: 8px; background: rgba(var(--accent-rgb),0.1); color: var(--ink); }
+  .tv-preset.on { background: rgba(var(--accent-rgb),0.25); font-weight: 600; }
+  /* background: var(--pillTint), not var(--cream) (2026-08-13 fix) -- with
+     --cream now white (post-rebrand), a plain var(--cream) fill here
+     rendered as flat white with no contrast against the --tv-box container
+     around it (also a near-white tint), which read as a stale, un-rebranded
+     box next to everything else. The real app's own freeform instruction
+     field uses bg-pillTint for exactly this reason. */
+  .tv-freeform { display: flex; align-items: center; background: var(--pillTint); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 8px; padding: 7px 10px; font-size: 11.5px; color: var(--inkMuted); margin-bottom: 8px; }
   .tv-run-row { display: flex; gap: 6px; }
   .tv-run { flex: 1; text-align: center; font-size: 11px; font-weight: 500; padding: 7px 0; border-radius: 8px; background: rgba(var(--accent-rgb),0.15); color: var(--ink); }
   .tv-save { padding: 7px 10px; border-radius: 8px; background: rgba(var(--accent-rgb),0.1); color: var(--ink); font-size: 12px; }
@@ -664,14 +696,9 @@
           <span class="panel-tab">Transform</span>
           <span class="panel-tab">Folders</span>
         </div>
-        <div class="panel-subtabs">
-          <span class="panel-subtab active">History</span>
-          <span class="panel-subtab">Screenshots</span>
-        </div>
-        <div class="toolbar-row">
-          <span class="tool-chip"><i class="ti ti-filter"></i> Filter <i class="ti ti-chevron-down"></i></span>
-          <span class="tool-chip"><i class="ti ti-calendar"></i> Date <i class="ti ti-chevron-down"></i></span>
-          <span class="tool-chip"><i class="ti ti-list-numbers"></i> Stack</span>
+        <div class="text-ss-row">
+          <span class="text-ss-pill on">Text <i class="ti ti-chevron-down"></i></span>
+          <span class="text-ss-pill">Screenshots <i class="ti ti-chevron-down"></i></span>
         </div>
         <div class="panel-label">Pinned</div>
         <div class="panel-group">
@@ -920,18 +947,23 @@
 
           <div class="tv-label-row">
             <span class="tv-label">Instruction</span>
-            <span class="tv-presetcount">4/6 presets <i class="ti ti-settings"></i></span>
+            <span class="tv-presetcount">1/6 custom <i class="ti ti-settings"></i></span>
           </div>
           <div class="tv-box">
-            <!-- "Translate into Spanish" isn't one of BUILTIN_PRESETS (see
-                 lib/presets.ts) -- it's shown here as a saved *custom*
-                 preset instead (what "Save as preset" in the real Transform
-                 panel produces), sitting alongside three builtins with no
-                 visual distinction between the two kinds, same as the real
-                 chip row. Highlighted/"on" to show the mechanics: pick a
-                 saved preset -> its instruction fills the box below -> Run. -->
+            <!-- Instruction is now a Presets/Custom tab switcher (2026-08-13,
+                 was one flex-wrap row mixing builtins and custom presets
+                 together) -- only one group shows at a time. "Spanish" isn't
+                 one of BUILTIN_PRESETS (see lib/presets.ts); it's a saved
+                 *custom* preset (what "Save as preset" produces), so Custom
+                 is the tab shown active/selected here, with its one saved
+                 preset highlighted to show the mechanics: pick a saved
+                 preset -> its instruction fills the box below -> Run. -->
+            <div class="tv-instr-tabs">
+              <span class="tv-instr-tab">Presets</span>
+              <span class="tv-instr-tab on">Custom</span>
+            </div>
             <div class="tv-presets">
-              <span class="tv-preset">Fix grammar</span><span class="tv-preset">Make formal</span><span class="tv-preset">Make casual</span><span class="tv-preset on">Translate into Spanish</span>
+              <span class="tv-preset on">Spanish</span>
             </div>
             <div class="tv-freeform">Translate into Spanish</div>
             <div class="tv-run-row"><span class="tv-run">Run</span><span class="tv-save"><i class="ti ti-device-floppy"></i></span></div>
