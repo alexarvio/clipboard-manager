@@ -226,22 +226,28 @@
   .hotkey-tag { top: -60px; right: 20px; font-size: 12.5px; }
   .hotkey-tag kbd { background: rgba(255,255,255,0.16); color: var(--cream); padding: 2px 6px; border-radius: 5px; font-size: 10.5px; border-bottom: 1px solid rgba(255,255,255,0.22); }
 
-  /* Rebuilt directly off src/App.tsx's real Tailwind classes (2026-08-08)
-     rather than eyeballed from screenshots -- window is 480px wide
-     (tauri.conf.json), tabs/sub-toggle/toolbar are all literally
+  /* Rebuilt directly off src/App.tsx's real Tailwind classes (2026-08-08,
+     updated 2026-08-13) rather than eyeballed from screenshots -- window is
+     480px wide (tauri.conf.json), tabs/sub-toggle/toolbar are all literally
      grid-cols-3 or grid-cols-2 with centered text (see the comment block
      starting "Same grid-cols-3 as the tab row" in App.tsx), and the
-     Pinned/Today lists are each one rounded-2xl card
-     (bg-creamSurface/70 ring-1 ring-black/[0.15] shadow-card) wrapping
-     flat item rows (px-3.5 py-3) separated by a 1px border, not
-     individually-highlighted pills. Colors are scoped custom properties
-     matching the app's actual light palette (see tailwind.config.js). */
+     Pinned/date-group lists are each one rounded-xl card
+     (bg-pillTint dark:bg-charcoalSurface ring-1 ring-black/[0.15]
+     shadow-card) wrapping flat item rows separated by a 1px border, not
+     individually-highlighted pills. This was bg-creamSurface/70 as of
+     2026-08-08, but the app moved to bg-pillTint for these list cards in
+     the cream/green -> white/lavender rebrand shortly after -- the mockup
+     was never updated to follow, so it kept rendering plain white/cream
+     cards with no lavender anywhere in sight. Colors are scoped custom
+     properties matching the app's actual light palette (see
+     tailwind.config.js). */
   .panel-mock {
     position: relative;
     width: 430px; margin-left: auto;
     pointer-events: none;
     --p-bg: var(--creamSurface);
     --p-surface: var(--surface);
+    --p-pillTint: var(--pillTint);
     --p-ink: var(--ink);
     --p-inkMuted: var(--inkMuted);
     --p-border: var(--borderLight);
@@ -271,7 +277,11 @@
   .panel-brand-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 4px; }
   .panel-brand-row img { height: 20px; width: auto; display: block; }
   .panel-brand-row i { color: var(--p-inkMuted); font-size: 15px; }
-  .panel-search { display: flex; align-items: center; gap: 8px; padding: 6px 16px 12px; border-bottom: 1px solid var(--p-border); }
+  /* Lavender pill, not a bordered flat row (2026-08-13 fix) -- the real
+     search bar (App.tsx) is a rounded-full bg-pillTint box, not a plain row
+     with a bottom divider; this mockup had never had any lavender in it at
+     all. */
+  .panel-search { display: flex; align-items: center; gap: 8px; margin: 4px 16px 10px; padding: 9px 14px; border-radius: 999px; background: var(--p-pillTint); }
   .panel-search i.ti-search { color: var(--p-inkMuted); font-size: 14px; }
   .panel-search .ph { flex: 1; font-size: 13px; color: var(--p-inkMuted); }
   .search-toggle { display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--p-search-bg); }
@@ -296,7 +306,10 @@
   .text-ss-pill.on { background: var(--p-surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
   .text-ss-pill i { font-size: 9px; opacity: 0.65; }
   .panel-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--p-inkMuted); padding: 6px 16px 6px; }
-  .panel-group { margin: 0 16px 12px; border-radius: 16px; background: var(--p-surface); box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); overflow: hidden; }
+  /* background: var(--p-pillTint), not var(--p-surface) (2026-08-13 fix) --
+     see the .panel-mock comment above; these cards are lavender-tinted in
+     the real app, not plain white. */
+  .panel-group { margin: 0 16px 12px; border-radius: 16px; background: var(--p-pillTint); box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); overflow: hidden; }
   .panel-item { padding: 12px 14px; }
   .panel-item + .panel-item { border-top: 1px solid var(--p-border); }
   .item-text { font-size: 13.5px; color: var(--p-ink); line-height: 1.4; }
@@ -310,7 +323,13 @@
 
   /* Matches FoldersPanel.tsx's actual row: icon, name, count, hover-only
      pin, trailing chevron. */
-  .folder-viz { width: 100%; }
+  /* Wrapped in its own lavender card (2026-08-13, new) -- FoldersPanel.tsx
+     groups the plain top-level folder list into "the same bordered-card
+     treatment as History/Screenshots' boxed lists" (its own doc comment),
+     i.e. a bg-pillTint card, same as .panel-group/.pin-card above. This had
+     no card treatment at all before -- just loose rows straight on the
+     creamSurface feature-box background, no lavender anywhere. */
+  .folder-viz { width: 100%; background: var(--pillTint); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); padding: 6px; }
   .folder-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; }
   .folder-row:hover, .folder-row.on { background: var(--surface); }
   .folder-row i.ti-folder, .folder-row i.ti-folder-filled { color: var(--accent); width: 16px; }
@@ -327,7 +346,10 @@
   .folder-open-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 2px; }
   .folder-open-action { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 500; padding: 6px 4px; border-radius: 999px; background: rgba(var(--ink-rgb),0.05); color: var(--ink); white-space: nowrap; }
   .folder-open-action i { font-size: 11px; }
-  .folder-open-card { background: var(--surface); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
+  /* background: var(--pillTint), not var(--surface) (2026-08-13 fix) --
+     matches FoldersPanel.tsx's real bg-pillTint item-list card; was plain
+     white/creamSurface-adjacent with no lavender at all. */
+  .folder-open-card { background: var(--pillTint); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
   /* Matches FolderItemRow's real structure -- a leading drag-grip handle,
      clamped text with its own "Show more" line, then date + the
      copy/duplicate/folder/transform/delete icon row sharing one line
@@ -352,7 +374,10 @@
      self-explanatory. Shown persistently here on purpose. */
   .pin-viz { width: 100%; }
   .pin-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); margin-bottom: 6px; }
-  .pin-card { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
+  /* background: var(--pillTint), not var(--surface) (2026-08-13 fix) --
+     matches App.tsx's real Pinned-group card (bg-pillTint), same fix as
+     .panel-group above. */
+  .pin-card { background: var(--pillTint); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); }
   .pin-item { padding: 12px 14px; }
   .pin-item + .pin-item { border-top: 1px solid var(--borderLight); }
   .pin-item .item-text { font-size: 13px; color: var(--ink); line-height: 1.45; }
@@ -537,9 +562,15 @@
   .shot-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
   .shot-tab { text-align: center; font-size: 11px; padding: 7px 0; border-radius: 999px; color: var(--inkMuted); }
   .shot-tab.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(26,24,22,0.08); }
+  /* border-radius: 8px, not 999px (2026-08-13 fix) -- same Text/Screenshots
+     redesign as the hero mockup's .text-ss-pill: bigger, less-rounded split
+     buttons with a trailing chevron, not small fully-round pills. Two
+     separate mockups on this page both had the pre-redesign pill shape;
+     this is the second one (see .text-ss-row's comment for the first). */
   .shot-subtabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
-  .shot-subtab { text-align: center; font-size: 10.5px; padding: 6px 0; border-radius: 999px; color: var(--inkMuted); }
+  .shot-subtab { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 7px 0; border-radius: 8px; color: var(--inkMuted); }
   .shot-subtab.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(26,24,22,0.08); }
+  .shot-subtab i { font-size: 9px; opacity: 0.65; }
   .shot-search-lg { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(var(--ink-rgb),0.05); border-radius: 999px; padding: 9px 9px 9px 13px; font-size: 12.5px; color: var(--inkMuted); margin-bottom: 10px; }
   .shot-search-lg .shot-search-text { display: flex; align-items: center; gap: 8px; }
   .shot-search-toggle { display: flex; align-items: center; gap: 2px; background: rgba(var(--ink-rgb),0.06); border-radius: 999px; padding: 2px; flex-shrink: 0; }
@@ -817,8 +848,8 @@
           <div class="shot-tab">Folders</div>
         </div>
         <div class="shot-subtabs">
-          <div class="shot-subtab">Text</div>
-          <div class="shot-subtab on">Screenshots</div>
+          <div class="shot-subtab">Text <i class="ti ti-chevron-down"></i></div>
+          <div class="shot-subtab on">Screenshots <i class="ti ti-chevron-down"></i></div>
         </div>
         <div class="shot-row on">
           <div class="shot-img"><img src="assets/screenshots/fake-invoice.svg" alt="" loading="lazy"></div>
