@@ -63,7 +63,7 @@ function passwordResetEmailHtml(token) {
       <p style="font-size: 20px; margin: 0 0 16px;">Reset your Clip password</p>
       <p>Someone (hopefully you) asked to reset the password on this account. Copy the code below and paste it into Clip's "Reset password" screen, along with your new password.</p>
       <p style="margin: 24px 0; text-align: center;">
-        <span style="display: inline-block; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 15px; letter-spacing: 0.02em; background: #F2EEE3; border-radius: 8px; padding: 12px 16px; word-break: break-all;">${token}</span>
+        <span style="display: inline-block; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 15px; letter-spacing: 0.02em; background: #FFFFFF; border-radius: 8px; padding: 12px 16px; word-break: break-all;">${token}</span>
       </p>
       <p style="color: #6E6859; font-size: 13px;">This code expires in 1 hour and can only be used once. If you didn't request this, you can safely ignore this email -- your password hasn't changed.</p>
       <p style="color: #6E6859; font-size: 13px; margin-top: 24px;">-- The Clip team</p>

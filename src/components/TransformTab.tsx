@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "../lib/tauriShim";
 import {
@@ -55,6 +55,13 @@ interface TransformLogEntry {
   instruction: string;
   output: string;
   created_at: string;
+  // Set only when this run came from clicking a preset button (builtin or
+  // custom) rather than the freeform Custom field -- see db.rs's
+  // preset_label migration. Recent's row title falls back to `instruction`
+  // when this is null (2026-08-13 fix -- a preset-triggered run used to
+  // always show its raw instruction/prompt text there instead of the
+  // preset's actual name).
+  preset_label: string | null;
 }
 
 interface Props {
@@ -95,6 +102,25 @@ interface Props {
 // was clicked instead of every copy/save-shaped button in the tab at once.
 type ActionTarget = number | "main";
 
+// Caps how much text a single transform run can carry (2026-08-13, added
+// alongside making Input auto-grow -- previously there was no limit at all
+// on the client, so nothing stopped someone from pasting in, say, a whole
+// novel and firing it at the AI endpoint). 20k characters is roughly
+// 4-5k tokens, generous for "an email, a paragraph, a long article" -- the
+// stated use case in this tab's Free-tier upsell copy above -- while still
+// keeping a single run's request/cost bounded. Enforced via the textarea's
+// own maxLength, so pasting something longer just truncates at the limit
+// rather than silently failing the run afterward.
+const MAX_TRANSFORM_INPUT_LENGTH = 20000;
+
+// Old fixed box was rows={7} at this tab's text-[13px]/py-2/leading-normal ~
+// 152px tall in practice. 1.5x that is the new default/minimum; it can grow
+// past it as content is typed/pasted, capped at MAX_TEXTAREA_PX so a huge
+// paste scrolls internally instead of shoving Instruction/Output/Recent
+// further down the tab on every keystroke.
+const MIN_TEXTAREA_PX = 228;
+const MAX_TEXTAREA_PX = 480;
+
 // The standalone AI Transform tab (added 2026-07-22, taking over Screenshots'
 // old top-level tab slot -- Screenshots moved into a History sub-toggle).
 // Originally just for freeform pasted text (paste in an email/webpage/
@@ -118,6 +144,12 @@ export default function TransformTab({
 }: Props) {
   const [input, setInput] = useState("");
   const [instruction, setInstruction] = useState("");
+  // Instruction box redesign (2026-08-13) -- presets and the freeform
+  // "write your own" field used to both be visible at once, stacked with a
+  // divider between them. Split into two tabs instead so only one group
+  // shows at a time; defaults to Presets since picking one is the faster,
+  // more common path when any are enabled.
+  const [instructionTab, setInstructionTab] = useState<"presets" | "custom">("presets");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -176,6 +208,13 @@ export default function TransformTab({
   // preview with a stale/wrong image.
   const previewRequestId = useRef<number | null>(null);
 
+  // Input auto-grow (2026-08-13) -- was a fixed rows={7} box that clipped
+  // anything longer with an inner scrollbar; now starts at 1.5x that
+  // default height and grows with the content up to MAX_TEXTAREA_PX, past
+  // which it scrolls internally instead of pushing the rest of the tab
+  // (Instruction/Output/Recent) further down every keystroke.
+  const inputTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   // "Add image" dropdown (2026-08-07) -- previously the only way to get an
   // image's text into Input was uploadImage's native file dialog; there was
   // no way to reuse a screenshot already captured by the app itself without
@@ -228,6 +267,17 @@ export default function TransformTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingInput?.seed]);
 
+  // Re-measures on every Input change (typing, pasting, or pendingInput
+  // handing over a whole item's content at once) -- resetting height to
+  // "auto" first is what lets scrollHeight shrink back down too, not just
+  // grow, e.g. after clearing a long paste back out.
+  useLayoutEffect(() => {
+    const el = inputTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, MIN_TEXTAREA_PX), MAX_TEXTAREA_PX)}px`;
+  }, [input]);
+
   useEffect(() => {
     if (tier !== "pro") return;
     invoke<Settings>("get_settings")
@@ -255,19 +305,24 @@ export default function TransformTab({
   // screenshot to transforming pasted text without remounting.
   const presetContext: "text" | "screenshot" = screenshotSource ? "screenshot" : "text";
   const visibleField = presetContext === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
-  const visibleFallback = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
+  // Empty (2026-08-13, was the eligible-builtins list) -- visibleField only
+  // ever tracks *custom* preset selection now, so there's nothing
+  // context-appropriate to default it to besides "none shown yet."
+  const visibleFallback: string[] = [];
   // Filtered against the context-appropriate eligible list (not the full
   // BUILTIN_PRESETS) so e.g. an OCR-oriented preset like "Clean up OCR
   // errors" can never render as a chip while transforming plain text, and
   // vice versa (2026-08-03 fix, ported alongside the rest of this split).
+  // Always all of them now (2026-08-13, was filtered against
+  // visiblePresetLabels) -- built-ins are no longer optional, so there's no
+  // "shown/hidden" distinction left to apply here.
   const eligibleBuiltins = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
   const customField = presetContext === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
 
   const customPresets = loadedSettings?.[customField] ?? [];
   const visiblePresetLabels = new Set(loadedSettings?.[visibleField] ?? visibleFallback);
-  const visibleBuiltins = eligibleBuiltins.filter((p) => visiblePresetLabels.has(p));
+  const visibleBuiltins = eligibleBuiltins;
   const visibleCustomPresets = customPresets.filter((p) => visiblePresetLabels.has(p.label));
-  const visibleCount = visibleBuiltins.length + visibleCustomPresets.length;
 
   function startSavingPreset() {
     if (!instruction.trim()) return;
@@ -283,7 +338,8 @@ export default function TransformTab({
     // Screenshots preset pool, not text's, until manually enabled for both
     // from Settings (same behavior as TransformBar always had).
     const currentVisible = loadedSettings[visibleField] ?? visibleFallback;
-    const nextVisible = visibleCount < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
+    const nextVisible =
+      visibleCustomPresets.length < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
     const updated = {
       ...loadedSettings,
       [customField]: [...customPresets, { label, instruction: instruction.trim() }],
@@ -322,7 +378,12 @@ export default function TransformTab({
       // Logged here (not in transform_clip itself) since only this tab
       // wants a browsable history of runs -- TransformBar's per-item
       // in-place fixes don't.
-      await invoke("log_transform", { input, instruction: finalInstruction, output: transformed });
+      await invoke("log_transform", {
+        input,
+        instruction: finalInstruction,
+        output: transformed,
+        presetLabel: presetLabel ?? null,
+      });
       refreshLog();
     } catch (e) {
       setError(typeof e === "string" ? e : "Transform failed. Is the server running?");
@@ -479,6 +540,11 @@ export default function TransformTab({
     // Past runs aren't logged with any image reference, so any screenshot
     // preview currently showing would be stale/wrong for this entry.
     setScreenshotSource(null);
+    // Custom, not Presets -- the loaded instruction's full text is always
+    // visible there regardless of whether it happens to match one of the
+    // *currently* visible preset chips (it may not, e.g. if that preset was
+    // since removed from the visible set, or was never a preset at all).
+    setInstructionTab("custom");
   }
 
   async function deleteLogEntry(e: React.MouseEvent, id: number) {
@@ -502,7 +568,13 @@ export default function TransformTab({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 pt-2.5 pb-3 space-y-3">
+      {/* pt-8 (2026-08-13, was pt-2.5) -- History/Screenshots get a visible
+          gap under the tab row "for free" because the Text/Screenshots
+          sub-toggle (its own padding + button height, ~30px+) sits between
+          the tab row and their content; Transform has no such row, so it
+          needs a bigger top padding of its own here to read as the same
+          amount of breathing room instead of visibly tighter. */}
+      <div className="flex-1 overflow-y-auto px-4 pt-8 pb-3 space-y-3">
         <div>
           <div className="flex items-center justify-between mb-1">
             <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
@@ -586,17 +658,38 @@ export default function TransformTab({
           )}
           <div className="relative">
             <textarea
+              ref={inputTextareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
               placeholder="Paste or type text to transform…"
-              rows={7}
-              className="w-full resize-none bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2 text-[13px] outline-none"
+              maxLength={MAX_TRANSFORM_INPUT_LENGTH}
+              style={{ height: MIN_TEXTAREA_PX }}
+              className="w-full resize-none overflow-y-auto bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2 text-[13px] outline-none"
             />
           </div>
-          {imageError && (
-            <p className="text-[11px] text-red-600 dark:text-red-300 mt-1">{imageError}</p>
-          )}
+          <div className="flex items-center justify-between mt-1">
+            {imageError ? (
+              <p className="text-[11px] text-red-600 dark:text-red-300">{imageError}</p>
+            ) : (
+              <span />
+            )}
+            {/* Only shown once it's actually relevant (past 90% of the cap)
+                -- a permanent "0 / 20,000" counter under a mostly-empty box
+                would just be clutter for the vast majority of runs, which
+                are nowhere close to it. */}
+            {input.length >= MAX_TRANSFORM_INPUT_LENGTH * 0.9 && (
+              <p
+                className={`text-[10.5px] ${
+                  input.length >= MAX_TRANSFORM_INPUT_LENGTH
+                    ? "text-red-600 dark:text-red-300"
+                    : "text-inkMuted dark:text-inkMutedDark"
+                }`}
+              >
+                {input.length.toLocaleString()} / {MAX_TRANSFORM_INPUT_LENGTH.toLocaleString()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Instruction now lives in its own bordered box (2026-07-27), same
@@ -617,133 +710,216 @@ export default function TransformTab({
               className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
             >
               <span>
-                {visibleCount}/{MAX_VISIBLE_PRESETS} presets
+                {visibleCustomPresets.length}/{MAX_VISIBLE_PRESETS} custom
               </span>
               <i className="ti ti-settings text-[10px]" />
             </button>
           </div>
 
           <div className="bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2.5 space-y-2">
-            <div className="flex flex-wrap gap-1.5">
-              {visibleBuiltins.map((p) => (
-                <button
-                  key={p}
-                  disabled={loading || !input.trim()}
-                  onClick={() => {
-                    setInstruction(p);
-                    run(p, p);
-                  }}
-                  className={`text-[11px] px-2 py-1 rounded-md transition-colors disabled:opacity-40 ${
-                    instruction === p
-                      ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream"
-                      : "bg-accent/10 dark:bg-accentDark/15 text-ink dark:text-cream hover:bg-accent/20 dark:hover:bg-accentDark/25"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              {visibleCustomPresets.map((p) => (
-                <div key={p.label} className="group relative">
+            {/* Presets/Custom tabs (2026-08-13) -- replaces the old always-
+                stacked layout (chip grid, then a divider, then the freeform
+                field) with only one group visible at a time. Segmented
+                control matches the same look used for History's Relevance/
+                Recent toggle and the Text/Screenshots search-mode switch
+                elsewhere in the app. */}
+            <div className="flex items-center gap-0.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.07] p-0.5 w-fit">
+              <button
+                onClick={() => setInstructionTab("presets")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  instructionTab === "presets"
+                    ? "bg-white dark:bg-charcoalSurface shadow-sm text-ink dark:text-cream"
+                    : "text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream"
+                }`}
+              >
+                Presets
+              </button>
+              <button
+                onClick={() => setInstructionTab("custom")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  instructionTab === "custom"
+                    ? "bg-white dark:bg-charcoalSurface shadow-sm text-ink dark:text-cream"
+                    : "text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream"
+                }`}
+              >
+                Custom
+              </button>
+            </div>
+
+            {instructionTab === "presets" ? (
+              // Built-in presets only (2026-08-13, moved the bookmark-icon
+              // ones below out of here) -- "Presets" means the ready-made
+              // ones the app ships with; anything the user typed and saved
+              // themselves belongs with the rest of that self-authored
+              // workflow over on Custom, not mixed into this grid.
+              // Uniform grid (2026-08-13, was flex-wrap with each chip sized
+              // to its own text) -- same 2-per-row/fixed-height treatment
+              // already used for the Filter dropdown's category bubbles
+              // elsewhere, so short labels ("Summarize") and long ones
+              // ("To bullet points") line up into neat rows instead of an
+              // uneven, thrown-together-looking wrap.
+              <div className="grid grid-cols-2 gap-1.5">
+                {visibleBuiltins.map((p) => (
                   <button
+                    key={p}
                     disabled={loading || !input.trim()}
                     onClick={() => {
-                      setInstruction(p.instruction);
-                      run(p.instruction, p.label);
+                      setInstruction(p);
+                      run(p, p);
                     }}
-                    title={p.instruction}
-                    className={`text-[11px] pl-2 pr-5 py-1 rounded-md transition-colors disabled:opacity-40 ${
-                      instruction === p.instruction
-                        ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream"
+                    title={p}
+                    className={`flex items-center justify-center h-9 px-2 rounded-lg text-[11px] leading-tight transition-colors disabled:opacity-40 ${
+                      instruction === p
+                        ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
                         : "bg-accent/10 dark:bg-accentDark/15 text-ink dark:text-cream hover:bg-accent/20 dark:hover:bg-accentDark/25"
                     }`}
                   >
-                    <i className="ti ti-bookmark text-[9px] mr-1 opacity-60" />
-                    <span className="inline-block align-middle max-w-[140px] truncate">{p.label}</span>
+                    <span className="truncate">{p}</span>
                   </button>
-                  <button
-                    onClick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setDeleteConfirmPos(clampMenuPosition(r.bottom + 4, r.right - 224, 224, 100));
-                      setDeleteConfirmLabel(p.label);
-                    }}
-                    title="Delete preset"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
-                  >
-                    <i className="ti ti-trash text-[10px]" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Separated from the chip row above with its own divider and
-                label (2026-08-03) -- previously the free-text field sat
-                right under the chips with no visual break, and clicking a
-                chip echoed its label into this same box, which read as one
-                crowded, slightly redundant block instead of two distinct
-                ways to give an instruction ("pick a preset" vs. "write your
-                own"). Run/Save moved to their own row below (same change
-                just made in TransformBar) instead of squeezed onto the
-                input's line. */}
-            <div className="pt-2 border-t border-borderLight dark:border-borderDark">
-              <p className="text-[10px] text-inkMuted dark:text-inkMutedDark mb-1.5">Or write your own</p>
-              <input
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter") run(instruction);
-                }}
-                placeholder="Type an instruction…"
-                className="w-full bg-cream dark:bg-charcoal border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
-                disabled={loading}
-              />
-              <div className="flex gap-1.5 mt-1.5">
-                <button
-                  onClick={() => run(instruction)}
-                  disabled={loading || !input.trim() || !instruction.trim()}
-                  className="flex-1 text-[11px] py-1.5 rounded-lg bg-accent/15 dark:bg-accentDark/20 disabled:opacity-40"
-                >
-                  Run
-                </button>
-                <button
-                  onClick={startSavingPreset}
-                  disabled={loading || !instruction.trim()}
-                  title="Save as a reusable preset"
-                  className="px-2.5 rounded-lg bg-accent/10 dark:bg-accentDark/15 disabled:opacity-30 hover:bg-accent/20 dark:hover:bg-accentDark/25 transition-colors"
-                >
-                  <i className="ti ti-device-floppy text-[13px]" />
-                </button>
+                ))}
               </div>
-            </div>
-
-            {namingPreset && (
-              <div className="flex gap-1.5">
+            ) : (
+              <div className="space-y-2">
+                {/* Your own saved presets (2026-08-13, moved in from Presets
+                    tab) -- these were created from this exact box below (see
+                    startSavingPreset/confirmSavePreset), so they live
+                    together with it rather than mixed in with the built-in
+                    ones above. */}
+                {visibleCustomPresets.length > 0 && (
+                  // Same uniform grid treatment as the built-in presets
+                  // above -- each cell is the delete button's positioning
+                  // context now (relative), instead of the button itself
+                  // sizing to its own label length.
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {visibleCustomPresets.map((p) => (
+                      <div key={p.label} className="group relative">
+                        <button
+                          disabled={loading || !input.trim()}
+                          onClick={() => {
+                            setInstruction(p.instruction);
+                            run(p.instruction, p.label);
+                          }}
+                          title={p.instruction}
+                          className={`w-full flex items-center justify-center h-9 px-2 rounded-lg text-[11px] leading-tight transition-colors disabled:opacity-40 ${
+                            instruction === p.instruction
+                              ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
+                              : "bg-accent/10 dark:bg-accentDark/15 text-ink dark:text-cream hover:bg-accent/20 dark:hover:bg-accentDark/25"
+                          }`}
+                        >
+                          {/* Bookmark icon removed (2026-08-13) -- with
+                              labels now capped short (see
+                              MAX_PRESET_LABEL_LENGTH), there's no real risk
+                              of confusing a custom preset for a built-in one
+                              without it, and it was crowding out centering
+                              the text like the built-in chips above. */}
+                          <span className="truncate">{p.label}</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            const r = e.currentTarget.getBoundingClientRect();
+                            setDeleteConfirmPos(clampMenuPosition(r.bottom + 4, r.right - 224, 224, 100));
+                            setDeleteConfirmLabel(p.label);
+                          }}
+                          title="Delete preset"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:!text-red-500 dark:hover:!text-red-400 transition-opacity"
+                        >
+                          {/* Fixed w-5/h-5 box, flex-centered (2026-08-13,
+                              was just the bare icon) -- the ti-trash glyph's
+                              own line-height has whitespace above/below that
+                              doesn't match the chip label's text baseline,
+                              so centering the *button* on the icon's natural
+                              box read as sitting too high next to the
+                              label. Centering the icon inside its own fixed
+                              square first, then centering that square,
+                              lines it up with the text instead. */}
+                          <i className="ti ti-trash text-[10px]" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <input
-                  autoFocus
-                  value={presetLabel}
-                  onChange={(e) => setPresetLabel(e.target.value.slice(0, MAX_PRESET_LABEL_LENGTH))}
+                  value={instruction}
+                  onChange={(e) => setInstruction(e.target.value)}
                   onKeyDown={(e) => {
                     e.stopPropagation();
-                    if (e.key === "Enter") confirmSavePreset();
-                    if (e.key === "Escape") setNamingPreset(false);
+                    if (e.key === "Enter") run(instruction);
                   }}
-                  maxLength={MAX_PRESET_LABEL_LENGTH}
-                  placeholder="Name this preset…"
-                  className="flex-1 bg-cream dark:bg-charcoal border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
+                  placeholder="Type an instruction…"
+                  className="w-full bg-pillTint dark:bg-charcoalSurface border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none transition-colors hover:border-accent/40 dark:hover:border-accentDark/40 focus:border-accent/50 dark:focus:border-accentDark/50"
+                  disabled={loading}
                 />
-                <button
-                  onClick={confirmSavePreset}
-                  disabled={!presetLabel.trim()}
-                  className="text-[11px] px-2.5 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal disabled:opacity-40"
-                >
-                  <i className="ti ti-check text-[12px]" />
-                </button>
-                <button
-                  onClick={() => setNamingPreset(false)}
-                  className="text-[11px] px-2.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08]"
-                >
-                  <i className="ti ti-x text-[12px]" />
-                </button>
+                <div className="flex gap-1.5 mt-1.5">
+                  <button
+                    onClick={() => run(instruction)}
+                    disabled={loading || !input.trim() || !instruction.trim()}
+                    className="flex-1 text-[11px] py-1.5 rounded-lg bg-accent/15 dark:bg-accentDark/20 disabled:opacity-40"
+                  >
+                    Run
+                  </button>
+                  <button
+                    onClick={startSavingPreset}
+                    disabled={loading || !instruction.trim()}
+                    title="Save as a reusable preset"
+                    className="px-2.5 rounded-lg bg-accent/10 dark:bg-accentDark/15 disabled:opacity-30 hover:bg-accent/20 dark:hover:bg-accentDark/25 transition-colors"
+                  >
+                    <i className="ti ti-device-floppy text-[13px]" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {namingPreset && (
+              // Redesigned 2026-08-13 -- was just a single unlabeled input
+              // sitting directly under the (visually near-identical)
+              // instruction field above, which read as two of the same
+              // thing rather than "here's the prompt you already wrote,
+              // now give it a short name." A bordered card with its own
+              // "Prompt"/"Name" labels makes the two roles unambiguous:
+              // Prompt is a read-only recap of what's being saved, Name is
+              // the only thing actually being typed here.
+              <div className="rounded-lg bg-black/[0.04] dark:bg-white/[0.06] p-2 space-y-2">
+                <div>
+                  <p className="text-[9.5px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
+                    Prompt
+                  </p>
+                  <p className="text-[11.5px] text-ink dark:text-cream leading-snug line-clamp-2 break-words">
+                    {instruction}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9.5px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
+                    Name
+                  </p>
+                  <div className="flex gap-1.5">
+                    <input
+                      autoFocus
+                      value={presetLabel}
+                      onChange={(e) => setPresetLabel(e.target.value.slice(0, MAX_PRESET_LABEL_LENGTH))}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") confirmSavePreset();
+                        if (e.key === "Escape") setNamingPreset(false);
+                      }}
+                      maxLength={MAX_PRESET_LABEL_LENGTH}
+                      placeholder="e.g. Spanish"
+                      className="flex-1 min-w-0 bg-pillTint dark:bg-charcoalSurface border border-accent/20 dark:border-accentDark/20 text-ink dark:text-cream rounded-lg px-2.5 py-1.5 text-[12px] outline-none transition-colors hover:border-accent/40 dark:hover:border-accentDark/40 focus:border-accent/50 dark:focus:border-accentDark/50"
+                    />
+                    <button
+                      onClick={confirmSavePreset}
+                      disabled={!presetLabel.trim()}
+                      className="text-[11px] px-2.5 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal disabled:opacity-40"
+                    >
+                      <i className="ti ti-check text-[12px]" />
+                    </button>
+                    <button
+                      onClick={() => setNamingPreset(false)}
+                      className="text-[11px] px-2.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08]"
+                    >
+                      <i className="ti ti-x text-[12px]" />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -805,7 +981,7 @@ export default function TransformTab({
               Nothing yet — run a transform above and it'll show up here.
             </p>
           ) : (
-            <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+            <div className="rounded-xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
               {log.map((entry, idx) => (
                 <div key={entry.id}>
                   {/* A wrapping div (not a button) here, with the action
@@ -821,7 +997,16 @@ export default function TransformTab({
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-medium text-accent dark:text-accentDark truncate">
-                        {entry.instruction}
+                        {/* Preset name when this run came from a preset
+                            button (2026-08-13 fix) -- previously always
+                            showed the raw instruction/prompt text here even
+                            for preset-triggered runs, e.g. a "Spanish"
+                            custom preset's row read as its full translate
+                            prompt instead of "Spanish". Freeform runs (no
+                            preset_label) still show their instruction text,
+                            same as before -- there's no separate name to
+                            fall back to there. */}
+                        {entry.preset_label ?? entry.instruction}
                       </p>
                       <p className="text-[12px] leading-snug truncate">{entry.output}</p>
                       <p className="text-[10px] text-inkMuted dark:text-inkMutedDark mt-0.5">
@@ -950,7 +1135,7 @@ export default function TransformTab({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[360px] max-h-[80vh] flex flex-col rounded-2xl bg-cream dark:bg-charcoalSurface shadow-2xl overflow-hidden"
+              className="w-full max-w-[360px] max-h-[80vh] flex flex-col rounded-xl bg-cream dark:bg-charcoalSurface shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-borderLight dark:border-borderDark">
                 <p className="text-[13px] font-medium">Choose a screenshot</p>

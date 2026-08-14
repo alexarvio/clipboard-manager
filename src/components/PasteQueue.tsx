@@ -38,7 +38,7 @@ export default function PasteQueue({
       <p className="text-[11.5px] text-inkMuted dark:text-inkMutedDark mb-3">
         Pasting {index + 1} of {items.length}
       </p>
-      <div className="w-full max-w-[280px] rounded-xl bg-creamSurface dark:bg-charcoalSurface px-3.5 py-3 mb-4">
+      <div className="w-full max-w-[280px] rounded-xl bg-pillTint dark:bg-charcoalSurface ring-1 ring-transparent hover:ring-accent/40 dark:hover:ring-accentDark/40 transition-colors px-3.5 py-3 mb-4">
         <ClampedText
           text={current.content}
           lines={4}

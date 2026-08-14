@@ -292,6 +292,18 @@ pub fn init(conn: &Connection) {
     )
     .expect("failed to create transform_log table");
 
+    // Migration for DBs created before preset_label existed on transform_log
+    // (2026-08-13) -- lets the Recent list show a preset's actual name
+    // ("Spanish") instead of falling back to its raw instruction/prompt text
+    // ("translate any input text into the spanish language") for entries
+    // that came from clicking a preset button rather than typing a freeform
+    // instruction. NULL for freeform runs (there's no preset name to show,
+    // the instruction text itself already *is* the label there) and for
+    // every row logged before this column existed. Errors (column already
+    // exists) are expected and ignored, same as every other migration here.
+    conn.execute("ALTER TABLE transform_log ADD COLUMN preset_label TEXT", [])
+        .ok();
+
     // --- Indexes ---------------------------------------------------------
     // Declared last so every ALTER TABLE above has already added the columns
     // these cover. All IF NOT EXISTS, so this is a no-op on an existing DB
@@ -1665,6 +1677,12 @@ pub struct TransformLogEntry {
     pub instruction: String,
     pub output: String,
     pub created_at: String,
+    // Set only when this run came from clicking an actual preset button
+    // (builtin or custom) -- see the preset_label migration's doc comment
+    // above. The frontend falls back to `instruction` for display when this
+    // is None, which is correct for freeform runs and pre-migration rows
+    // alike.
+    pub preset_label: Option<String>,
 }
 
 /// Records one completed transform run and trims the log back down to
@@ -1672,11 +1690,17 @@ pub struct TransformLogEntry {
 /// from the standalone Transform tab specifically -- not from the
 /// per-item TransformBar (History/Folders rows), which is a "fix this one
 /// clip in place" action rather than something you'd browse back through.
-pub fn log_transform(conn: &Connection, input: &str, instruction: &str, output: &str) -> i64 {
+pub fn log_transform(
+    conn: &Connection,
+    input: &str,
+    instruction: &str,
+    output: &str,
+    preset_label: Option<&str>,
+) -> i64 {
     let now = chrono::Local::now().to_rfc3339();
     conn.execute(
-        "INSERT INTO transform_log (input, instruction, output, created_at) VALUES (?1, ?2, ?3, ?4)",
-        params![input, instruction, output, now],
+        "INSERT INTO transform_log (input, instruction, output, created_at, preset_label) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![input, instruction, output, now, preset_label],
     )
     // `.ok()` rather than `.expect()`, matching every other insert in this
     // file: input/output here are arbitrary user/model text, and a failed
@@ -1702,7 +1726,7 @@ pub fn log_transform(conn: &Connection, input: &str, instruction: &str, output: 
 pub fn get_transform_log(conn: &Connection) -> Vec<TransformLogEntry> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, input, instruction, output, created_at
+            "SELECT id, input, instruction, output, created_at, preset_label
              FROM transform_log ORDER BY id DESC LIMIT ?1",
         )
         .expect("failed to prepare transform_log query");
@@ -1714,6 +1738,7 @@ pub fn get_transform_log(conn: &Connection) -> Vec<TransformLogEntry> {
                 instruction: row.get(2)?,
                 output: row.get(3)?,
                 created_at: row.get(4)?,
+                preset_label: row.get(5)?,
             })
         })
         .expect("failed to query transform_log");

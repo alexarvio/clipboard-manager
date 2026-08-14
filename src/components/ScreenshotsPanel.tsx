@@ -38,6 +38,8 @@ export default function ScreenshotsPanel({
   tier,
   query = "",
   searchMode = "text",
+  dateFrom = null,
+  dateTo = null,
   onPasted,
   onOpenFolder,
   onCreateNewFolder,
@@ -49,6 +51,12 @@ export default function ScreenshotsPanel({
   // (previously only showed for historyView === "clips").
   query?: string;
   searchMode?: "text" | "smart";
+  // Screenshots' own Date filter (2026-08-13, from the Screenshots options
+  // dropdown in App.tsx) -- ISO strings, applied client-side below since
+  // list_screenshots has no date param server-side (unlike get_history's
+  // dateFrom/dateTo, which Text's Filter/Date/Stack dropdown uses).
+  dateFrom?: string | null;
+  dateTo?: string | null;
   onPasted?: () => void;
   // Same routing pattern as the History tab's FolderPicker usage in App.tsx
   // -- lets "open this folder" / "create a new folder" jump straight to the
@@ -295,8 +303,30 @@ export default function ScreenshotsPanel({
   // Same "Pinned, then grouped by day" layout as the text History tab (see
   // App.tsx), so the two tabs feel like the same product rather than
   // Screenshots being an ungrouped afterthought.
-  const pinned = screenshots.filter((s) => s.pinned);
-  const unpinned = screenshots.filter((s) => !s.pinned);
+  // Client-side date filter (2026-08-13) -- applied here rather than at
+  // fetch time so pin state / OCR backfill etc. don't need to know about it.
+  // Preset ranges (App.tsx's applyScreenshotsDatePreset) arrive as full ISO
+  // timestamps already, but the custom-range date inputs pass bare
+  // "YYYY-MM-DD" strings -- same padding App.tsx's dayBoundIso does for
+  // Text's own dateFrom/dateTo before those hit the backend, needed here too
+  // since a bare date otherwise string-compares as *before* every timestamp
+  // on that same day (breaking dateTo in particular -- every item from the
+  // selected end day would get excluded).
+  function dayBoundIso(date: string | null, endOfDay: boolean): string | null {
+    if (!date) return null;
+    if (date.includes("T")) return date;
+    return `${date}T${endOfDay ? "23:59:59.999" : "00:00:00"}`;
+  }
+  const boundedDateFrom = dayBoundIso(dateFrom, false);
+  const boundedDateTo = dayBoundIso(dateTo, true);
+  function inDateRange(item: ScreenshotItem) {
+    if (boundedDateFrom && item.created_at < boundedDateFrom) return false;
+    if (boundedDateTo && item.created_at > boundedDateTo) return false;
+    return true;
+  }
+  const dateFilteredScreenshots = dateFrom || dateTo ? screenshots.filter(inDateRange) : screenshots;
+  const pinned = dateFilteredScreenshots.filter((s) => s.pinned);
+  const unpinned = dateFilteredScreenshots.filter((s) => !s.pinned);
   const dateGroups: { label: string; items: ScreenshotItem[] }[] = [];
   const groupIndexByLabel = new Map<string, number>();
   for (const item of unpinned) {
@@ -325,7 +355,7 @@ export default function ScreenshotsPanel({
     const savedIn = memberships.get(item.id) ?? [];
     return (
       <div key={item.id}>
-        <div className="group relative px-3 py-2.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
+        <div className="group relative px-3 py-2.5 hover:bg-accent/10 dark:hover:bg-accentDark/15 transition-colors">
           {/* A plain cropped rectangle (object-cover, no black letterbox
               backdrop) rather than the letterboxed square used briefly here
               before -- same idea as the small "From a screenshot" preview
@@ -535,25 +565,30 @@ export default function ScreenshotsPanel({
           <p className="text-red-500 dark:text-red-400 text-[12.5px] text-center mt-10 px-4">
             {smartError}
           </p>
-        ) : smartResults.length === 0 ? (
+        ) : (dateFrom || dateTo ? smartResults.filter((m) => inDateRange(m.screenshot)) : smartResults)
+            .length === 0 ? (
           <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10 px-4">
             No screenshots match "{query}".
           </p>
         ) : (
           <div className="mb-3">
-            <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
-              {smartResults.map((m, idx) =>
-                renderRow(m.screenshot, idx === smartResults.length - 1, m.score)
+            <div className="rounded-xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors">
+              {(dateFrom || dateTo ? smartResults.filter((m) => inDateRange(m.screenshot)) : smartResults).map(
+                (m, idx, arr) => renderRow(m.screenshot, idx === arr.length - 1, m.score)
               )}
             </div>
           </div>
         )
       ) : (
         <>
-          {screenshots.length === 0 &&
+          {dateFilteredScreenshots.length === 0 &&
             (query.trim() ? (
               <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10 px-4">
                 No screenshots match "{query}".
+              </p>
+            ) : dateFrom || dateTo ? (
+              <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10 px-4">
+                No screenshots in that date range.
               </p>
             ) : (
               <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10 px-4">
@@ -576,7 +611,7 @@ export default function ScreenshotsPanel({
                   (rounded card, tinted background, hairline ring) so screenshots
                   taken the same day read as one grouped card instead of a bare
                   grid floating under a label. */}
-              <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+              <div className="rounded-xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors">
                 {pinned.map((item, idx) => renderRow(item, idx === pinned.length - 1))}
               </div>
             </div>
@@ -587,7 +622,7 @@ export default function ScreenshotsPanel({
               <p className="text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-1 pb-1.5">
                 {group.label}
               </p>
-              <div className="rounded-2xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+              <div className="rounded-xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors">
                 {group.items.map((item, idx) => renderRow(item, idx === group.items.length - 1))}
               </div>
             </div>

@@ -3,7 +3,7 @@
   <rect x="0" y="0" width="800" height="480" fill="none" stroke="#E5E1D6" stroke-width="2"/>
 
   <!-- Header -->
-  <rect x="48" y="44" width="34" height="34" rx="8" fill="#5EA800"/>
+  <rect x="48" y="44" width="34" height="34" rx="8" fill="#7C6FE3"/>
   <text x="94" y="68" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#1A1816">Acme Corp</text>
   <text x="752" y="60" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1A1816" text-anchor="end">INVOICE</text>
   <text x="752" y="82" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#6E6859" text-anchor="end">#4471</text>
@@ -43,5 +43,5 @@
   <!-- Total -->
   <line x1="480" y1="392" x2="752" y2="392" stroke="#E5E1D6" stroke-width="1.5"/>
   <text x="560" y="422" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1A1816">Total due</text>
-  <text x="752" y="422" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#5EA800" text-anchor="end">$1,240.00</text>
+  <text x="752" y="422" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#7C6FE3" text-anchor="end">$1,240.00</text>
 </svg>

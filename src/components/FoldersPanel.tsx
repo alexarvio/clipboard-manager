@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Reorder, useDragControls } from "framer-motion";
+import { Reorder, motion, useDragControls } from "framer-motion";
 import { invoke } from "../lib/tauriShim";
 import { formatTimestamp } from "../lib/dateFormat";
 import { clampMenuPosition } from "../lib/menuPosition";
@@ -584,8 +584,16 @@ export default function FoldersPanel({
       : null;
   if (view.kind === "list" || expandedRootFolder) {
     const atLimit = tier !== "pro" && rootFolders.length >= FREE_FOLDER_LIMIT;
+    // overflow-y-scroll, not -auto (2026-08-13) -- this is the root folders
+    // list's own scroll container, and an inline-expanded folder's Text/
+    // Screenshots toggle (rendered as part of this same list, see
+    // expandedRootFolder above) lives inside it -- the earlier fix for this
+    // same resize issue targeted the *other* render path (a full drilled-
+    // into folder's own independent scroll container further down), which
+    // doesn't apply when a folder is just inline-expanded in place like
+    // this. See that div's own comment for why `scroll` instead of `auto`.
     return (
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-scroll px-2 py-2">
         {rootFolders.length === 0 && !creating && (
           <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10">
             No folders yet.
@@ -740,7 +748,7 @@ export default function FoldersPanel({
             className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
               stackBuilderIds !== null
                 ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+                : "bg-pillTint dark:bg-charcoalSurface text-ink dark:text-cream hover:bg-accent/15 dark:hover:bg-accentDark/25"
             }`}
           >
             <i className="ti ti-list-numbers text-[12px]" />
@@ -752,7 +760,7 @@ export default function FoldersPanel({
             className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
               creatingSubfolder
                 ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+                : "bg-pillTint dark:bg-charcoalSurface text-ink dark:text-cream hover:bg-accent/15 dark:hover:bg-accentDark/25"
             }`}
           >
             <i className="ti ti-folder-plus text-[12px]" />
@@ -767,14 +775,31 @@ export default function FoldersPanel({
             className={`flex items-center justify-center gap-1 whitespace-nowrap text-[10px] px-1 py-1.5 rounded-full transition-colors ${
               creatingItem
                 ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
+                : "bg-pillTint dark:bg-charcoalSurface text-ink dark:text-cream hover:bg-accent/15 dark:hover:bg-accentDark/25"
             }`}
           >
             <i className="ti ti-plus text-[12px]" />
             New item
           </button>
         </div>
-        <div className={inline ? "px-2 py-2" : "flex-1 overflow-y-auto px-2 py-2"}>
+        {/* overflow-y-scroll, not -auto (2026-08-13 follow-up) -- the real
+            cause of the Text/Screenshots resize: whichever view's content is
+            tall enough to need a scrollbar shrinks the available content
+            width by the scrollbar's own width (auto only reserves that
+            space once actually scrollable), while the shorter view doesn't,
+            so switching could reflow line-wrapping/image width on top of the
+            height change the `layout` animation above already covers.
+            `scrollbar-gutter: stable` was tried first but depends on a CSS
+            feature the installed WebView2 runtime may not have -- silently
+            no-ops rather than erroring if unsupported, which is exactly what
+            "still happens" looks like. Forcing the scrollbar always-on with
+            `scroll` instead of `auto` reserves that space unconditionally
+            using base overflow behavior every browser/webview has supported
+            forever, no feature-detection risk. The scrollbar itself is the
+            thin, mostly-transparent custom one from styles.css, so it
+            doesn't add a visible track when content isn't actually
+            scrollable. */}
+        <div className={inline ? "px-2 py-2" : "flex-1 overflow-y-scroll px-2 py-2"}>
           {creatingSubfolder && (
             <div className="flex items-center gap-1.5 px-1 pb-1.5 mb-1">
               <input
@@ -816,7 +841,7 @@ export default function FoldersPanel({
                   <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-1 mb-1">
                     Folders
                   </p>
-                  <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden mb-2">
+                  <div className="rounded-xl bg-pillTint dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden mb-2 transition-colors">
                     {folders.map((sub, idx) => (
                       <div key={sub.id}>
                         <FolderRow
@@ -977,7 +1002,21 @@ export default function FoldersPanel({
               stay the direct child here) instead of each row floating with
               its own margin/rounded corners. */}
           {visibleItems.length > 0 && (
-            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+            // motion.div + layout (2026-08-13) -- switching the Text/
+            // Screenshots toggle above swaps visibleItems entirely, and
+            // screenshot rows run taller than text rows (they carry a h-32
+            // thumbnail text rows don't), so this card's height used to
+            // snap between the two abruptly. `layout` makes Framer Motion
+            // animate the resulting height change instead of jump-cutting
+            // it, which is the actual fix -- the two views were always
+            // going to differ in height (that's just what a thumbnail
+            // costs), smoothing the transition is what makes it read as
+            // intentional instead of jarring.
+            <motion.div
+              layout
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              className="rounded-xl bg-pillTint dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors"
+            >
               <Reorder.Group
                 as="div"
                 axis="y"
@@ -1023,7 +1062,7 @@ export default function FoldersPanel({
                   />
                 ))}
               </Reorder.Group>
-            </div>
+            </motion.div>
           )}
         </div>
 
@@ -1190,8 +1229,8 @@ function FolderRow({
       onClick={onOpen}
       className={`group flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors ${
         expanded
-          ? "bg-black/[0.03] dark:bg-white/[0.05]"
-          : "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+          ? "bg-accent/10 dark:bg-accentDark/15"
+          : "hover:bg-accent/10 dark:hover:bg-accentDark/15"
       } ${boxed ? "" : "rounded-xl mb-1"}`}
     >
       <i className="ti ti-folder text-[15px] text-accent dark:text-accentDark" />
@@ -1308,7 +1347,7 @@ function FolderItemRow({
         // read as "content, timestamp, icons", now it was just "content,
         // ...gap..., icons"). Top padding is untouched since that spacing
         // is still doing its original job (room above the title/content).
-        className="group flex items-start gap-2 px-3 pt-2.5 pb-1.5 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors"
+        className="group flex items-start gap-2 px-3 pt-2.5 pb-1.5 cursor-pointer hover:bg-accent/10 dark:hover:bg-accentDark/15 transition-colors"
       >
         {stackMode ? (
           <span
@@ -1401,9 +1440,20 @@ function FolderItemRow({
                   />
                 )}
               </p>
+              {/* Same size/color as the no-title branch below (2026-08-13,
+                  was text-[11.5px]/text-inkMuted) -- items with a manually
+                  set title (e.g. from the "New item" form, which always
+                  asks for one) were rendering their content preview smaller
+                  and muted, like a caption, while items saved without a
+                  title (e.g. anything sent here from History/clipboard,
+                  which never sets one) rendered the exact same content at
+                  full size/color. That made otherwise-identical text read
+                  as if it were in a different font depending only on
+                  whether the item happened to have a title, not on
+                  anything about the content itself. */}
               <ClampedText
                 text={item.content}
-                className="text-[11.5px] text-inkMuted dark:text-inkMutedDark leading-snug whitespace-pre-wrap break-words mt-0.5"
+                className="text-[12.5px] leading-snug whitespace-pre-wrap break-words mt-0.5"
               />
             </>
           ) : (

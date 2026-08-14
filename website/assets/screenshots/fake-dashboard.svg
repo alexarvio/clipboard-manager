@@ -4,7 +4,7 @@
 
   <!-- top bar -->
   <rect x="0" y="0" width="800" height="44" fill="#F8F4EC"/>
-  <circle cx="28" cy="22" r="6" fill="#5EA800"/>
+  <circle cx="28" cy="22" r="6" fill="#7C6FE3"/>
   <text x="46" y="27" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1A1816">Weekly overview</text>
   <rect x="700" y="12" width="76" height="20" rx="10" fill="#E7F2D8"/>
   <text x="738" y="26" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#4C8600" text-anchor="middle">+12.4%</text>
@@ -27,7 +27,7 @@
   </g>
 
   <!-- bar chart -->
-  <g fill="#5EA800">
+  <g fill="#7C6FE3">
     <rect x="540" y="98" width="14" height="32" rx="3"/>
     <rect x="562" y="80" width="14" height="50" rx="3"/>
     <rect x="584" y="106" width="14" height="24" rx="3"/>
@@ -39,7 +39,7 @@
 
   <!-- list rows -->
   <line x1="24" y1="150" x2="776" y2="150" stroke="#F0ECE1" stroke-width="1.5"/>
-  <circle cx="36" cy="172" r="4" fill="#5EA800"/>
+  <circle cx="36" cy="172" r="4" fill="#7C6FE3"/>
   <text x="50" y="176" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1A1816">Landing page redesign shipped</text>
   <text x="776" y="176" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#6E6859" text-anchor="end">2h ago</text>
 

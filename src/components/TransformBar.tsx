@@ -109,16 +109,16 @@ export default function TransformBar({
   // context -- see the two doc comments above (Settings.visible_presets and
   // .visible_presets_screenshots).
   const visibleField = context === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
-  // What to show when settings has no list for this context yet -- screenshots
-  // get their own OCR-oriented default subset (see lib/presets.ts), not the
-  // full builtin catalog.
-  const visibleFallback = context === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
-  // Which builtins even apply to this context -- filtering against this
-  // (not the full BUILTIN_PRESETS) instead of just visiblePresetLabels
-  // means a chip like "Clean up OCR errors" can never render for plain text
-  // even if a stale label happens to still be sitting in an old settings
-  // file (2026-08-03 fix; SettingsPanel prunes these on load too, but that
-  // only runs once someone actually opens Settings).
+  // Empty (2026-08-13, was the eligible-builtins list) -- visibleField only
+  // ever tracks *custom* preset selection now (built-ins are always shown,
+  // see eligibleBuiltins below), so there's nothing to default it to
+  // besides "no customs shown yet."
+  const visibleFallback: string[] = [];
+  // Which builtins apply to this context -- filtering against this (not the
+  // full BUILTIN_PRESETS) means a chip like "Clean up OCR errors" can never
+  // render for plain text (2026-08-03 fix). Always all of them now
+  // (2026-08-13) -- built-ins are no longer optional/toggleable, so this is
+  // rendered directly with no visibility filtering.
   const eligibleBuiltins = context === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
   // Which custom-preset pool belongs to this instance's context -- fully
   // separate arrays as of 2026-08-06 (see custom_presets_screenshots's doc
@@ -127,9 +127,8 @@ export default function TransformBar({
 
   const customPresets = loadedSettings?.[customField] ?? [];
   const visiblePresetLabels = new Set(loadedSettings?.[visibleField] ?? visibleFallback);
-  const visibleBuiltins = eligibleBuiltins.filter((p) => visiblePresetLabels.has(p));
+  const visibleBuiltins = eligibleBuiltins;
   const visibleCustomPresets = customPresets.filter((p) => visiblePresetLabels.has(p.label));
-  const visibleCount = visibleBuiltins.length + visibleCustomPresets.length;
 
   function startSavingPreset() {
     if (!instruction.trim()) return;
@@ -149,7 +148,8 @@ export default function TransformBar({
     // Transform panel, not text's, until manually enabled for both from
     // Settings.
     const currentVisible = loadedSettings[visibleField] ?? visibleFallback;
-    const nextVisible = visibleCount < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
+    const nextVisible =
+      visibleCustomPresets.length < MAX_VISIBLE_PRESETS ? [...currentVisible, label] : currentVisible;
     const updated = {
       ...loadedSettings,
       [customField]: [...customPresets, { label, instruction: instruction.trim() }],
@@ -248,7 +248,7 @@ export default function TransformBar({
               className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
             >
               <span>
-                {visibleCount}/{MAX_VISIBLE_PRESETS} presets
+                {visibleCustomPresets.length}/{MAX_VISIBLE_PRESETS} custom
               </span>
               <i className="ti ti-settings text-[10px]" />
             </button>

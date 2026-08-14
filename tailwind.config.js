@@ -5,28 +5,43 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Light mode (cream)
-        cream: "#F2EEE3",
-        creamSurface: "#F8F4EC",
+        // Light mode
+        cream: "#FFFFFF",
+        creamSurface: "#F6F4FB",
+        // Light lavender (2026-08-12) specifically for item-list/pill
+        // containers (folder item lists, the PasteQueue pill, preset toggle
+        // chips, standalone text inputs) and their clickable rows' hover
+        // state. Deliberately a lighter, less saturated tint than accentFill
+        // (#EDEAFB) -- accentFill stays reserved for actual accent-highlight
+        // boxes (Dashboard stat tile, Transform preset-preview boxes, the
+        // "Paste now" CTA) where more saturation is the point; these
+        // containers just need to read as a distinct inset surface, not as
+        // an accent callout.
+        pillTint: "#F6F4FB",
         ink: "#1A1816",
         inkMuted: "#6E6859",
         borderLight: "rgba(0, 0, 0, 0.08)",
-        // Accent recolored 2026-07-27 to match the FatClipboard logo's neon
-        // lime-green (the "CLIPBOARD" wordmark, #C1FF72) instead of the old
-        // purple -- accentDark uses the exact logo green since it's bright
-        // enough to pop straight off charcoal; accent (light mode) is a
-        // darker, more saturated shade of the *same* hue/sat rather than the
-        // literal logo color, since #C1FF72 at full brightness has too little
-        // contrast to read as text/icons against the cream background.
-        accent: "#5EA800",
-        accentFill: "#F1F8E7",
-        // Dark mode (warm charcoal — not pure black, to match the cream brand)
+        // Accent recolored 2026-08-12 back to violet/lavender (#7C6FE3),
+        // moving off the neon lime-green ("CLIPBOARD" wordmark, #C1FF72) that
+        // had been in place since the 2026-07-27 pass. accentDark is a
+        // lighter, less saturated lavender (#B7A9FF) than the light-mode
+        // accent -- same reasoning as before: the light-mode shade needs more
+        // contrast to read as text/icons against the (now white) cream
+        // background, while the dark-mode shade can be brighter against
+        // charcoal without blowing out.
+        accent: "#7C6FE3",
+        accentFill: "#EDEAFB",
+        // Dark mode (warm charcoal — not pure black, to match the original
+        // cream brand). Reverted back to the original warm tone (2026-08-13)
+        // -- only the accent (icons, links, "Show more", active states)
+        // stays lavender; the charcoal background/surface itself goes back
+        // to how it looked before the violet dark-mode pass.
         charcoal: "#1C1A17",
         charcoalSurface: "#262320",
         inkMutedDark: "#A8A39B",
         borderDark: "rgba(255, 255, 255, 0.08)",
-        accentDark: "#C1FF72",
-        accentFillDark: "#2B3B16",
+        accentDark: "#B7A9FF",
+        accentFillDark: "#332B4D",
       },
       borderRadius: {
         panel: "18px",

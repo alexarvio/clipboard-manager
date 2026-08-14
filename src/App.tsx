@@ -11,6 +11,7 @@ import TransformTab from "./components/TransformTab";
 import FolderPicker from "./components/FolderPicker";
 import PasteQueue, { type QueueEntry } from "./components/PasteQueue";
 import ClampedText from "./components/ClampedText";
+import DateRangeCalendar from "./components/DateRangeCalendar";
 import { ALL_CATEGORIES } from "./lib/categories";
 import { formatTimestamp, dateGroupLabel } from "./lib/dateFormat";
 import { clampMenuPosition } from "./lib/menuPosition";
@@ -41,6 +42,14 @@ export default function App() {
   const [items, setItems] = useState<ClipItem[]>([]);
   const [selected, setSelected] = useState(0);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  // Whether `selected` should actually paint a highlight -- true only once
+  // the user has pressed an arrow key. Without this, `selected` (which
+  // defaults to 0 on every load/refresh) painted the same hover-tinted
+  // background on the top item permanently, even with the mouse nowhere
+  // near it -- indistinguishable from actually hovering it. Handed back to
+  // the mouse the instant it moves over any row (see onMouseEnter below) so
+  // the two mechanisms never fight over which item looks "active."
+  const [keyboardActive, setKeyboardActive] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [jumpToPresets, setJumpToPresets] = useState(false);
   // Which of Settings' two independent preset-visibility tabs "manage
@@ -120,7 +129,12 @@ export default function App() {
   const [paywallMsg, setPaywallMsg] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // Multi-select (2026-08-13, was a single string | null) -- the Filter
+  // dropdown's category bubbles can now be toggled independently instead of
+  // each pick replacing the last one. Kept as an array rather than a Set so
+  // it's trivially JSON/deps-comparable; membership checks below just use
+  // .includes()/.length.
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
@@ -149,6 +163,43 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Text/Screenshots split-button dropdowns (2026-08-13) -- Filter/Date/
+  // Stack used to be their own always-visible row; now each lives behind a
+  // small options menu attached to the Text (all three) or Screenshots
+  // (Date only, see below) pill's chevron, saving a full row of vertical
+  // space. filterBtnRef/dateBtnRef above are re-pointed at the "Filter"/
+  // "Date" items inside this menu so the existing category/date menu
+  // positioning + click-away logic keeps working unmodified.
+  const [showTextOptions, setShowTextOptions] = useState(false);
+  const [textOptionsPos, setTextOptionsPos] = useState<{ top: number; left: number } | null>(null);
+  const textOptionsBtnRef = useRef<HTMLButtonElement>(null);
+  const textOptionsMenuRef = useRef<HTMLDivElement>(null);
+  // Whole-pill refs (2026-08-13), separate from the chevron-only
+  // textOptionsBtnRef/screenshotsOptionsBtnRef above -- used just for
+  // measuring the pill's own left edge so the dropdown lines up under the
+  // *pill*, not the window center (the previous positioning) or the
+  // chevron's own narrow sliver (which would look off-center under the
+  // wider pill).
+  const textPillRef = useRef<HTMLDivElement>(null);
+  const screenshotsPillRef = useRef<HTMLDivElement>(null);
+
+  const [showScreenshotsOptions, setShowScreenshotsOptions] = useState(false);
+  const [screenshotsOptionsPos, setScreenshotsOptionsPos] = useState<{ top: number; left: number } | null>(null);
+  const screenshotsOptionsBtnRef = useRef<HTMLButtonElement>(null);
+  const screenshotsOptionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Screenshots' own Date filter (2026-08-13) -- list_screenshots has no
+  // date param server-side, so this filters the already-fetched array
+  // client-side in ScreenshotsPanel rather than round-tripping to Rust.
+  const [screenshotsDateFrom, setScreenshotsDateFrom] = useState<string | null>(null);
+  const [screenshotsDateTo, setScreenshotsDateTo] = useState<string | null>(null);
+  const [screenshotsActiveDatePreset, setScreenshotsActiveDatePreset] = useState<string | null>(null);
+  const [showScreenshotsDateMenu, setShowScreenshotsDateMenu] = useState(false);
+  const [screenshotsDateMenuPos, setScreenshotsDateMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [screenshotsDateMenuView, setScreenshotsDateMenuView] = useState<"list" | "custom">("list");
+  const screenshotsDateMenuRef = useRef<HTMLDivElement>(null);
+  const screenshotsDateBtnRef = useRef<HTMLButtonElement>(null);
 
   // Jumps to the Transform tab with `content` pre-loaded -- see
   // pendingTransformInput above and TransformTab's pendingInput prop.
@@ -219,6 +270,15 @@ export default function App() {
     setShowDateMenu(false);
   }
 
+  function applyScreenshotsDatePreset(label: string, hours: number) {
+    const to = new Date();
+    const from = new Date(to.getTime() - hours * 60 * 60 * 1000);
+    setScreenshotsDateFrom(from.toISOString());
+    setScreenshotsDateTo(to.toISOString());
+    setScreenshotsActiveDatePreset(label);
+    setShowScreenshotsDateMenu(false);
+  }
+
   const refresh = useCallback(
     async (q: string, category: string | null, from: string | null, to: string | null) => {
       try {
@@ -233,6 +293,7 @@ export default function App() {
         });
         setItems(result);
         setSelected(0);
+        setKeyboardActive(false);
       } catch (e) {
         console.error("get_history failed", e);
       }
@@ -247,7 +308,7 @@ export default function App() {
       setFolderPickerFor(null);
       setCopiedId(null);
       setExpandedId(null);
-      setCategoryFilter(null);
+      setCategoryFilters([]);
       setActiveCustomFilter(null);
       setCustomFilterIds(null);
       setCustomFilterError(null);
@@ -278,8 +339,13 @@ export default function App() {
   }, [refresh, refreshFolderMemberships]);
 
   useEffect(() => {
-    refresh(query, categoryFilter, dateFrom, dateTo);
-  }, [query, categoryFilter, dateFrom, dateTo, refresh]);
+    // Backend's get_history still only takes a single category (or none) --
+    // multi-select is handled client-side below via filteredItems, so this
+    // only narrows the backend query when there's exactly one selected
+    // (keeps the free-tier result cap applying pre-filter, same as before).
+    // With 2+ selected we fetch unfiltered and let filteredItems narrow it.
+    refresh(query, categoryFilters.length === 1 ? categoryFilters[0] : null, dateFrom, dateTo);
+  }, [query, categoryFilters, dateFrom, dateTo, refresh]);
 
   useEffect(() => {
     // Smart mode is a standalone search, not an addition to the substring
@@ -315,7 +381,7 @@ export default function App() {
         }
         const all = await invoke<ClipItem[]>("get_history", {
           query: "",
-          category: categoryFilter,
+          category: categoryFilters.length === 1 ? categoryFilters[0] : null,
           dateFrom: dayBoundIso(dateFrom, false),
           dateTo: dayBoundIso(dateTo, true),
         });
@@ -341,7 +407,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, searchMode, tier, categoryFilter, dateFrom, dateTo, activeCustomFilter, historyView]);
+  }, [query, searchMode, tier, categoryFilters, dateFrom, dateTo, activeCustomFilter, historyView]);
 
   useEffect(() => {
     if (!showCategoryMenu) return;
@@ -351,12 +417,16 @@ export default function App() {
       // without this, clicking "Filter" again while it's open closed the
       // menu here (mousedown fires first) and then the button's own onClick
       // toggle immediately reopened it (since by the time click fires,
-      // state already reads closed), netting out to "never closes."
+      // state already reads closed), netting out to "never closes." Filter
+      // no longer has its own persistent trigger button (2026-08-13, moved
+      // into the Text options dropdown) -- filterBtnRef.current is null once
+      // that dropdown closes, so the exclusion is now optional rather than
+      // required, otherwise a null ref would make this condition
+      // permanently false and the menu would never close on outside click.
       if (
         categoryMenuRef.current &&
         !categoryMenuRef.current.contains(target) &&
-        filterBtnRef.current &&
-        !filterBtnRef.current.contains(target)
+        (!filterBtnRef.current || !filterBtnRef.current.contains(target))
       ) {
         setShowCategoryMenu(false);
       }
@@ -375,8 +445,7 @@ export default function App() {
       if (
         dateMenuRef.current &&
         !dateMenuRef.current.contains(target) &&
-        dateBtnRef.current &&
-        !dateBtnRef.current.contains(target)
+        (!dateBtnRef.current || !dateBtnRef.current.contains(target))
       ) {
         setShowDateMenu(false);
       }
@@ -384,6 +453,62 @@ export default function App() {
     document.addEventListener("mousedown", onClickAway);
     return () => document.removeEventListener("mousedown", onClickAway);
   }, [showDateMenu]);
+
+  useEffect(() => {
+    if (!showTextOptions) return;
+    function onClickAway(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        textOptionsMenuRef.current &&
+        !textOptionsMenuRef.current.contains(target) &&
+        textOptionsBtnRef.current &&
+        !textOptionsBtnRef.current.contains(target)
+      ) {
+        setShowTextOptions(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [showTextOptions]);
+
+  useEffect(() => {
+    if (!showScreenshotsOptions) return;
+    function onClickAway(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        screenshotsOptionsMenuRef.current &&
+        !screenshotsOptionsMenuRef.current.contains(target) &&
+        screenshotsOptionsBtnRef.current &&
+        !screenshotsOptionsBtnRef.current.contains(target)
+      ) {
+        setShowScreenshotsOptions(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [showScreenshotsOptions]);
+
+  useEffect(() => {
+    if (!showScreenshotsDateMenu) return;
+    function onClickAway(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        screenshotsDateMenuRef.current &&
+        !screenshotsDateMenuRef.current.contains(target) &&
+        // screenshotsDateBtnRef is never attached to an element (Date is
+        // opened from inside the options dropdown, not its own persistent
+        // button), so requiring it to be truthy made this condition always
+        // false and the menu could never close on outside click (2026-08-13
+        // fix -- same null-ref pattern already used for categoryMenu/
+        // dateMenu above).
+        (!screenshotsDateBtnRef.current || !screenshotsDateBtnRef.current.contains(target))
+      ) {
+        setShowScreenshotsDateMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [showScreenshotsDateMenu]);
 
   const COPY_FEEDBACK_MS = 320;
   async function pasteAndHide(item: ClipItem) {
@@ -457,12 +582,12 @@ export default function App() {
       setTimeout(() => setPinLimitMsg(false), 2200);
       return;
     }
-    refresh(query, categoryFilter, dateFrom, dateTo);
+    refresh(query, categoryFilters.length === 1 ? categoryFilters[0] : null, dateFrom, dateTo);
   }
 
   async function deleteItem(item: ClipItem) {
     await invoke("delete_history_item", { id: item.id });
-    refresh(query, categoryFilter, dateFrom, dateTo);
+    refresh(query, categoryFilters.length === 1 ? categoryFilters[0] : null, dateFrom, dateTo);
   }
 
   async function persistCustomFilters(next: CustomFilter[]) {
@@ -472,7 +597,7 @@ export default function App() {
   }
 
   async function applyCustomFilter(filter: CustomFilter) {
-    setCategoryFilter(null);
+    setCategoryFilters([]);
     setActiveCustomFilter(filter.name);
     setCustomFilterIds(null);
     setCustomFilterError(null);
@@ -520,12 +645,19 @@ export default function App() {
         )
       : smartResults; // already best-score-first from the backend
 
-  const filteredItems =
+  // Client-side category narrowing on top of whatever base list applies --
+  // needed because get_history only takes a single category (see refresh's
+  // call sites above), so with 2+ categories selected the backend returns
+  // everything and this is what actually applies the multi-select. Harmless
+  // no-op when 0 or 1 categories are selected (backend already filtered).
+  const categoryFilterSet = categoryFilters.length > 0 ? new Set(categoryFilters) : null;
+  const filteredItems = (
     activeCustomFilter && customFilterIds
       ? items.filter((it) => customFilterIds.includes(it.id))
       : searchMode === "smart" && query.trim()
       ? sortedSmartResults.map((r) => r.item)
-      : items;
+      : items
+  ).filter((it) => !categoryFilterSet || categoryFilterSet.has(it.category));
 
   const smartScoreById = new Map(smartResults.map((r) => [r.item.id, r.score]));
 
@@ -584,9 +716,11 @@ export default function App() {
     if (tab !== "history" || historyView !== "clips") return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      setKeyboardActive(true);
       setSelected((s) => Math.min(s + 1, filteredItems.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setKeyboardActive(true);
       setSelected((s) => Math.max(s - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -602,7 +736,7 @@ export default function App() {
       animate={open ? "open" : "closed"}
       variants={{ open: { x: 0 }, closed: { x: "-100%" } }}
       transition={{ duration: SLIDE_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
-      className="w-full h-full rounded-r-[20px] bg-cream dark:bg-charcoal shadow-2xl flex flex-col overflow-hidden text-ink dark:text-cream"
+      className="w-full h-full rounded-r-xl bg-cream dark:bg-charcoal shadow-2xl flex flex-col overflow-hidden text-ink dark:text-cream"
     >
       {authToken === null ? (
         <div />
@@ -634,7 +768,18 @@ export default function App() {
             spacer balancing the settings gear) -- justify-between here
             instead, so the logo just starts at the row's left padding and
             the gear stays pinned to the right without needing that spacer. */}
-        <img src={fatClipboardLogo} alt="FatClipboard" className="h-12 w-auto" />
+        <div className="flex items-center gap-2">
+          <img src={fatClipboardLogo} alt="FatClipboard" className="h-12 w-auto" />
+          {/* Mirrors Dashboard's own sidebar tier badge (same accent-tinted
+              pill, same "Pro" label) -- but only shown for Pro, not Free,
+              since this docked panel has no room to spare for a badge that's
+              just confirming the default tier. */}
+          {tier === "pro" && (
+            <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark">
+              Pro
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setShowSettings((s) => !s)}
           className="shrink-0 text-ink dark:text-cream transition-colors p-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
@@ -647,20 +792,30 @@ export default function App() {
         data-tauri-drag-region
         className="flex items-center gap-2 px-4 pb-3 pt-0.5 shadow-[0_1px_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_rgba(255,255,255,0.05)]"
       >
-        <input
-          ref={inputRef}
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            tab === "history" && searchMode === "smart"
-              ? "Describe what you're looking for…"
-              : tab === "history" && historyView === "screenshots"
-              ? "Search screenshot text…"
-              : "Search clipboard history…"
-          }
-          className="flex-1 min-w-0 bg-transparent outline-none text-[15px] placeholder:text-inkMuted dark:placeholder:text-inkMutedDark"
-        />
+        <div className="flex-1 min-w-0 flex items-center rounded-full bg-pillTint dark:bg-charcoalSurface px-3.5 py-2 transition-colors">
+          <i className="ti ti-search text-[13px] text-inkMuted dark:text-inkMutedDark mr-2 shrink-0" />
+          <input
+            ref={inputRef}
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              tab === "history" && searchMode === "smart"
+                ? "Describe what you're looking for…"
+                : tab === "history" && historyView === "screenshots"
+                ? "Search screenshot text…"
+                : "Search clipboard history…"
+            }
+            // placeholder:text-[13px] (2026-08-13, was inheriting the
+            // input's own text-[15px]) -- Smart mode's longer copy
+            // ("Describe what you're looking for…") was wide enough at 15px
+            // to run past the box's right edge and get hard-clipped (native
+            // <input> placeholders don't get an ellipsis, they just cut off
+            // mid-character). Only the placeholder shrinks; typed query text
+            // stays at 15px.
+            className="flex-1 min-w-0 bg-transparent outline-none text-[15px] placeholder:text-[13px] placeholder:text-inkMuted dark:placeholder:text-inkMutedDark"
+          />
+        </div>
         {/* Explicit two-icon segmented control rather than one icon that
             silently swaps meaning -- a single magnifying glass that turns
             into sparkles on click isn't discoverable (a new user has no
@@ -758,7 +913,17 @@ export default function App() {
               in 2 of the 3 columns, so each of its items is exactly as wide
               as History/Transform/Folders here -- same fill-the-row
               behavior, same per-item width, actually aligned. */}
-          <div className="grid grid-cols-3 gap-1.5 px-4 pt-2.5">
+          {/* pb-2.5 added (2026-08-13) -- History/Screenshots always had a
+              buffer below this row for free, since the Text/Screenshots
+              sub-toggle sits right under it with its own pt-1.5/pb-1.5 and
+              button height. Transform and Folders have no such row, so
+              without their own bottom padding here they had *zero* space
+              between this row and their content -- TransformTab's own
+              internal top padding couldn't make up for a missing row's
+              worth of height. Putting the buffer here instead of relying on
+              each panel's internal padding means all three tabs get the
+              same breathing room underneath this row, consistently. */}
+          <div className="grid grid-cols-3 gap-1.5 px-4 pt-2.5 pb-2.5">
             <button
               onClick={() => setTab("history")}
               className={`text-[11.5px] py-1.5 rounded-full transition-all active:scale-[0.97] ${
@@ -792,24 +957,14 @@ export default function App() {
             </button>
           </div>
 
-          {/* History/Screenshots sub-toggle -- Screenshots used to be its own
-              top-level tab; it moved here (2026-07-22) since it's still
-              fundamentally "something you copied," just images instead of
-              text, and Transform needed the top-level slot more (it's not
-              tied to any specific item). Only rendered under the History
-              tab, directly below the primary tab row and above the
-              Filter/Date/Stack row, which only applies to the clips view.
-              Its own grid-cols-2 (2026-07-22) rather than reusing the
-              3-column grid above -- History/Screenshots should split the
-              *full* row 50/50, not sit in 2 of 3 columns sized for the
-              tab row above and leave the third column empty. */}
-          {/* Animated height collapse rather than an instant unmount
-              (2026-07-22) -- this whole row only applies to History, so it
-              can't just be faded-in-place like the search toggle above
-              (that would leave permanent dead space on Transform/Folders).
-              Animating height 0<->auto instead means switching tabs still
-              slides smoothly rather than snapping the rows below it up/down
-              a fixed number of pixels instantly. */}
+          {/* History/Screenshots sub-toggle, redesigned 2026-08-13 as two
+              split buttons instead of a plain 2-up toggle plus a separate
+              Filter/Date/Stack row below it -- bigger and less rounded
+              (rounded-lg, not rounded-full) per request, and each pill's
+              trailing chevron opens a small options menu (Filter/Date/Stack
+              for Text, just Date for Screenshots -- screenshots have no
+              category filter yet) instead of those controls sitting always-
+              visible in their own row. Saves a full row of vertical space. */}
           <AnimatePresence initial={false}>
             {tab === "history" && (
               <motion.div
@@ -819,48 +974,345 @@ export default function App() {
                 transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-            {/* pb-0.5 (2026-08-06): the active pill's ring-1/shadow-sm render
-                a hair outside its own border box, which this motion.div's
-                animated height (measured to exactly fit the content) doesn't
-                account for -- without this buffer, overflow-hidden sliced
-                off that outer sliver right at the bottom, flattening the
-                pill's bottom-rounded corners instead of a small visual glitch
-                nobody would notice. */}
-            <div className="grid grid-cols-2 gap-1.5 px-4 pt-1.5 pb-0.5">
-              {/* Same active-pill treatment as the History/Transform/Folders
-                  row above it now (white/charcoalSurface + shadow + ring,
-                  2026-08-03) -- this sub-toggle used to get a flatter,
-                  dimmer tinted-black active state, which read as a visibly
-                  different (lesser) tab style one level down instead of the
-                  same kind of control. Label changed from "History" to
-                  "Text" at the same time -- with the tab above it already
-                  called History, "History > History / Screenshots" said
-                  History twice for what's actually "History > Text /
-                  Screenshots". */}
-              <button
-                onClick={() => setHistoryView("clips")}
-                className={`text-center text-[10.5px] py-1 rounded-full transition-all active:scale-[0.97] ${
+            <div className="grid grid-cols-2 gap-2 px-4 pt-1.5 pb-1.5">
+              <div
+                ref={textPillRef}
+                className={`flex items-stretch rounded-lg transition-all overflow-hidden ${
                   historyView === "clips"
                     ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
                     : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
                 }`}
               >
-                Text
-              </button>
-              <button
-                onClick={() => setHistoryView("screenshots")}
-                className={`flex items-center justify-center gap-1 text-[10.5px] py-1 rounded-full transition-all active:scale-[0.97] ${
+                <button
+                  onClick={() => setHistoryView("clips")}
+                  className="flex-1 text-center text-[12.5px] py-2 active:scale-[0.98] transition-transform"
+                >
+                  Text
+                </button>
+                <button
+                  ref={textOptionsBtnRef}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!showTextOptions && textPillRef.current) {
+                      // Aligned to the pill's own left edge (2026-08-13,
+                      // was centered in the window) -- clamped so it can't
+                      // run past the right edge on a narrow panel.
+                      const r = textPillRef.current.getBoundingClientRect();
+                      setTextOptionsPos({
+                        top: r.bottom + 4,
+                        left: Math.min(r.left, window.innerWidth - 168 - 8),
+                      });
+                    }
+                    // Close the other pill's dropdown so only one is ever
+                    // open at a time (2026-08-13 -- previously each chevron
+                    // toggled independently, so both could be open at once).
+                    setShowScreenshotsOptions(false);
+                    setShowTextOptions((s) => !s);
+                  }}
+                  title="Filter, date, or stack options"
+                  className="px-2.5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
+                >
+                  <i className={`ti ti-chevron-down text-[11px] transition-transform ${showTextOptions ? "rotate-180" : ""} ${
+                    categoryFilters.length > 0 || activeCustomFilter !== null || dateFrom || dateTo || stackBuilderIds !== null
+                      ? "text-accent dark:text-accentDark"
+                      : ""
+                  }`} />
+                </button>
+              </div>
+
+              <div
+                ref={screenshotsPillRef}
+                className={`flex items-stretch rounded-lg transition-all overflow-hidden ${
                   historyView === "screenshots"
                     ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
                     : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
                 }`}
               >
-                Screenshots
-              </button>
+                <button
+                  onClick={() => setHistoryView("screenshots")}
+                  className="flex-1 text-center text-[12.5px] py-2 active:scale-[0.98] transition-transform"
+                >
+                  Screenshots
+                </button>
+                <button
+                  ref={screenshotsOptionsBtnRef}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!showScreenshotsOptions && screenshotsPillRef.current) {
+                      // Aligned to the pill's own left edge, same fix as
+                      // Text's dropdown above.
+                      const r = screenshotsPillRef.current.getBoundingClientRect();
+                      setScreenshotsOptionsPos({
+                        top: r.bottom + 4,
+                        left: Math.min(r.left, window.innerWidth - 168 - 8),
+                      });
+                    }
+                    setShowTextOptions(false);
+                    setShowScreenshotsOptions((s) => !s);
+                  }}
+                  title="Date options"
+                  className="px-2.5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
+                >
+                  <i className={`ti ti-chevron-down text-[11px] transition-transform ${showScreenshotsOptions ? "rotate-180" : ""} ${
+                    screenshotsDateFrom || screenshotsDateTo ? "text-accent dark:text-accentDark" : ""
+                  }`} />
+                </button>
+              </div>
             </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Text's options dropdown (2026-08-13) -- Filter/Date/Stack used
+              to be their own always-visible row; now they're items here.
+              Picking Filter or Date also switches historyView to "clips"
+              first, since the menus they open (categoryMenu/dateMenu) only
+              render inside the clips branch below -- without that, opening
+              this dropdown while looking at Screenshots and picking "Filter"
+              would set showCategoryMenu true with nothing mounted to show
+              it. */}
+          {showTextOptions &&
+            textOptionsPos &&
+            createPortal(
+              <div
+                ref={textOptionsMenuRef}
+                style={{
+                  position: "fixed",
+                  top: textOptionsPos.top,
+                  left: textOptionsPos.left,
+                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  opacity: 1,
+                }}
+                className="z-[9999] w-40 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream space-y-0.5"
+              >
+                <button
+                  onClick={() => {
+                    setShowTextOptions(false);
+                    setHistoryView("clips");
+                    if (textPillRef.current) {
+                      // Aligned to the pill's left edge (2026-08-13, was
+                      // centered in the window), same fix as the options
+                      // dropdown itself -- w-64 (256px) here, not the
+                      // options dropdown's 168px.
+                      const r = textPillRef.current.getBoundingClientRect();
+                      setCategoryMenuPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 256 - 8) });
+                    }
+                    setShowCategoryMenu(true);
+                  }}
+                  className={`w-full flex items-center gap-2 text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                    categoryFilters.length > 0 || activeCustomFilter !== null
+                      ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
+                      : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <i className="ti ti-filter text-[13px]" />
+                  Filter
+                  {(categoryFilters.length > 0 || activeCustomFilter !== null) && (
+                    <i className="ti ti-check text-[11px] ml-auto" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTextOptions(false);
+                    setHistoryView("clips");
+                    if (textPillRef.current) {
+                      // Aligned to the pill's left edge, same fix as Filter
+                      // above (w-60/240px here).
+                      const r = textPillRef.current.getBoundingClientRect();
+                      setDateMenuPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 240 - 8) });
+                    }
+                    setDateMenuView(!activeDatePreset && (dateFrom || dateTo) ? "custom" : "list");
+                    setShowDateMenu(true);
+                  }}
+                  className={`w-full flex items-center gap-2 text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                    dateFrom || dateTo
+                      ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
+                      : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <i className="ti ti-calendar text-[13px]" />
+                  Date
+                  {(dateFrom || dateTo) && <i className="ti ti-check text-[11px] ml-auto" />}
+                </button>
+                <button
+                  onClick={() => {
+                    setHistoryView("clips");
+                    setStackBuilderIds((ids) => (ids === null ? [] : null));
+                    setShowTextOptions(false);
+                  }}
+                  title="Select items to paste one after another, in order"
+                  className={`w-full flex items-center gap-2 text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                    stackBuilderIds !== null
+                      ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
+                      : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <i className="ti ti-list-numbers text-[13px]" />
+                  Stack
+                  {stackBuilderIds !== null && <i className="ti ti-check text-[11px] ml-auto" />}
+                </button>
+              </div>,
+              document.body
+            )}
+
+          {/* Screenshots' options dropdown -- just Date for now (2026-08-13),
+              see the task discussion: category filtering doesn't make as
+              much sense here since it'd rely on possibly-empty/noisy OCR
+              text, but a date range is exactly as meaningful as it is for
+              Text. */}
+          {showScreenshotsOptions &&
+            screenshotsOptionsPos &&
+            createPortal(
+              <div
+                ref={screenshotsOptionsMenuRef}
+                style={{
+                  position: "fixed",
+                  top: screenshotsOptionsPos.top,
+                  left: screenshotsOptionsPos.left,
+                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  opacity: 1,
+                }}
+                className="z-[9999] w-40 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
+              >
+                <button
+                  onClick={() => {
+                    setShowScreenshotsOptions(false);
+                    setHistoryView("screenshots");
+                    if (screenshotsPillRef.current) {
+                      // Aligned to the pill's left edge, same fix as Text's
+                      // Date menu above.
+                      const r = screenshotsPillRef.current.getBoundingClientRect();
+                      setScreenshotsDateMenuPos({
+                        top: r.bottom + 4,
+                        left: Math.min(r.left, window.innerWidth - 240 - 8),
+                      });
+                    }
+                    setScreenshotsDateMenuView(
+                      !screenshotsActiveDatePreset && (screenshotsDateFrom || screenshotsDateTo) ? "custom" : "list"
+                    );
+                    setShowScreenshotsDateMenu(true);
+                  }}
+                  className={`w-full flex items-center gap-2 text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                    screenshotsDateFrom || screenshotsDateTo
+                      ? "bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
+                      : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <i className="ti ti-calendar text-[13px]" />
+                  Date
+                  {(screenshotsDateFrom || screenshotsDateTo) && (
+                    <i className="ti ti-check text-[11px] ml-auto" />
+                  )}
+                </button>
+              </div>,
+              document.body
+            )}
+
+          {/* Screenshots' actual date-range picker, opened from the options
+              dropdown above -- same list/custom shape as Text's Date menu
+              (DATE_PRESETS/applyScreenshotsDatePreset), kept as its own copy
+              rather than shared state since it filters a completely separate
+              list (screenshots, client-side in ScreenshotsPanel) from Text's
+              server-side dateFrom/dateTo. */}
+          {showScreenshotsDateMenu &&
+            screenshotsDateMenuPos &&
+            createPortal(
+              <div
+                ref={screenshotsDateMenuRef}
+                style={{
+                  position: "fixed",
+                  top: screenshotsDateMenuPos.top,
+                  left: screenshotsDateMenuPos.left,
+                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  opacity: 1,
+                }}
+                className="z-[9999] w-60 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
+              >
+                {screenshotsDateMenuView === "list" ? (
+                  <div className="space-y-0.5">
+                    {DATE_PRESETS.map((p) => {
+                      const active = screenshotsActiveDatePreset === p.label;
+                      return (
+                        <button
+                          key={p.label}
+                          onClick={() => applyScreenshotsDatePreset(p.label, p.hours)}
+                          className={`w-full flex items-center justify-between text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                            active
+                              ? "bg-accent/20 dark:bg-accentDark/30 text-ink dark:text-cream font-medium"
+                              : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                          }`}
+                        >
+                          {p.label}
+                          {active && <i className="ti ti-check text-[12px]" />}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setScreenshotsDateMenuView("custom")}
+                      className={`w-full flex items-center justify-between text-left text-[12px] px-2.5 py-2 rounded-lg transition-colors ${
+                        !screenshotsActiveDatePreset && (screenshotsDateFrom || screenshotsDateTo)
+                          ? "bg-accent/20 dark:bg-accentDark/30 text-ink dark:text-cream font-medium"
+                          : "hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                      }`}
+                    >
+                      Custom
+                      <i className="ti ti-chevron-right text-[12px]" />
+                    </button>
+                    {(screenshotsDateFrom || screenshotsDateTo) && (
+                      <button
+                        onClick={() => {
+                          setScreenshotsDateFrom(null);
+                          setScreenshotsDateTo(null);
+                          setScreenshotsActiveDatePreset(null);
+                          setShowScreenshotsDateMenu(false);
+                        }}
+                        className="w-full text-left text-[12px] px-2.5 py-2 rounded-lg text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                      >
+                        Clear date filter
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-1.5 space-y-2">
+                    <button
+                      onClick={() => setScreenshotsDateMenuView("list")}
+                      className="flex items-center gap-1 text-[11px] text-inkMuted dark:text-inkMutedDark mb-1 hover:text-ink dark:hover:text-cream"
+                    >
+                      <i className="ti ti-chevron-left text-[11px]" />
+                      Back
+                    </button>
+                    <DateRangeCalendar
+                      from={!screenshotsActiveDatePreset ? screenshotsDateFrom : null}
+                      to={!screenshotsActiveDatePreset ? screenshotsDateTo : null}
+                      onChange={(f, t) => {
+                        setScreenshotsActiveDatePreset(null);
+                        setScreenshotsDateFrom(f);
+                        setScreenshotsDateTo(t);
+                      }}
+                    />
+                    <div className="flex gap-1.5 pt-1">
+                      <button
+                        onClick={() => {
+                          setScreenshotsDateFrom(null);
+                          setScreenshotsDateTo(null);
+                          setScreenshotsActiveDatePreset(null);
+                        }}
+                        className="flex-1 text-[11px] py-1.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08]"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={() => setShowScreenshotsDateMenu(false)}
+                        className="flex-1 text-[11px] py-1.5 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>,
+              document.body
+            )}
 
           {tab === "folders" ? (
             <FoldersPanel
@@ -901,6 +1353,8 @@ export default function App() {
               tier={tier}
               query={query}
               searchMode={searchMode}
+              dateFrom={screenshotsDateFrom}
+              dateTo={screenshotsDateTo}
               onPasted={closeWithAnimation}
               onOpenFolder={(folderId) => {
                 setOpenFolderId(folderId);
@@ -914,84 +1368,15 @@ export default function App() {
             />
           ) : (
         <div key="history" className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
-        {/* Same grid-cols-3 as the tab row and sub-toggle above (see the
-            comment on the tab row) -- this row also has exactly 3 items, so
-            it already lined up with the tab row above by construction, but
-            grid keeps all three rows on one consistent alignment mechanism
-            instead of two different ones that happen to agree. */}
-        <div className="grid grid-cols-3 gap-1.5 px-4 pt-2 pb-1 shrink-0">
-          <button
-            ref={filterBtnRef}
-            onClick={() => {
-              if (!showCategoryMenu && filterBtnRef.current) {
-                const r = filterBtnRef.current.getBoundingClientRect();
-                // Centered in the window rather than anchored to the
-                // button's own left edge (2026-07-21) -- this menu is a
-                // fixed w-60 (240px), and on a narrow docked panel,
-                // anchoring to r.left routinely pushed it past the window's
-                // right edge with nothing clamping it back on-screen.
-                setCategoryMenuPos({ top: r.bottom + 4, left: Math.max(8, (window.innerWidth - 240) / 2) });
-              }
-              setShowCategoryMenu((s) => !s);
-            }}
-            className={`flex items-center justify-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full transition-colors active:scale-[0.97] ${
-              categoryFilter !== null || activeCustomFilter !== null
-                ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium hover:bg-accent/35 dark:hover:bg-accentDark/45"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
-            }`}
-          >
-            <i className={activeCustomFilter ? "ti ti-sparkles text-[12px]" : "ti ti-filter text-[12px]"} />
-            {activeCustomFilter
-              ? activeCustomFilter
-              : categoryFilter !== null
-              ? ALL_CATEGORIES.find((f) => f.value === categoryFilter)?.label ?? "Filter"
-              : "Filter"}
-            <i className={`ti ti-chevron-down text-[10px] transition-transform ${showCategoryMenu ? "rotate-180" : ""}`} />
-          </button>
-
-          <button
-            ref={dateBtnRef}
-            onClick={() => {
-              if (!showDateMenu && dateBtnRef.current) {
-                const r = dateBtnRef.current.getBoundingClientRect();
-                // Same centering fix as the Filter menu above -- see that
-                // comment. Same w-60 (240px) width.
-                setDateMenuPos({ top: r.bottom + 4, left: Math.max(8, (window.innerWidth - 240) / 2) });
-              }
-              setDateMenuView(!activeDatePreset && (dateFrom || dateTo) ? "custom" : "list");
-              setShowDateMenu((s) => !s);
-            }}
-            className={`flex items-center justify-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full transition-colors active:scale-[0.97] ${
-              dateFrom || dateTo
-                ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium hover:bg-accent/35 dark:hover:bg-accentDark/45"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
-            }`}
-          >
-            <i className="ti ti-calendar text-[12px]" />
-            {/* Always just "Date" now (2026-07-21) -- the highlighted
-                background already signals "a filter is active" on its own,
-                and cramming the actual date range into this small pill blew
-                it up to multiple lines. The real range is what the active-
-                filter chip right below this row is for. */}
-            Date
-            <i className={`ti ti-chevron-down text-[10px] transition-transform ${showDateMenu ? "rotate-180" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => setStackBuilderIds((ids) => (ids === null ? [] : null))}
-            title="Select items to paste one after another, in order"
-            className={`flex items-center justify-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full transition-colors active:scale-[0.97] ${
-              stackBuilderIds !== null
-                ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium hover:bg-accent/35 dark:hover:bg-accentDark/45"
-                : "bg-black/[0.05] dark:bg-white/[0.07] text-ink dark:text-cream hover:bg-black/[0.09] dark:hover:bg-white/[0.12]"
-            }`}
-          >
-            <i className="ti ti-list-numbers text-[12px]" />
-            Stack
-          </button>
-
+        {/* Filter/Date/Stack no longer have their own always-visible row
+            (2026-08-13) -- they're now items in the Text split-button's
+            options dropdown above (see textOptionsMenuRef's portal near the
+            sub-toggle row). This wrapper just holds the smart-sort toggle
+            plus the Date/Category menu portals those dropdown items open;
+            it renders empty (no visible footprint) otherwise. */}
+        <div className="shrink-0">
           {searchMode === "smart" && query.trim() && (
-            <div className="shrink-0 flex items-center rounded-full bg-black/[0.05] dark:bg-white/[0.07] p-0.5 text-[10.5px]">
+            <div className="mx-4 mt-2 mb-1 w-fit shrink-0 flex items-center rounded-full bg-black/[0.05] dark:bg-white/[0.07] p-0.5 text-[10.5px]">
               <button
                 onClick={() => setSmartSortBy("score")}
                 title="Sort by how well each result matches"
@@ -1026,10 +1411,10 @@ export default function App() {
                   position: "fixed",
                   top: dateMenuPos.top,
                   left: dateMenuPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#F2EEE3",
+                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
                   opacity: 1,
                 }}
-                className="z-[9999] w-60 rounded-2xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
+                className="z-[9999] w-60 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
               >
                 {dateMenuView === "list" ? (
                   <div className="space-y-0.5">
@@ -1084,34 +1469,20 @@ export default function App() {
                       <i className="ti ti-chevron-left text-[11px]" />
                       Back
                     </button>
-                    <div>
-                      <label className="block text-[10px] text-inkMuted dark:text-inkMutedDark mb-1">
-                        From
-                      </label>
-                      <input
-                        type="date"
-                        value={!activeDatePreset ? dateFrom ?? "" : ""}
-                        onChange={(e) => {
-                          setActiveDatePreset(null);
-                          setDateFrom(e.target.value || null);
-                        }}
-                        className="w-full bg-black/[0.05] dark:bg-white/[0.07] rounded-lg px-2 py-1.5 text-[12px] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-inkMuted dark:text-inkMutedDark mb-1">
-                        To
-                      </label>
-                      <input
-                        type="date"
-                        value={!activeDatePreset ? dateTo ?? "" : ""}
-                        onChange={(e) => {
-                          setActiveDatePreset(null);
-                          setDateTo(e.target.value || null);
-                        }}
-                        className="w-full bg-black/[0.05] dark:bg-white/[0.07] rounded-lg px-2 py-1.5 text-[12px] outline-none"
-                      />
-                    </div>
+                    {/* One connected month-grid range picker (2026-08-13),
+                        replacing the two separate native From/To date
+                        inputs -- those opened two unrelated OS pickers with
+                        no visual link between them, which read as confusing
+                        for selecting a single range. */}
+                    <DateRangeCalendar
+                      from={!activeDatePreset ? dateFrom : null}
+                      to={!activeDatePreset ? dateTo : null}
+                      onChange={(f, t) => {
+                        setActiveDatePreset(null);
+                        setDateFrom(f);
+                        setDateTo(t);
+                      }}
+                    />
                     <div className="flex gap-1.5 pt-1">
                       <button
                         onClick={() => {
@@ -1145,10 +1516,10 @@ export default function App() {
                   position: "fixed",
                   top: categoryMenuPos.top,
                   left: categoryMenuPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#F2EEE3",
+                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
                   opacity: 1,
                 }}
-                className="z-[9999] w-64 rounded-2xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] py-1.5 text-ink dark:text-cream"
+                className="z-[9999] w-64 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] py-1.5 text-ink dark:text-cream"
               >
                 <p className="px-3.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
                   Presets
@@ -1158,12 +1529,12 @@ export default function App() {
                     filters" below) so it reads as "clear the grid below"
                     rather than being just another same-sized bubble. */}
                 {(() => {
-                  const allActive = activeCustomFilter === null && categoryFilter === null;
+                  const allActive = activeCustomFilter === null && categoryFilters.length === 0;
                   return (
                     <button
                       onClick={() => {
                         clearCustomFilter();
-                        setCategoryFilter(null);
+                        setCategoryFilters([]);
                         setShowCategoryMenu(false);
                       }}
                       className={`flex items-center gap-2 px-3.5 py-1.5 mx-1 mb-1.5 rounded-full text-[12px] text-left transition-colors ${
@@ -1189,19 +1560,26 @@ export default function App() {
                     from Settings' h-11/text-[11.5px] to fit this dropdown's
                     narrower width, and capped at 6 regardless of how many a
                     user has enabled in Settings -- this is a quick-access
-                    menu, not the full list (which still lives in Settings). */}
+                    menu, not the full list (which still lives in Settings).
+                    Multi-select (2026-08-13, was single-select) -- each
+                    bubble toggles independently and the menu stays open
+                    after a pick so several can be selected in one go; only
+                    "All" above and clicking away close it. */}
                 <div className="grid grid-cols-2 gap-1.5 px-1 mb-1">
                   {ALL_CATEGORIES.filter((f) => visibleCategories.includes(f.value))
                     .slice(0, 6)
                     .map((f) => {
-                      const active = activeCustomFilter === null && categoryFilter === f.value;
+                      const active = activeCustomFilter === null && categoryFilters.includes(f.value);
                       return (
                         <button
                           key={f.value}
                           onClick={() => {
                             clearCustomFilter();
-                            setCategoryFilter(f.value);
-                            setShowCategoryMenu(false);
+                            setCategoryFilters((prev) =>
+                              prev.includes(f.value)
+                                ? prev.filter((c) => c !== f.value)
+                                : [...prev, f.value]
+                            );
                           }}
                           className={`flex items-center justify-center gap-1 h-9 px-1.5 rounded-full text-[10.5px] leading-tight text-center border transition-colors ${
                             active
@@ -1327,20 +1705,23 @@ export default function App() {
             )}
         </div>
 
-        {(categoryFilter !== null || activeCustomFilter !== null || dateFrom || dateTo) && (
+        {(categoryFilters.length > 0 || activeCustomFilter !== null || dateFrom || dateTo) && (
           <div className="flex items-center flex-wrap gap-1.5 px-4 pb-2 shrink-0">
-            {categoryFilter !== null && (
-              <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium">
-                {ALL_CATEGORIES.find((f) => f.value === categoryFilter)?.label ?? categoryFilter}
+            {categoryFilters.map((c) => (
+              <span
+                key={c}
+                className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium"
+              >
+                {ALL_CATEGORIES.find((f) => f.value === c)?.label ?? c}
                 <button
-                  onClick={() => setCategoryFilter(null)}
+                  onClick={() => setCategoryFilters((prev) => prev.filter((x) => x !== c))}
                   title="Clear this filter"
                   className="hover:opacity-70"
                 >
                   <i className="ti ti-x text-[10px]" />
                 </button>
               </span>
-            )}
+            ))}
             {activeCustomFilter !== null && (
               <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium">
                 <i className="ti ti-sparkles text-[10px]" />
@@ -1352,7 +1733,12 @@ export default function App() {
             )}
             {(dateFrom || dateTo) && (
               <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark font-medium">
-                <i className="ti ti-calendar text-[10px]" />
+                {/* text-[13px], matching the calendar icon in the Date
+                    dropdown item that opens this filter (2026-08-13) -- was
+                    text-[10px], same as this chip's other icons (ti-x,
+                    ti-sparkles), but that made this one specifically read as
+                    a different/smaller icon next to the dropdown's. */}
+                <i className="ti ti-calendar text-[13px]" />
                 {activeDatePreset ?? `${dateFrom ?? "…"} – ${dateTo ?? "…"}`}
                 <button
                   onClick={() => {
@@ -1408,17 +1794,14 @@ export default function App() {
                 ) : query ? (
                   "No matches."
                 ) : (
-                  <>
-                    Copy something to get{" "}
-                    <span className="font-serif italic text-ink dark:text-cream">started</span>.
-                  </>
+                  "Copy something to get started."
                 )}
               </motion.div>
             )}
             {(() => {
               const renderRow = (entry: Entry, isLastInGroup: boolean) => {
                 const { item, i } = entry;
-                const active = hoverIndex !== null ? i === hoverIndex : i === selected;
+                const active = hoverIndex !== null ? i === hoverIndex : keyboardActive && i === selected;
                 const savedInFolders = folderMemberships.get(item.content) ?? [];
                 const stackPos = stackBuilderIds?.indexOf(item.id) ?? -1;
                 return (
@@ -1429,7 +1812,10 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      onMouseEnter={() => setHoverIndex(i)}
+                      onMouseEnter={() => {
+                        setHoverIndex(i);
+                        setKeyboardActive(false);
+                      }}
                       onMouseLeave={() => setHoverIndex(null)}
                       onClick={() =>
                         stackBuilderIds !== null
@@ -1437,7 +1823,7 @@ export default function App() {
                           : setExpandedId((id) => (id === item.id ? null : item.id))
                       }
                       className={`group relative flex items-start gap-2 px-3.5 py-3 cursor-pointer transition-colors ${
-                        active ? "bg-creamSurface dark:bg-charcoalSurface" : ""
+                        active ? "bg-accent/10 dark:bg-accentDark/15" : ""
                       }`}
                     >
                       {stackBuilderIds !== null && (
@@ -1646,7 +2032,7 @@ export default function App() {
                       <p className="text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-3 pb-1.5">
                         Pinned
                       </p>
-                      <div className="rounded-2xl bg-white/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+                      <div className="rounded-xl bg-pillTint dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors">
                         {pinnedEntries.map((entry, idx) =>
                           renderRow(entry, idx === pinnedEntries.length - 1)
                         )}
@@ -1658,7 +2044,7 @@ export default function App() {
                       <p className="text-[10px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark px-3 pb-1.5">
                         {group.label}
                       </p>
-                      <div className="rounded-2xl bg-white/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+                      <div className="rounded-xl bg-pillTint dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] hover:ring-accent/40 dark:hover:ring-accentDark/40 shadow-card dark:shadow-cardDark overflow-hidden transition-colors">
                         {group.entries.map((entry, idx) =>
                           renderRow(entry, idx === group.entries.length - 1)
                         )}

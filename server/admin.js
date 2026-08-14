@@ -441,13 +441,13 @@ function renderDashboard({
      color scheme (prefers-color-scheme) rather than a manual toggle -- this
      is a one-person internal tool, not worth its own theme switcher. */
   :root {
-    --cream: #F2EEE3; --creamSurface: #F8F4EC; --ink: #1A1816; --inkMuted: #6E6859;
-    --border: rgba(26,24,22,0.10); --accent: #5EA800; --accentFill: #F1F8E7; --surface: #ffffff;
+    --cream: #FFFFFF; --creamSurface: #F8F4EC; --ink: #1A1816; --inkMuted: #6E6859;
+    --border: rgba(26,24,22,0.10); --accent: #7C6FE3; --accentFill: #EDEAFB; --surface: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --cream: #1C1A17; --creamSurface: #262320; --ink: #F2EEE3; --inkMuted: #A8A39B;
-      --border: rgba(255,255,255,0.08); --accent: #C1FF72; --accentFill: #2B3B16; --surface: #2E2A25;
+      --border: rgba(255,255,255,0.08); --accent: #B7A9FF; --accentFill: #332B4D; --surface: #2E2A25;
     }
   }
   * { box-sizing: border-box; }

@@ -24,13 +24,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --cream: #F2EEE3;
+    --cream: #FFFFFF;
     --creamSurface: #F8F4EC;
     --ink: #1A1816;
     --inkMuted: #6E6859;
     --borderLight: rgba(var(--ink-rgb),0.10);
-    --accent: #5EA800;
-    --accentFill: #F1F8E7;
+    --accent: #7C6FE3;
+    --accentFill: #EDEAFB;
     --charcoal: #1C1A17;
     /* Companion rgb-triplet vars (2026-08-09, dark mode) -- lets literal
        rgba(...) tints elsewhere in this file (hover backgrounds, chip
@@ -40,8 +40,16 @@
        text sitting on a solid accent-colored fill) that also need a dark
        equivalent. */
     --ink-rgb: 26,24,22;
-    --cream-rgb: 242,238,227;
-    --accent-rgb: 94,168,0;
+    /* cream-rgb/accent-rgb (2026-08-13 fix) -- these two were left over
+       from the pre-rebrand cream/green palette (rgb of the old #F2EEE3 and
+       #5EA800) when --cream/--accent above were updated to #FFFFFF/#7C6FE3.
+       Nothing broke loudly since these only feed rgba(...) translucency
+       (the sticky nav's backdrop blur, the active-nav-pill tint, the hero
+       button's focus ring), so they just quietly kept rendering faintly
+       green/cream-tinted instead of matching the new white/lavender
+       palette. Now rgb of #FFFFFF and #7C6FE3 respectively. */
+    --cream-rgb: 255,255,255;
+    --accent-rgb: 124,111,227;
     --surface: #ffffff;
     --onAccent: #ffffff;
   }
@@ -57,11 +65,16 @@
     --ink: #F2EEE3;
     --inkMuted: #A8A39B;
     --borderLight: rgba(255,255,255,0.08);
-    --accent: #C1FF72;
-    --accentFill: #2B3B16;
+    --accent: #B7A9FF;
+    --accentFill: #332B4D;
     --ink-rgb: 242,238,227;
     --cream-rgb: 28,26,23;
-    --accent-rgb: 193,255,114;
+    /* Same stale-leftover fix as :root above -- this was rgb of the old
+       neon-green dark accent (#C1FF72) from before the 2026-08-12 lavender
+       rebrand; --accent itself already reads #B7A9FF, this just brings the
+       translucency variants (nav active-pill tint, focus rings) in line
+       with it. Now rgb of #B7A9FF. */
+    --accent-rgb: 183,169,255;
     --surface: #2E2A25;
     --onAccent: #1A1816;
   }
@@ -168,9 +181,22 @@
     content: "";
     position: absolute; left: -4%; right: -4%; bottom: -0.16em;
     height: 0.16em;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M2,11 C2,6 14,4 34,4 C90,2 180,2 250,4 C275,4.5 292,6 298,9 C296,13 288,15.5 260,16 C190,17.5 100,17.5 40,16 C18,15.5 6,14 2,11 Z' fill='%235EA800'/%3E%3C/svg%3E") no-repeat;
+    /* fill was %235EA800 (the old green accent) -- a plain background-image
+       data URI can't reference a CSS var, so this stayed hardcoded green
+       through the 2026-08-12 lavender rebrand even though h1 em's own text
+       color above already switched to var(--accent). Now %237C6FE3 (light
+       mode's #7C6FE3); see the dark-mode override right below for the
+       #B7A9FF variant. */
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M2,11 C2,6 14,4 34,4 C90,2 180,2 250,4 C275,4.5 292,6 298,9 C296,13 288,15.5 260,16 C190,17.5 100,17.5 40,16 C18,15.5 6,14 2,11 Z' fill='%237C6FE3'/%3E%3C/svg%3E") no-repeat;
     background-size: 100% 100%;
     z-index: -1;
+  }
+  /* Dark-mode variant of the brush-stroke fill above (2026-08-13, new) --
+     same shape, swapped to #B7A9FF (dark mode's lighter accent) so the
+     underline still matches "elevated"'s own text color instead of showing
+     the light-mode accent against a dark page. */
+  html[data-theme="dark"] h1 em::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M2,11 C2,6 14,4 34,4 C90,2 180,2 250,4 C275,4.5 292,6 298,9 C296,13 288,15.5 260,16 C190,17.5 100,17.5 40,16 C18,15.5 6,14 2,11 Z' fill='%23B7A9FF'/%3E%3C/svg%3E");
   }
   .sub { font-size: 17px; color: var(--inkMuted); max-width: 460px; margin: 0 0 32px; line-height: 1.6; }
   .ctaRow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -226,7 +252,7 @@
      (see the .float-tag rule above), so pairing its icon with the
      separately-flipping --accent could land it on a background of a
      similar brightness (nearly invisible) depending on theme. */
-  .float-tag i { color: #5EA800; font-size: 13px; }
+  .float-tag i { color: #7C6FE3; font-size: 13px; }
   .panel {
     background: var(--p-bg); border-radius: 20px; overflow: hidden;
     box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(26,24,22,0.06);

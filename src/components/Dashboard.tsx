@@ -144,7 +144,7 @@ function computeBusiestWeekday(daily: { date: string; count: number }[]): string
 function heatColor(count: number, max: number, isDark: boolean): string {
   if (count === 0) return isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
   const intensity = Math.min(1, count / Math.max(max, 1));
-  const accent = isDark ? "193,255,114" : "94,168,0"; // accentDark / accent (FatClipboard green, 2026-07-27)
+  const accent = isDark ? "183,169,255" : "124,111,227"; // accentDark / accent (FatClipboard violet, 2026-08-12)
   const alpha = 0.25 + intensity * 0.65;
   return `rgba(${accent},${alpha})`;
 }
@@ -397,7 +397,7 @@ export default function Dashboard() {
         <div className="flex-1" />
 
         {tier !== "pro" && (
-          <div className="rounded-2xl bg-accentFill dark:bg-accentFillDark p-3.5 mb-2">
+          <div className="rounded-xl bg-accentFill dark:bg-accentFillDark p-3.5 mb-2">
             <p className="text-[12px] font-medium mb-1">Unlock unlimited history + AI</p>
             <p className="text-[11px] text-inkMuted dark:text-inkMutedDark mb-2.5">
               Upgrade to Pro for unlimited clips, folders, and AI transforms.
@@ -442,7 +442,7 @@ export default function Dashboard() {
           </button>
 
           {showHelp && (
-            <div className="absolute bottom-full left-1 mb-2 w-64 rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.06] dark:ring-white/[0.08] shadow-float dark:shadow-floatDark p-4 z-10">
+            <div className="absolute bottom-full left-1 mb-2 w-64 rounded-xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.06] dark:ring-white/[0.08] shadow-float dark:shadow-floatDark p-4 z-10">
               <div className="flex items-center gap-2 mb-2">
                 <img src={fatClipboardLogo} alt="FatClipboard" className="h-4 w-auto" />
                 <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">v0.1.0</span>
@@ -496,7 +496,7 @@ export default function Dashboard() {
                     <p className="text-[11px] font-medium text-inkMuted dark:text-inkMutedDark mb-2">
                       {group.label}
                     </p>
-                    <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
+                    <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
                       {group.entries.map((item, idx) => {
                         const isExpanded = expandedId === item.id;
                         return (
@@ -588,7 +588,7 @@ export default function Dashboard() {
               {/* Compact stat stack -- the fuller breakdown (category bars,
                   heatmap) lives in Insights so Home stays quick to scan,
                   same split as Wispr's own Home vs. Your Usage tabs. */}
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[26px] font-semibold leading-none">
                     {stats ? stats.total_clips_saved.toLocaleString() : "--"}
@@ -663,13 +663,13 @@ export default function Dashboard() {
             </p>
 
             <div className={`grid gap-4 mb-4 ${tier === "pro" ? "grid-cols-5" : "grid-cols-4"}`}>
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">
                   {stats ? stats.total_clips_saved.toLocaleString() : "--"}
                 </p>
                 <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">clips saved</p>
               </div>
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">
                   {stats ? stats.transforms_run.toLocaleString() : "--"}
                 </p>
@@ -677,7 +677,7 @@ export default function Dashboard() {
                   AI transforms run
                 </p>
               </div>
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">
                   {stats
                     ? new Intl.NumberFormat(undefined, {
@@ -690,7 +690,7 @@ export default function Dashboard() {
                   characters captured
                 </p>
               </div>
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[28px] font-semibold leading-none mb-1.5">{streak}</p>
                 <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
                   day streak
@@ -703,7 +703,7 @@ export default function Dashboard() {
                 </p>
               </div>
               {tier === "pro" && (
-                <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+                <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                   <p className="text-[28px] font-semibold leading-none mb-1.5">
                     {stats ? stats.total_screenshots_saved.toLocaleString() : "--"}
                   </p>
@@ -718,7 +718,7 @@ export default function Dashboard() {
                 reductions over the same daily_activity array the heatmap
                 below already renders (see computeWeeklyComparison/
                 computeBusiestWeekday), no extra backend query needed. */}
-            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4 flex items-center gap-6">
+            <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4 flex items-center gap-6">
               <div>
                 <p className="text-[20px] font-semibold leading-none mb-1.5 flex items-center gap-1.5">
                   {weeklyComparison.thisWeek.toLocaleString()}
@@ -754,7 +754,7 @@ export default function Dashboard() {
             </div>
 
             {/* Category breakdown */}
-            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4">
+            <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4 mb-4">
               <p className="text-[12px] font-medium mb-3">Where your clips come from</p>
               {(stats?.categories.length ?? 0) === 0 && (
                 <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
@@ -772,22 +772,22 @@ export default function Dashboard() {
                         className="h-full rounded-full"
                         style={{
                           width: `${Math.max(6, (c.count / maxCategoryCount) * 100)}%`,
-                          // FatClipboard green (2026-07-27), replacing the
-                          // old purple -- same accent/accentDark hex values
-                          // as tailwind.config.js, just inlined since this is
+                          // FatClipboard violet (2026-08-12) -- same
+                          // accent/accentDark hex values as
+                          // tailwind.config.js, just inlined since this is
                           // a computed style, not a static class.
                           backgroundColor:
                             idx === 0
                               ? theme === "dark"
-                                ? "#C1FF72"
-                                : "#5EA800"
+                                ? "#B7A9FF"
+                                : "#7C6FE3"
                               : idx <= 2
                               ? theme === "dark"
-                                ? "rgba(193,255,114,0.55)"
-                                : "rgba(94,168,0,0.55)"
+                                ? "rgba(183,169,255,0.55)"
+                                : "rgba(124,111,227,0.55)"
                               : theme === "dark"
-                              ? "rgba(193,255,114,0.3)"
-                              : "rgba(94,168,0,0.3)",
+                              ? "rgba(183,169,255,0.3)"
+                              : "rgba(124,111,227,0.3)",
                         }}
                       />
                     </div>
@@ -809,7 +809,7 @@ export default function Dashboard() {
                 rather than one, since they're unrelated stats that both
                 happen to be short lists. */}
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[12px] font-medium mb-3">Folders</p>
                 {!stats || stats.folders.folder_count === 0 ? (
                   <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
@@ -837,7 +837,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+              <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
                 <p className="text-[12px] font-medium mb-3">Top presets used</p>
                 {!stats || stats.top_presets.length === 0 ? (
                   <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
@@ -859,7 +859,7 @@ export default function Dashboard() {
             </div>
 
             {/* Streak heatmap */}
-            <div className="rounded-2xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
+            <div className="rounded-xl bg-creamSurface dark:bg-charcoalSurface shadow-card dark:shadow-cardDark p-4">
               <p className="text-[12px] font-medium mb-3">Activity, last 12 weeks</p>
               <div className="flex gap-[3px] overflow-x-auto pb-1">
                 {heatmapWeeks.map((week, wi) => (
@@ -895,9 +895,9 @@ export default function Dashboard() {
                 otherwise full-width window, unlike Home's activity feed
                 right next to it in the sidebar. Same ring/shadow card
                 treatment as Home's activity feed now too, not just the width
-                -- bg-creamSurface + rounded-2xl alone (no ring/shadow) read
+                -- bg-creamSurface + rounded-xl alone (no ring/shadow) read
                 flatter than every other card on this page. */}
-            <div className="flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark rounded-2xl overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark rounded-xl overflow-hidden">
               {/* onStartPasteQueue is required by FoldersPanel but has no
                   meaning here: sequential ("Stack") paste is driven by the
                   quick panel's hotkey/hide cycle (see App.tsx's pasteQueue),
@@ -915,7 +915,7 @@ export default function Dashboard() {
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-5">
               Same settings as the quick panel -- changes here apply everywhere.
             </p>
-            <div className="w-full flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface rounded-2xl overflow-hidden">
+            <div className="w-full flex-1 min-h-0 flex flex-col bg-creamSurface dark:bg-charcoalSurface rounded-xl overflow-hidden">
               <SettingsPanel
                 onClose={() => setNav("home")}
                 onThemeChange={setTheme}

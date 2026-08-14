@@ -818,10 +818,14 @@ fn log_transform(
     input: String,
     instruction: String,
     output: String,
+    // Only set when this run came from clicking a preset button, mirroring
+    // transform_clip's own preset_label param -- see db::log_transform's
+    // preset_label migration comment for why this exists.
+    preset_label: Option<String>,
     state: tauri::State<AppState>,
 ) -> i64 {
     let conn = state.conn.lock().unwrap();
-    db::log_transform(&conn, &input, &instruction, &output)
+    db::log_transform(&conn, &input, &instruction, &output, preset_label.as_deref())
 }
 
 #[tauri::command]

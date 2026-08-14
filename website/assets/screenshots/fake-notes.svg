@@ -3,7 +3,7 @@
   <rect x="0" y="0" width="800" height="480" fill="none" stroke="#E5E1D6" stroke-width="2"/>
 
   <!-- Header -->
-  <rect x="48" y="42" width="34" height="34" rx="8" fill="#5EA800"/>
+  <rect x="48" y="42" width="34" height="34" rx="8" fill="#7C6FE3"/>
   <path d="M58 59 L65 66 L76 51" stroke="#ffffff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="94" y="60" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#1A1816">Team Standup</text>
   <text x="94" y="80" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#6E6859">Thursday, Aug 5, 2026</text>
@@ -12,13 +12,13 @@
 
   <!-- Checklist -->
   <g>
-    <rect x="48" y="126" width="20" height="20" rx="5" fill="#5EA800"/>
+    <rect x="48" y="126" width="20" height="20" rx="5" fill="#7C6FE3"/>
     <path d="M53 136 L59 142 L68 129" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="82" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816" text-decoration="line-through" opacity="0.55">Ship dark mode toggle by Friday</text>
   </g>
 
   <g>
-    <rect x="48" y="164" width="20" height="20" rx="5" fill="#5EA800"/>
+    <rect x="48" y="164" width="20" height="20" rx="5" fill="#7C6FE3"/>
     <path d="M53 174 L59 180 L68 167" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="82" y="180" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1A1816" text-decoration="line-through" opacity="0.55">Fix OCR crash on 4K screenshots</text>
   </g>

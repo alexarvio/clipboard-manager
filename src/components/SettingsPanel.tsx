@@ -67,7 +67,7 @@ function Section({
     // White in light mode (2026-08-09, was bg-creamSurface) -- matches the
     // website mockup's card treatment, which reads as a cleaner "card
     // sitting on the cream page" than blending into a same-toned surface.
-    <div className="rounded-2xl bg-white dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark p-4">
+    <div className="rounded-xl bg-white dark:bg-charcoalSurface ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark p-4">
       <div className="flex items-center gap-2 mb-1">
         <i className={`ti ${icon} text-accent dark:text-accentDark text-[15px]`} />
         <p className="text-[13px] font-medium">{title}</p>
@@ -335,33 +335,25 @@ export default function SettingsPanel({
       .then((s) => {
         const customPresets = s.custom_presets ?? [];
         const customPresetsScreenshots = s.custom_presets_screenshots ?? [];
-        // Every label that actually still resolves to a real preset for
-        // *that* context -- builtin-appropriate-to-this-context, or a
-        // custom preset from *that context's own pool* (2026-08-06: custom
-        // presets are no longer shared between Text and Screenshots -- see
+        // Every label that actually still resolves to a real *custom*
+        // preset for that context's own pool (2026-08-06: custom presets
+        // are no longer shared between Text and Screenshots -- see
         // custom_presets_screenshots's doc comment on settings.rs::Settings).
-        // A label can end up in visible_presets(_screenshots) without
-        // qualifying anymore if a custom preset was ever deleted by some
-        // other path than TransformBar/TransformTab's own deletePreset
-        // (which cleans both lists itself), or -- as of 2026-08-03 -- if a
-        // builtin that used to be toggleable for this context no longer is
-        // (e.g. "Clean up OCR errors" under Text: there's no OCR step for a
-        // plain text clip, so it never made sense there to begin with).
-        // Pruning both cases here keeps the "x/6" counter honest and stops
-        // a context from silently carrying a preset that doesn't apply to
-        // it.
-        const validTextLabels = new Set([
-          ...TEXT_ELIGIBLE_PRESETS,
-          ...customPresets.map((p) => p.label),
-        ]);
-        const validScreenshotLabels = new Set([
-          ...DEFAULT_SCREENSHOT_PRESETS,
-          ...customPresetsScreenshots.map((p) => p.label),
-        ]);
-        const visiblePresets = (s.visible_presets ?? TEXT_ELIGIBLE_PRESETS).filter((l) => validTextLabels.has(l));
-        const visiblePresetsScreenshots = (
-          s.visible_presets_screenshots ?? DEFAULT_SCREENSHOT_PRESETS
-        ).filter((l) => validScreenshotLabels.has(l));
+        // Built-ins no longer belong in this list at all (2026-08-13) --
+        // they're always shown regardless of what's in visible_presets, so
+        // any builtin label still sitting in here from before that change
+        // is stale and gets dropped, same as a label left over from a
+        // custom preset that was since deleted by some other path than
+        // TransformBar/TransformTab's own deletePreset (which cleans both
+        // lists itself). Pruning here keeps the "x/6" counter meaning
+        // exactly "x of your own presets are shown," with nothing hidden
+        // in the count that isn't actually a toggleable custom preset.
+        const validTextLabels = new Set(customPresets.map((p) => p.label));
+        const validScreenshotLabels = new Set(customPresetsScreenshots.map((p) => p.label));
+        const visiblePresets = (s.visible_presets ?? []).filter((l) => validTextLabels.has(l));
+        const visiblePresetsScreenshots = (s.visible_presets_screenshots ?? []).filter((l) =>
+          validScreenshotLabels.has(l)
+        );
         const cleaned = {
           ...s,
           custom_presets: customPresets,
@@ -372,8 +364,8 @@ export default function SettingsPanel({
         };
         setSettings(cleaned);
         const prunedSomething =
-          visiblePresets.length !== (s.visible_presets ?? TEXT_ELIGIBLE_PRESETS).length ||
-          visiblePresetsScreenshots.length !== (s.visible_presets_screenshots ?? DEFAULT_SCREENSHOT_PRESETS).length;
+          visiblePresets.length !== (s.visible_presets ?? []).length ||
+          visiblePresetsScreenshots.length !== (s.visible_presets_screenshots ?? []).length;
         if (prunedSomething) invoke("save_settings", { settings: cleaned }).catch(console.error);
       })
       .catch(console.error);
@@ -458,13 +450,18 @@ export default function SettingsPanel({
     );
 
   const activePresetField = presetContext === "screenshot" ? "visible_presets_screenshots" : "visible_presets";
+  // Only ever holds custom preset labels now (2026-08-13, see the load
+  // effect's pruning above) -- so its length is exactly "how many of your
+  // own presets are currently shown," the thing MAX_VISIBLE_PRESETS caps.
   const activeVisiblePresets = settings[activePresetField];
   const presetCount = activeVisiblePresets.length;
-  // Which builtins are even offered as a toggle for the current context --
-  // "Clean up OCR errors" makes no sense to turn on for plain text clips
-  // (there's no OCR step), and "Fix grammar"/"Make formal"/"Make casual"
-  // don't fit OCR'd screenshot content much better (2026-08-03 fix, see
-  // TEXT_ELIGIBLE_PRESETS/DEFAULT_SCREENSHOT_PRESETS's own doc comments).
+  // Which builtins are eligible for the current context -- "Clean up OCR
+  // errors" makes no sense for plain text clips (there's no OCR step), and
+  // "Fix grammar"/"Make formal"/"Make casual" don't fit OCR'd screenshot
+  // content much better (2026-08-03 fix, see TEXT_ELIGIBLE_PRESETS/
+  // DEFAULT_SCREENSHOT_PRESETS's own doc comments). No longer a toggle list
+  // (2026-08-13) -- every one of these is always shown, so this is just
+  // rendered directly below with no checked/unchecked state.
   const eligibleBuiltins = presetContext === "screenshot" ? DEFAULT_SCREENSHOT_PRESETS : TEXT_ELIGIBLE_PRESETS;
   // Which custom-preset pool "Your presets" reads/writes for the currently
   // selected context -- fully separate arrays as of 2026-08-06 (see
@@ -472,14 +469,6 @@ export default function SettingsPanel({
   // mirroring activePresetField's own context switch above.
   const activeCustomPresetField = presetContext === "screenshot" ? "custom_presets_screenshots" : "custom_presets";
   const activeCustomPresets = settings[activeCustomPresetField];
-  // Shown next to "Your presets" below -- both Built-in and Your-presets
-  // share one combined visibility list (hence presetCount above being the
-  // one true total), but calling out how many of *your own* saved presets
-  // specifically are turned on is useful once that list grows past a
-  // handful, same reasoning as the search box only appearing past 5.
-  const customVisibleCount = activeCustomPresets.filter((p) =>
-    activeVisiblePresets.includes(p.label)
-  ).length;
 
   // Every label already in use *for this context* -- builtins are still a
   // shared namespace across both contexts (same underlying instruction
@@ -939,7 +928,7 @@ export default function SettingsPanel({
         <Section
           icon="ti-sparkles"
           title="AI Transform"
-          description={`Choose up to ${MAX_VISIBLE_PRESETS} presets to show as one-click buttons in Transform -- separately for text clips and for screenshots, since a mix of built-in and your own saved ones makes sense differently for each.`}
+          description={`Built-in presets are always shown. Choose up to ${MAX_VISIBLE_PRESETS} of your own saved ones to show alongside them -- separately for text clips and for screenshots, since different ones tend to make sense for each.`}
         >
           {/* Redesigned 2026-08-03 -- the old layout stacked a Text/
               Screenshots switch, a combined "x/6" counter, *another*
@@ -979,10 +968,34 @@ export default function SettingsPanel({
             </button>
           </div>
 
+          <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1.5">
+            Built-in
+          </p>
+          {/* Always on (2026-08-13, was a checkbox-style toggle list capped
+              together with "Your presets" below) -- built-ins are few,
+              curated, and free, so there's no real reason to hide any of
+              them; the cap now only applies to your own, unbounded list of
+              saved presets further down. Non-interactive rows (no onClick,
+              no aria-pressed) styled the same "on" way every row always
+              looks, since that's simply always true here. */}
+          <div className="space-y-1.5 mb-4">
+            {eligibleBuiltins.map((label) => (
+              <div
+                key={label}
+                className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] border bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
+              >
+                <i className="ti ti-sparkles text-[12px] shrink-0 text-accent dark:text-accentDark" />
+                <span className="flex-1">{label}</span>
+                <i
+                  className="ti ti-check text-[11px] shrink-0 opacity-70"
+                  title="Always shown"
+                />
+              </div>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between mb-2.5 pb-2.5 border-b border-borderLight dark:border-borderDark">
-            <span className="text-[12.5px] font-medium">
-              {presetContext === "screenshot" ? "Screenshot" : "Text"} buttons shown
-            </span>
+            <span className="text-[12.5px] font-medium">Your presets shown</span>
             <span
               className={`text-[12px] font-medium ${
                 presetCount >= MAX_VISIBLE_PRESETS
@@ -996,45 +1009,10 @@ export default function SettingsPanel({
 
           {presetCapMsg && (
             <div className="mb-2.5 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium">
-              You can show up to {MAX_VISIBLE_PRESETS} at once — uncheck one first.
+              You can show up to {MAX_VISIBLE_PRESETS} of your own presets at once — uncheck one
+              first.
             </div>
           )}
-
-          <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1.5">
-            Built-in
-          </p>
-          {/* Redesigned 2026-08-09 -- capsule toggle buttons (same
-              selected/unselected color language as the Categories grid
-              above) instead of a checkbox list. A builtin's label doubles
-              as its own instruction (see BUILTIN_PRESETS's doc comment), so
-              there's nothing to expand here -- unlike "Your presets" below,
-              which does get an expand chevron for its separate instruction
-              text. */}
-          <div className="space-y-1.5 mb-4">
-            {eligibleBuiltins.map((label) => {
-              const checked = activeVisiblePresets.includes(label);
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  aria-pressed={checked}
-                  onClick={() => togglePresetVisible(label, !checked)}
-                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] border transition-colors ${
-                    checked
-                      ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30 text-accent dark:text-accentDark font-medium"
-                      : "bg-white dark:bg-charcoalSurface border-borderLight dark:border-borderDark text-ink dark:text-cream hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <i
-                    className={`ti ti-sparkles text-[12px] shrink-0 ${
-                      checked ? "text-accent dark:text-accentDark" : "text-inkMuted dark:text-inkMutedDark opacity-70"
-                    }`}
-                  />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
 
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-[11px] font-medium uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
@@ -1042,7 +1020,7 @@ export default function SettingsPanel({
             </p>
             {activeCustomPresets.length > 0 && (
               <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">
-                {customVisibleCount}/{activeCustomPresets.length} shown
+                {presetCount}/{activeCustomPresets.length} shown
               </span>
             )}
           </div>
@@ -1077,13 +1055,13 @@ export default function SettingsPanel({
                   }}
                   maxLength={MAX_PRESET_LABEL_LENGTH}
                   placeholder="Name"
-                  className="w-full bg-cream dark:bg-charcoal border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+                  className="w-full bg-pillTint dark:bg-charcoalSurface border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none transition-colors hover:border-accent/40 dark:hover:border-accentDark/40 focus:border-accent/50 dark:focus:border-accentDark/50"
                 />
                 <input
                   value={newPresetInstruction}
                   onChange={(e) => setNewPresetInstruction(e.target.value)}
                   placeholder="Instruction, e.g. “Translate into French”"
-                  className="w-full bg-cream dark:bg-charcoal border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+                  className="w-full bg-pillTint dark:bg-charcoalSurface border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none transition-colors hover:border-accent/40 dark:hover:border-accentDark/40 focus:border-accent/50 dark:focus:border-accentDark/50"
                 />
                 {newPresetLabelTaken && (
                   <p className="text-red-500 dark:text-red-400 text-[11px]">
@@ -1160,7 +1138,7 @@ export default function SettingsPanel({
                           className={`group rounded-xl border transition-colors ${
                             checked
                               ? "bg-accent/15 dark:bg-accentDark/20 border-accent/25 dark:border-accentDark/30"
-                              : "bg-creamSurface dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                              : "bg-pillTint dark:bg-charcoalSurface border-borderLight dark:border-borderDark hover:bg-accent/15 dark:hover:bg-accentDark/25 hover:border-accent/40 dark:hover:border-accentDark/40"
                           }`}
                         >
                           <div
@@ -1369,7 +1347,7 @@ export default function SettingsPanel({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[320px] rounded-2xl bg-cream dark:bg-charcoalSurface shadow-2xl p-4"
+              className="w-full max-w-[320px] rounded-xl bg-cream dark:bg-charcoalSurface shadow-2xl p-4"
             >
               <p className="text-[14px] font-semibold mb-1.5">Delete your account?</p>
               <p className="text-[12.5px] text-inkMuted dark:text-inkMutedDark leading-snug mb-3">

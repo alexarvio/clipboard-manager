@@ -56,7 +56,7 @@ props that don't exist.
     <p className="text-[13px] font-medium text-ink dark:text-cream">Brand colors</p>
   </div>
   <ClampedText
-    text="Primary purple #6B46C1, Cream #F2EEE3, Charcoal #1A1816"
+    text="Primary purple #6B46C1, Cream #FFFFFF, Charcoal #1A1816"
     className="text-[12px] text-inkMuted dark:text-inkMutedDark"
     lines={2}
   />

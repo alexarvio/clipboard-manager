@@ -62,12 +62,21 @@ export const DEFAULT_SCREENSHOT_PRESETS: string[] = [
 // TransformTab/SettingsPanel already truncated a new preset's *auto-filled*
 // label to (from its instruction text) -- this just also enforces it on the
 // label field itself, which was previously freely editable past that length.
-export const MAX_PRESET_LABEL_LENGTH = 40;
+// Tightened 40 -> 20 (2026-08-13) -- the label is meant to be a short name
+// for the preset (think "Spanish", "Formal email"), not a second place to
+// paste the instruction/prompt itself; 40 characters was still long enough
+// to overflow the fixed-width preset chips in Transform's grid even with
+// `truncate` catching the overflow visually. The actual instruction text has
+// no length cap -- that's the field meant to hold real prompt-length content.
+export const MAX_PRESET_LABEL_LENGTH = 20;
 
-// Hard cap on how many preset chips can be visible in the Transform panel at
-// once -- there isn't room to show every builtin plus every custom preset
-// someone creates, so visibility is opt-in past this limit (see
-// Settings -> Presets, and the "x / MAX_VISIBLE_PRESETS" counter in
-// TransformBar). Matches the count of builtins today so upgrading users see
-// all 6 defaults still visible with nothing to change.
+// Hard cap on how many of *your own saved (custom) presets* can be shown as
+// chips in the Transform panel at once (2026-08-13, was a combined cap that
+// also counted the built-ins toward it -- see TEXT_ELIGIBLE_PRESETS/
+// DEFAULT_SCREENSHOT_PRESETS above). Built-ins are no longer optional: every
+// eligible one for the current context is always shown, with nothing to
+// toggle. This only governs which subset of your own saved presets (an
+// unbounded, user-grown list) shows up as buttons -- see Settings ->
+// Presets, and the "x / MAX_VISIBLE_PRESETS custom" counter in
+// TransformBar/TransformTab.
 export const MAX_VISIBLE_PRESETS = 6;

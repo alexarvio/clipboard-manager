@@ -94,12 +94,16 @@ pub struct Settings {
     /// existing settings.json files don't suddenly show nothing.
     #[serde(default = "default_visible_categories")]
     pub visible_categories: Vec<String>,
-    /// Which preset chips (builtin instruction text or a custom preset's
-    /// label -- both share one namespace) are shown in TransformBar, capped
-    /// at MAX_VISIBLE_PRESETS (see src/lib/presets.ts, which this default
-    /// must mirror). `#[serde(default)]` falls back to "every builtin
-    /// visible, no customs" so existing settings.json files see exactly
-    /// what they always saw before this was configurable.
+    /// Which of the user's own *custom* preset labels are shown in
+    /// TransformBar/TransformTab, capped at MAX_VISIBLE_PRESETS (see
+    /// src/lib/presets.ts). Built-in presets are no longer tracked here
+    /// (2026-08-13) -- every one eligible for the current context is always
+    /// shown, nothing to opt into. Old settings.json files may still carry
+    /// builtin labels left over from before that change; the frontend
+    /// (SettingsPanel's load effect) prunes those out on next open rather
+    /// than this field needing its own migration. `#[serde(default)]` falls
+    /// back to no custom presets shown, which is correct for a fresh
+    /// install (there's nothing to show yet).
     #[serde(default = "default_visible_presets")]
     pub visible_presets: Vec<String>,
     /// Same idea as visible_presets, but for screenshots' own Transform
@@ -177,15 +181,12 @@ fn default_visible_categories() -> Vec<String> {
     ]
 }
 
+// Empty (2026-08-13, was the 6 default builtin labels) -- builtins are
+// always shown now regardless of what's in this list, so seeding it with
+// their labels was no longer meaningful; a fresh install has no custom
+// presets yet, so there's nothing to default this to besides empty.
 fn default_visible_presets() -> Vec<String> {
-    vec![
-        "Fix grammar".into(),
-        "Make formal".into(),
-        "Make casual".into(),
-        "Summarize".into(),
-        "To bullet points".into(),
-        "Simplify".into(),
-    ]
+    Vec::new()
 }
 
 /// Screenshots' own default visible subset -- deliberately different from
@@ -196,15 +197,11 @@ fn default_visible_presets() -> Vec<String> {
 /// alongside this field. Must be kept in sync with that file's
 /// DEFAULT_SCREENSHOT_PRESETS constant (the frontend's own fallback copy of
 /// this same list).
+// Empty, same reasoning as default_visible_presets above -- screenshot-
+// eligible builtins are always shown now too, so this only ever needs to
+// seed the custom-preset subset, which starts empty on a fresh install.
 fn default_visible_presets_screenshots() -> Vec<String> {
-    vec![
-        "Summarize".into(),
-        "Extract key info".into(),
-        "Extract action items".into(),
-        "Clean up OCR errors".into(),
-        "To bullet points".into(),
-        "Simplify".into(),
-    ]
+    Vec::new()
 }
 
 impl Default for Settings {
