@@ -1023,20 +1023,21 @@
 
           <div class="tv-label-row">
             <span class="tv-label">Instruction</span>
-            <span class="tv-presetcount">3/6 custom <i class="ti ti-settings"></i></span>
+            <span class="tv-presetcount">5/6 custom <i class="ti ti-settings"></i></span>
           </div>
           <div class="tv-box">
             <!-- Instruction is now a Presets/Custom tab switcher (2026-08-13,
                  was one flex-wrap row mixing builtins and custom presets
                  together) -- only one group shows at a time. None of these
-                 three are BUILTIN_PRESETS (see lib/presets.ts); they're
-                 saved *custom* presets (what "Save as preset" produces), so
-                 Custom is the tab shown active/selected here. Three chips
-                 (2026-08-15, was just Spanish alone) so the selected/
-                 unselected contrast is actually visible instead of a single
-                 chip with nothing beside it to compare against: Spanish is
-                 selected, its instruction fills the box below; "Add all
-                 numbers" and "Expense line" sit unselected next to it. -->
+                 five are BUILTIN_PRESETS (see lib/presets.ts); they're saved
+                 *custom* presets (what "Save as preset" produces), so
+                 Custom is the tab shown active/selected here. Five chips
+                 (2026-08-16, grew from an initial three) deliberately span
+                 different use cases -- translation, math, finance, real
+                 estate, legal -- to show this is a general-purpose tool,
+                 not just a copy-editing one. Spanish stays selected, its
+                 instruction fills the box below; the rest sit unselected
+                 next to it. -->
             <div class="tv-instr-tabs">
               <span class="tv-instr-tab">Presets</span>
               <span class="tv-instr-tab on">Custom</span>
@@ -1045,6 +1046,8 @@
               <span class="tv-preset on">Spanish</span>
               <span class="tv-preset">Add all numbers</span>
               <span class="tv-preset">Expense line</span>
+              <span class="tv-preset">Listing description</span>
+              <span class="tv-preset">Flag clauses</span>
             </div>
             <div class="tv-freeform">Translate into Spanish</div>
             <div class="tv-run-row"><span class="tv-run">Run</span><span class="tv-save"><i class="ti ti-device-floppy"></i></span></div>
