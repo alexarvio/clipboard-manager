@@ -276,9 +276,21 @@
      separately-flipping --accent could land it on a background of a
      similar brightness (nearly invisible) depending on theme. */
   .float-tag i { color: #7C6FE3; font-size: 13px; }
+  /* Ring switched from a fixed rgba(26,24,22,..) literal to theme-aware
+     rgba(var(--ink-rgb),..) (2026-08-17 fix) -- --ink-rgb is dark ink in
+     light mode (same 26,24,22 the literal hardcoded, so light mode is
+     unchanged) but flips to near-white in dark mode. The drop shadow alone
+     can't define this panel's edge in dark mode -- a shadow is by
+     definition *darker* than its surroundings, and the page behind it
+     (var(--cream), #1C1A17) is already close to black, so a dark shadow on
+     a dark page reads as nothing. The fixed-dark ring had the same problem
+     for the same reason: rgba(26,24,22,0.06) on a #1C1A17 page is
+     virtually the same color. A light hairline ring is what actually
+     separates a dark panel from a dark page -- same fix already applied to
+     .shot-mock-card below. */
   .panel {
     background: var(--p-bg); border-radius: 20px; overflow: hidden;
-    box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(26,24,22,0.06);
+    box-shadow: 0 30px 60px -22px rgba(26,24,22,0.3), 0 0 0 1px rgba(var(--ink-rgb),0.08);
     padding-bottom: 14px;
   }
   .panel-brand-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 4px; }
