@@ -770,7 +770,7 @@ export default function TransformTab({
                     title={p}
                     className={`flex items-center justify-center h-9 px-2 rounded-lg text-[11px] leading-tight transition-colors disabled:opacity-40 ${
                       instruction === p
-                        ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium"
+                        ? "bg-accent/25 dark:bg-accentDark/35 text-ink dark:text-cream font-medium ring-1 ring-accent/50 dark:ring-accentDark/50"
                         : "bg-accent/10 dark:bg-accentDark/15 text-ink dark:text-cream hover:bg-accent/20 dark:hover:bg-accentDark/25"
                     }`}
                   >

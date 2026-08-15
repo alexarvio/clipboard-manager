@@ -964,7 +964,17 @@ export default function App() {
               trailing chevron opens a small options menu (Filter/Date/Stack
               for Text, just Date for Screenshots -- screenshots have no
               category filter yet) instead of those controls sitting always-
-              visible in their own row. Saves a full row of vertical space. */}
+              visible in their own row. Saves a full row of vertical space.
+              2026-08-15: wrapped both pills in a visible track
+              (bg-black/[0.04]) -- previously the unselected pill had no
+              background at all, just plain text floating next to the
+              selected one's white card, so it read as unclear whether it
+              was even a button and the selected/unselected split was hard
+              to read at a glance. The gray track now gives the whole
+              control a clear "segmented switch" shape in both themes, with
+              the white/charcoalSurface pill popping against it exactly the
+              way the selected tab already pops in Transform's Presets/
+              Custom switcher. */}
           <AnimatePresence initial={false}>
             {tab === "history" && (
               <motion.div
@@ -974,13 +984,13 @@ export default function App() {
                 transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-            <div className="grid grid-cols-2 gap-2 px-4 pt-1.5 pb-1.5">
+            <div className="grid grid-cols-2 gap-1 mx-4 mt-1.5 mb-1.5 p-[3px] rounded-[10px] bg-black/[0.04] dark:bg-white/[0.06]">
               <div
                 ref={textPillRef}
                 className={`flex items-stretch rounded-lg transition-all overflow-hidden ${
                   historyView === "clips"
                     ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
-                    : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                    : "text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
                 }`}
               >
                 <button
@@ -1025,7 +1035,7 @@ export default function App() {
                 className={`flex items-stretch rounded-lg transition-all overflow-hidden ${
                   historyView === "screenshots"
                     ? "font-medium bg-white dark:bg-charcoalSurface shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
-                    : "text-ink dark:text-cream hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
+                    : "text-inkMuted dark:text-inkMutedDark hover:bg-black/[0.05] dark:hover:bg-white/[0.07]"
                 }`}
               >
                 <button
