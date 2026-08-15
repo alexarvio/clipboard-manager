@@ -332,13 +332,25 @@
      pin, trailing chevron. */
   /* Wrapped in its own lavender card (2026-08-13, new) -- FoldersPanel.tsx
      groups the plain top-level folder list into "the same bordered-card
-     treatment as History/Screenshots' boxed lists" (its own doc comment),
-     i.e. a bg-pillTint card, same as .panel-group/.pin-card above. This had
-     no card treatment at all before -- just loose rows straight on the
-     creamSurface feature-box background, no lavender anywhere. */
-  .folder-viz { width: 100%; background: var(--pillTint); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); padding: 6px; }
+     treatment as History/Screenshots' boxed lists" (its own doc comment) --
+     this was WRONG, caught 2026-08-15 against the real app: FoldersPanel's
+     root folder list has no wrapping card at all, rows just float directly
+     on the panel's own plain cream background (see FoldersPanel.tsx's root
+     list branch -- no container div around the folder.map, and FolderRow's
+     unboxed variant gets no background of its own, only rounded-xl mb-1).
+     The lavender pillTint card treatment belongs to a *different* real
+     element -- the item/subfolder cards *inside* an opened folder (see
+     bg-pillTint at FoldersPanel.tsx lines ~844/1018) -- not this outer
+     wrapper, so putting it here made the whole mockup read as "everything
+     purple" instead of "plain list, individual items tinted". */
+  .folder-viz { width: 100%; background: var(--cream); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06); padding: 6px; }
   .folder-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 13px; }
-  .folder-row:hover, .folder-row.on { background: var(--surface); }
+  /* var(--surface) was also wrong here for the same reason -- the real
+     FolderRow's expanded/hover state is bg-accent/10 (a light accent tint,
+     not a plain white/surface fill and not pillTint either), so the "open"
+     row should read as faintly lavender-tinted against the plain list
+     behind it, not as a flat white block sitting on a purple card. */
+  .folder-row:hover, .folder-row.on { background: rgba(var(--accent-rgb),0.1); }
   .folder-row i.ti-folder, .folder-row i.ti-folder-filled { color: var(--accent); width: 16px; }
   .folder-row .fname { flex: 1; }
   .folder-row .fcount { color: var(--inkMuted); font-size: 11.5px; }
