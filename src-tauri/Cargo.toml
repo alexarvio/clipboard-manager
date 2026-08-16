@@ -61,11 +61,27 @@ base64 = "0.22"
 # against a real `cargo build` yet (see ocr.rs's own doc comment) -- if the
 # exact API surface has moved between windows-rs versions, this version
 # pin/feature list is the first thing to check.
+# 2026-08-19: five Win32_* features added for clipboard_listener.rs's
+# event-driven clipboard capture (AddClipboardFormatListener + a hidden
+# message-only window), replacing the old fixed-interval polling loop in
+# main.rs. Win32_Foundation/_UI_WindowsAndMessaging cover the window
+# creation and message loop, Win32_System_DataExchange has
+# AddClipboardFormatListener itself, Win32_System_LibraryLoader has
+# GetModuleHandleW (needed for RegisterClassW's hInstance). Win32_Graphics_Gdi
+# was an unexpected fifth one -- RegisterClassW/WNDCLASSW turned out to be
+# gated behind it too (a windows-rs metadata quirk, nothing GDI-specific is
+# actually used here), caught by cargo build reporting "no WNDCLASSW in
+# Win32::UI::WindowsAndMessaging -- found an item that was configured out".
 windows = { version = "0.58", features = [
     "Media_Ocr",
     "Graphics_Imaging",
+    "Win32_Graphics_Gdi",
     "Globalization",
     "Win32_System_WinRT",
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_DataExchange",
+    "Win32_System_LibraryLoader",
 ] }
 
 [[bin]]

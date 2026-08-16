@@ -48,6 +48,16 @@ if (!VOYAGE_API_KEY) {
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
+// Single source of truth for the transform/filter-match model id (2026-08-20
+// -- was two independently hardcoded "claude-haiku-4-5" strings in
+// /transform and /filter-match, missing the required date suffix, which
+// made every real request fail with a model_not_found error from day one.
+// One typo in one of two copies is exactly how that kind of bug happens --
+// with only one constant, there's only one place to ever get this wrong,
+// and both routes automatically stay in sync if this ever needs to change
+// again (e.g. a future model version).
+const TRANSFORM_MODEL = "claude-haiku-4-5-20251001";
+
 const app = express();
 app.use(cors());
 
@@ -587,8 +597,26 @@ function dailyCap(kind) {
   };
 }
 
+// 2026-08-20: expanded from a bare { ok: true } so a misconfigured
+// deployment (missing env var, or -- as just happened -- a bad model id) is
+// visible with one request against the live URL instead of only showing up
+// as a generic client-side error report or a warning buried in Railway's
+// log viewer. Never returns actual secret values, only booleans + the
+// currently-active model id (which is not secret, and is exactly the kind
+// of thing that silently drifted wrong last time).
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    transformModel: TRANSFORM_MODEL,
+    configured: {
+      anthropicApiKey: Boolean(ANTHROPIC_API_KEY),
+      voyageApiKey: Boolean(VOYAGE_API_KEY),
+      jwtSecret: Boolean(JWT_SECRET),
+      databaseUrl: Boolean(process.env.DATABASE_URL),
+      stripeSecretKey: Boolean(process.env.STRIPE_SECRET_KEY),
+      stripeWebhookSecret: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+    },
+  });
 });
 
 app.post("/transform", requireAppSecret, requireAuth, requirePro, dailyCap("transform"), async (req, res) => {
@@ -615,7 +643,7 @@ app.post("/transform", requireAppSecret, requireAuth, requirePro, dailyCap("tran
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: TRANSFORM_MODEL,
       max_tokens: 1024,
       messages: [
         {
@@ -634,7 +662,13 @@ app.post("/transform", requireAppSecret, requireAuth, requirePro, dailyCap("tran
     res.json({ result: transformed });
   } catch (err) {
     console.error("[clip-server] /transform failed:", err);
-    res.status(502).json({ error: "transform failed" });
+    // err.message (2026-08-20, was a hardcoded "transform failed" with no
+    // detail) -- the app's error UI (TransformTab.tsx/TransformBar.tsx)
+    // shows this string verbatim, so a bare "transform failed" gave no way
+    // to tell "wrong model id" apart from "bad API key" apart from "server
+    // unreachable" from the client side, and this exact bug (see the model
+    // id fix above) went unnoticed for a while as a result.
+    res.status(502).json({ error: err.message || "transform failed" });
   }
 });
 
@@ -675,7 +709,7 @@ app.post("/filter-match", requireAppSecret, requireAuth, requirePro, dailyCap("f
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: TRANSFORM_MODEL,
       max_tokens: 1024,
       messages: [
         {
@@ -706,7 +740,8 @@ app.post("/filter-match", requireAppSecret, requireAuth, requirePro, dailyCap("f
     res.json({ matches });
   } catch (err) {
     console.error("[clip-server] /filter-match failed:", err);
-    res.status(502).json({ error: "filter failed" });
+    // Same err.message fix as /transform above.
+    res.status(502).json({ error: err.message || "filter failed" });
   }
 });
 

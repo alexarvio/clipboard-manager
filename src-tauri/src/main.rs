@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod classify;
+mod clipboard_listener;
 mod db;
 mod ocr;
 mod settings;
@@ -1959,162 +1960,20 @@ fn main() {
             });
 
             // --- background clipboard watcher -------------------------------
+            // 2026-08-19: switched from a 400ms polling loop to Windows'
+            // native clipboard-change notification (see
+            // clipboard_listener.rs for the full reasoning) -- a user
+            // reported having to Ctrl+C two or three times before a paste
+            // actually picked up the new content, traced to the old loop's
+            // constant OpenClipboard polling colliding with other apps'
+            // own clipboard writes. This thread just runs the listener's
+            // blocking Win32 message loop; all the actual capture logic
+            // (dedup, DB insert, embedding, OCR -- unchanged from before)
+            // now lives in clipboard_listener::check_clipboard, called only
+            // when Windows reports a real change instead of on every tick.
             let app_handle = app.handle().clone();
             thread::spawn(move || {
-                let mut last_seen = String::new();
-                let mut last_seen_screenshot_hash: Option<u64> = None;
-                loop {
-                    // Skip this tick entirely (rather than colliding) while
-                    // an in-process clipboard write is underway -- see
-                    // AppState::clipboard_busy and ClipboardBusyGuard. Sleep
-                    // briefly and re-check rather than waiting the full
-                    // 400ms, so the watcher catches up quickly once the
-                    // write finishes.
-                    if let Some(state) = app_handle.try_state::<AppState>() {
-                        if state.clipboard_busy.load(Ordering::SeqCst) {
-                            thread::sleep(Duration::from_millis(50));
-                            continue;
-                        }
-                    }
-                    if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                        if let Ok(text) = clipboard.get_text() {
-                            if !text.trim().is_empty() && text != last_seen {
-                                last_seen = text.clone();
-                                if let Some(state) = app_handle.try_state::<AppState>() {
-                                    let is_self_set = {
-                                        let guard = state.last_self_set.lock().unwrap();
-                                        match &*guard {
-                                            Some((value, at)) => {
-                                                value == &text && at.elapsed() < SELF_SET_WINDOW
-                                            }
-                                            None => false,
-                                        }
-                                    };
-                                    if !is_self_set {
-                                        let conn = state.conn.lock().unwrap();
-                                        let new_id = db::insert_if_new(&conn, &text);
-                                        // History cap is now tier-driven (50 items / 7 days on
-                                        // Free, unlimited on Pro) rather than the old editable
-                                        // max_history setting -- see docs/free-vs-pro.md.
-                                        let tier = state.settings.lock().unwrap().tier.clone();
-                                        db::trim_history_for_tier(&conn, &tier);
-                                        drop(conn);
-
-                                        // Semantic search (Pro-only, see semantic_search below):
-                                        // embed the new clip in the background so it's
-                                        // searchable by meaning, not just substring, the moment
-                                        // it lands in history. Skipped entirely on Free -- every
-                                        // embed call is a real API request, same cost reasoning
-                                        // as transform_clip/filter_by_ai.
-                                        if let (Some(id), true) = (new_id, tier == "pro") {
-                                            let (server_url, app_secret, auth_token) = {
-                                                let settings = state.settings.lock().unwrap();
-                                                (
-                                                    settings.server_url.clone(),
-                                                    settings.app_secret.clone(),
-                                                    settings.auth_token.clone(),
-                                                )
-                                            };
-                                            let text_for_embed = text.clone();
-                                            let app_handle_for_embed = app_handle.clone();
-                                            tauri::async_runtime::spawn(async move {
-                                                if let Ok(vector) = embed_text(
-                                                    &text_for_embed,
-                                                    "document",
-                                                    &server_url,
-                                                    &app_secret,
-                                                    &auth_token,
-                                                )
-                                                .await
-                                                {
-                                                    if let Some(state) =
-                                                        app_handle_for_embed.try_state::<AppState>()
-                                                    {
-                                                        let conn = state.conn.lock().unwrap();
-                                                        db::save_embedding(&conn, id, &vector);
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        } else if let Some(state) = app_handle.try_state::<AppState>() {
-                            // get_text() failed -- most likely the clipboard holds a
-                            // screenshot/image instead of text (Win+Shift+S, PrintScreen,
-                            // etc. all copy raw image data, not text). Screenshots are
-                            // captured on both tiers now (2026-08-01 Free/Pro split
-                            // change, see docs/free-vs-pro.md) -- same tier-driven cap
-                            // as text history (trim_screenshots_for_tier below) rather
-                            // than being gated out of existing entirely on Free.
-                            let tier = state.settings.lock().unwrap().tier.clone();
-                            if let Ok(image) = clipboard.get_image() {
-                                let hash = hash_bytes(&image.bytes);
-                                if last_seen_screenshot_hash != Some(hash) {
-                                    last_seen_screenshot_hash = Some(hash);
-                                    let is_self_set = {
-                                        let guard = state.last_self_set_screenshot.lock().unwrap();
-                                        match &*guard {
-                                            Some((value, at)) => {
-                                                *value == hash && at.elapsed() < SELF_SET_WINDOW
-                                            }
-                                            None => false,
-                                        }
-                                    };
-                                    if !is_self_set {
-                                        let conn = state.conn.lock().unwrap();
-                                        let new_screenshot_id = db::insert_screenshot(
-                                            &conn,
-                                            &image.bytes,
-                                            image.width as u32,
-                                            image.height as u32,
-                                        );
-                                        // Same Free-tier cap as text history (50 items /
-                                        // 7 days, unlimited on Pro) -- see
-                                        // trim_screenshots_for_tier's doc comment.
-                                        db::trim_screenshots_for_tier(&conn, &tier);
-                                        drop(conn);
-
-                                        // OCR runs automatically on every
-                                        // screenshot, on both tiers -- unlike AI
-                                        // Transform/embeddings, it's
-                                        // local (Windows.Media.Ocr, see
-                                        // ocr.rs) and free, so there's no
-                                        // cost reason to ration it.
-                                        // Spawned on a plain OS thread
-                                        // (not tauri::async_runtime)
-                                        // since ocr::extract_text blocks
-                                        // synchronously on the WinRT
-                                        // async call.
-                                        if let Some(id) = new_screenshot_id {
-                                            let rgba = image.bytes.to_vec();
-                                            let width = image.width as u32;
-                                            let height = image.height as u32;
-                                            let app_handle_for_ocr = app_handle.clone();
-                                            thread::spawn(move || {
-                                                // Always save, even if OCR found nothing --
-                                                // an empty string still marks this screenshot
-                                                // as "processed" (see db::save_ocr_text /
-                                                // screenshots_missing_ocr), so it isn't picked
-                                                // up and re-OCR'd forever by
-                                                // backfill_screenshot_ocr below.
-                                                let text = ocr::extract_text(&rgba, width, height)
-                                                    .unwrap_or_default();
-                                                if let Some(state) =
-                                                    app_handle_for_ocr.try_state::<AppState>()
-                                                {
-                                                    let conn = state.conn.lock().unwrap();
-                                                    db::save_ocr_text(&conn, id, &text);
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    thread::sleep(Duration::from_millis(400));
-                }
+                clipboard_listener::run(app_handle);
             });
 
             // --- global hotkey to toggle the panel ---------------------------

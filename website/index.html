@@ -380,7 +380,11 @@
      the item list nested inside, same structure as the app. */
   .folder-open { margin-top: 2px; }
   .folder-open-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 2px; }
-  .folder-open-action { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 500; padding: 6px 4px; border-radius: 999px; background: rgba(var(--ink-rgb),0.05); color: var(--ink); white-space: nowrap; }
+  /* background: var(--pillTint), not rgba(ink,0.05) (2026-08-19 fix) --
+     FoldersPanel.tsx's real Stack/New folder/New item buttons are
+     bg-pillTint dark:bg-charcoalSurface (see the same lavender token used
+     for .folder-open-card below), not a plain gray-ink tint. */
+  .folder-open-action { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 500; padding: 6px 4px; border-radius: 999px; background: var(--pillTint); color: var(--ink); white-space: nowrap; }
   .folder-open-action i { font-size: 11px; }
   /* background: var(--pillTint), not var(--surface) (2026-08-13 fix) --
      matches FoldersPanel.tsx's real bg-pillTint item-list card; was plain

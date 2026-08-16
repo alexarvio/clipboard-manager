@@ -1213,50 +1213,64 @@ export default function SettingsPanel({
         </Section>
       </div>
 
-      <Section
-        icon="ti-code"
-        title="Developer"
-        description="Dev-only tools for testing -- see docs/billing-flow.md and server/README.md. This local toggle changes what the UI shows, but the server independently re-checks the real tier from its own database on every AI request, so this alone cannot unlock Pro features against a real deployed server."
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span>Local plan override (dev only)</span>
-            <select
-              value={settings.tier}
-              onChange={(e) => update({ tier: e.target.value as "free" | "pro" })}
-              className="bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2 py-1"
-            >
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-            </select>
-          </div>
+      {/* Dev build only (2026-08-20, gated behind import.meta.env.DEV --
+          true for `npm run dev`/`cargo tauri dev`, false for a real `npm
+          run build` release, which is what every shipped installer bundles)
+          -- previously visible in every build including real ones users
+          download. The plan-override select alone can't actually grant
+          real Pro (the server re-checks tier from its own database on
+          every AI request, independent of anything the client sends -- see
+          docs/billing-flow.md), so this was never a security hole, but a
+          visible "flip yourself to Pro" switch plus raw server-URL/secret
+          fields in a public build looks unfinished and invites confused
+          bug reports from real users poking at things meant for testing.
+          Still fully available when running locally for dev/testing. */}
+      {import.meta.env.DEV && (
+        <Section
+          icon="ti-code"
+          title="Developer"
+          description="Dev-only tools for testing -- see docs/billing-flow.md and server/README.md. This local toggle changes what the UI shows, but the server independently re-checks the real tier from its own database on every AI request, so this alone cannot unlock Pro features against a real deployed server."
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span>Local plan override (dev only)</span>
+              <select
+                value={settings.tier}
+                onChange={(e) => update({ tier: e.target.value as "free" | "pro" })}
+                className="bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2 py-1"
+              >
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">
-              Server URL
-            </label>
-            <input
-              value={settings.server_url}
-              onChange={(e) => update({ server_url: e.target.value })}
-              className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none"
-              placeholder="http://localhost:8787"
-            />
-          </div>
+            <div>
+              <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">
+                Server URL
+              </label>
+              <input
+                value={settings.server_url}
+                onChange={(e) => update({ server_url: e.target.value })}
+                className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none"
+                placeholder="http://localhost:8787"
+              />
+            </div>
 
-          <div>
-            <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">
-              Server shared secret (only needed once deployed)
-            </label>
-            <input
-              type="password"
-              value={settings.app_secret}
-              onChange={(e) => update({ app_secret: e.target.value })}
-              className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none"
-              placeholder="leave blank for local dev"
-            />
+            <div>
+              <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">
+                Server shared secret (only needed once deployed)
+              </label>
+              <input
+                type="password"
+                value={settings.app_secret}
+                onChange={(e) => update({ app_secret: e.target.value })}
+                className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-3 py-2 outline-none"
+                placeholder="leave blank for local dev"
+              />
+            </div>
           </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
       {/* Account moved to the bottom (2026-08-06, was the very first
           section) -- Log out being the first thing anyone sees on opening
