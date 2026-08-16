@@ -23,6 +23,7 @@ const { pool, initDb } = require("./db");
 const { sendWelcomeEmail, sendPasswordResetEmail } = require("./email");
 const billing = require("./billing");
 const admin = require("./admin");
+const createWaitlistRouter = require("./waitlist");
 
 const PORT = process.env.PORT || 8787;
 const APP_SHARED_SECRET = process.env.APP_SHARED_SECRET || "";
@@ -95,6 +96,17 @@ app.use(express.json({ limit: "200kb" }));
 // requirePro, since this has nothing to do with a Clip user's own session,
 // it's a separate, single-owner surface.
 app.use("/admin", admin.router);
+
+// --- Mac waitlist ----------------------------------------------------------
+//
+// Public, unauthenticated POST /waitlist, used by the "On a Mac?" email
+// capture at the bottom of the marketing site -- non-Windows visitors used
+// to hit "Windows only" and leave with no way to stay in touch.
+//
+// Deliberately not wired into initDb(): it creates its own table lazily on
+// first use, so an issue with this optional marketing endpoint can never
+// stop the server booting for auth/billing/transform. See waitlist.js.
+app.use(createWaitlistRouter(pool));
 
 // --- Accounts -----------------------------------------------------------
 //

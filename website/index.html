@@ -21,7 +21,13 @@
 <link rel="stylesheet" href="./tabler-icons.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!-- Luckiest Guy (2026-08-16, new) -- the chunky rounded bubble-letter face
+     used for the "sticker" accents (.sticker class below). Deliberately not
+     used anywhere else on the page: the logo is the one place this site
+     already breaks its own clean/minimal rules with a graffiti-style
+     wordmark, and the stickers are meant to feel like a bit of that same
+     energy escaped onto the page, not a full type-system change. -->
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&family=Luckiest+Guy&display=swap" rel="stylesheet" />
 <style>
   :root {
     --cream: #FFFFFF;
@@ -39,6 +45,30 @@
        for genuine accent-highlight boxes. See tailwind.config.js's pillTint
        comment for the same distinction in the real app. */
     --pillTint: #F6F4FB;
+
+    /* ---- Logo palette (2026-08-16, new) ------------------------------
+       Pulled straight off the FatClipboard wordmark: "FAT" is a warm
+       orange->pink gradient, "CLIPBOARD" is neon green, both with a thick
+       black outline and a hard offset drop shadow. That lockup is the one
+       place this product already breaks its own clean/minimal rules, so
+       these tokens exist to let the *site* borrow that same energy in
+       controlled doses -- accent chips, stickers, section highlights --
+       rather than the page being 100% lavender everywhere.
+
+       Deliberately NOT used inside any app mockup: those must keep
+       matching the real app's actual white/lavender UI, or the site stops
+       being an honest preview of the product. These are page-chrome only. */
+    --lime: #C6F24E;
+    --pink: #FF3D77;
+    --orange: #FF9466;
+    --limeInk: #1C1A17;
+    /* The graffiti "sticker" shadow -- a hard, un-blurred offset, the way a
+       vinyl sticker's die-cut edge throws a shadow, vs. the soft ambient
+       blur used for realistic UI depth elsewhere. Theme-aware so it stays
+       visible on a dark page (see the dark-mode override below). */
+    --punchShadow: 4px 4px 0 rgba(26,24,22,0.92);
+    --punchBorder: #1C1A17;
+
     /* Companion rgb-triplet vars (2026-08-09, dark mode) -- lets literal
        rgba(...) tints elsewhere in this file (hover backgrounds, chip
        fills, translucent overlays) flip alongside --ink/--cream/--accent
@@ -77,6 +107,14 @@
     /* Dark equivalent of pillTint above -- matches the app's own
        dark:bg-charcoalSurface pairing wherever bg-pillTint is used. */
     --pillTint: #262320;
+    /* Logo-palette tokens in dark mode (2026-08-16) -- the three brand hues
+       themselves are unchanged (they're saturated enough to hold up on both
+       a white and a near-black page, which is exactly why the logo works on
+       either), but the sticker outline/shadow flip: on a dark page a
+       near-black hard shadow is invisible, so it goes pure black for extra
+       separation while the border darkens to match. */
+    --punchShadow: 4px 4px 0 rgba(0,0,0,0.85);
+    --punchBorder: #0C0B0A;
     --ink-rgb: 242,238,227;
     --cream-rgb: 28,26,23;
     /* Same stale-leftover fix as :root above -- this was rgb of the old
@@ -111,6 +149,13 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
   }
   a { color: inherit; text-decoration: none; }
+  /* Visually hidden but still announced by screen readers -- used for the
+     waitlist field's <label>, which would otherwise be carried only by a
+     placeholder (placeholders aren't a substitute for a label). */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
   /* Fixed literal colors, not var(--charcoal)/var(--cream) -- a keycap is
      meant to always read as "a dark key with light text" regardless of
@@ -149,8 +194,23 @@
     border-color: rgba(var(--accent-rgb),0.3); font-weight: 600;
   }
   .navlinks a.active:hover { background: rgba(var(--accent-rgb),0.18); }
-  .navcta { background: var(--ink); color: var(--cream); padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .navcta:hover { opacity: 0.85; }
+  /* Lime + hard outline (2026-08-16, was solid ink) -- the nav CTA is the
+     first thing a visitor sees after the logo, so it's worth having it
+     answer the logo's neon green rather than being a neutral black pill.
+     Fixed literal colors, not theme vars: like kbd and .float-tag, this is
+     meant to read identically in both themes (neon on dark ink) instead of
+     inverting into a black-on-white pill in dark mode. */
+  .navcta {
+    background: var(--lime); color: #1C1A17; padding: 8px 16px; border-radius: 999px;
+    /* white-space: nowrap (2026-08-16 fix) -- the nav grew from four links
+       to five ("vs Win+V", "FAQ"), squeezing this button until "Download
+       free" broke onto two lines and made the whole header taller. */
+    font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    border: 2px solid var(--punchBorder); box-shadow: 3px 3px 0 rgba(26,24,22,0.9);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .navcta:hover { transform: translate(1.5px, 1.5px); box-shadow: 1.5px 1.5px 0 rgba(26,24,22,0.9); }
+  html[data-theme="dark"] .navcta { box-shadow: 3px 3px 0 rgba(0,0,0,0.8); }
   .nav-right { display: flex; align-items: center; gap: 10px; justify-self: end; }
   /* Dark mode toggle (2026-08-09) -- a plain icon pill matching the rest of
      the nav's rounded-full chip language, swaps its icon (moon/sun) and
@@ -170,8 +230,35 @@
   .theme-toggle i { font-size: 14px; }
 
   /* ---- hero: asymmetric split, not centered-stack ---- */
-  .hero { padding: 88px 0 40px; }
-  .hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
+  /* overflow-x: hidden, not visible (2026-08-16) -- .hero *is* .wrap (see
+     the <section class="hero wrap"> markup), so its box is only
+     max-width:1120px + padding, not the full viewport. The glow blob below
+     needs to bleed toward the section's own edge without risking a
+     page-wide horizontal scrollbar on viewports narrower than ~1176px,
+     where there's no margin outside .wrap to bleed into safely. overflow-y
+     is left alone (auto by default) since nothing here overflows
+     vertically in a way that needs scrolling. */
+  /* Horizontal padding restored to 28px (2026-08-16 fix) -- .hero is also
+     .wrap, and this rule's `padding: 88px 0 40px` shorthand was silently
+     zeroing out .wrap's own `0 28px` (same specificity, later in the file).
+     Two consequences: on mobile the headline and body copy sat flush
+     against the viewport edge with no margin at all, and on desktop the
+     hero column started 28px left of every other section's content, so
+     nothing on the page lined up with the hero. */
+  .hero { padding: 88px 28px 40px; position: relative; overflow-x: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; position: relative; }
+  /* Ambient glow blob (2026-08-16, new) -- part of "depth and light" pass.
+     A large, heavily blurred radial gradient sitting behind the mockup
+     panel so the hero reads as lit from one soft source instead of flat
+     print-on-white. Purely decorative: absolutely positioned, zero layout
+     impact, ignored by screen readers via aria-hidden on its element. */
+  .hero-glow {
+    position: absolute; z-index: 0; top: -120px; right: -40px;
+    width: 560px; height: 560px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--accent-rgb),0.35) 0%, rgba(var(--accent-rgb),0.12) 45%, rgba(var(--accent-rgb),0) 72%);
+    filter: blur(10px);
+    pointer-events: none;
+  }
   .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 700; color: var(--accent); margin-bottom: 22px; }
   .eyebrow::before {
     content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
@@ -182,7 +269,11 @@
     70% { box-shadow: 0 0 0 7px rgba(var(--accent-rgb),0); }
     100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb),0); }
   }
-  h1 { font-size: 52px; font-weight: 500; line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.5px; }
+  /* Bumped 52px/500 -> 66px/600 (2026-08-16, type-scale contrast pass) --
+     at 52px the headline was losing a size/weight contest against its own
+     mockup and the eyebrow above it; bigger + heavier gives it the visual
+     weight a hero headline needs to actually anchor the page. */
+  h1 { font-size: 66px; font-weight: 600; line-height: 1.04; margin: 0 0 20px; letter-spacing: -1px; }
   /* Brush-stroke underline under "elevated" -- a filled, tapered shape
      (thin at both ends, uneven top/bottom edges) instead of a uniform bar,
      so it reads as one loaded-brush swipe rather than a ruled line. */
@@ -211,10 +302,32 @@
   .sub { font-size: 17px; color: var(--inkMuted); max-width: 460px; margin: 0 0 32px; line-height: 1.6; }
   .ctaRow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
   .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 11px; font-size: 14.5px; font-weight: 600; border: 1px solid transparent; cursor: pointer; }
-  .btn-primary { background: var(--accent); color: var(--onAccent); }
-  .btn-primary:hover { filter: brightness(0.88); }
-  .btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--borderLight); }
-  .btn-secondary:hover { border-color: var(--accent); }
+  /* Primary CTAs get the logo's sticker language (2026-08-16): thick dark
+     outline + hard un-blurred offset shadow, and a "press down into the
+     shadow" hover instead of a brightness shift. This is the single most
+     repeated element on the page, so it's the most efficient place to make
+     the whole site feel like it belongs to that graffiti wordmark rather
+     than being generic SaaS-lavender. Applies everywhere .btn-primary is
+     used (hero, pricing, CTA band) so every conversion point matches. */
+  .btn-primary {
+    /* var(--onAccent), not a hardcoded #fff (2026-08-16 fix) -- --accent
+       flips to a *lighter* lavender in dark mode (#B7A9FF), so fixed white
+       label text left the dark-mode buttons nearly illegible. --onAccent is
+       the token that already tracks "readable text on an accent fill" in
+       both themes. */
+    background: var(--accent); color: var(--onAccent);
+    border: 2.5px solid var(--punchBorder);
+    box-shadow: var(--punchShadow);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.15s ease;
+  }
+  .btn-primary:hover { filter: brightness(1.04); transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(26,24,22,0.92); }
+  .btn-primary:active { transform: translate(4px, 4px); box-shadow: 0 0 0 rgba(26,24,22,0.92); }
+  html[data-theme="dark"] .btn-primary:hover { box-shadow: 2px 2px 0 rgba(0,0,0,0.85); }
+  /* Matching outline weight so secondary doesn't look flimsy next to a
+     primary that now carries a 2.5px border -- but no hard shadow, so the
+     hierarchy between them still reads clearly. */
+  .btn-secondary { background: transparent; color: var(--ink); border: 2.5px solid rgba(var(--ink-rgb),0.22); }
+  .btn-secondary:hover { border-color: var(--ink); }
   /* Split into two separate, more noticeable lines (2026-08-08) -- the
      hotkey and the "free forever" claim are two different pieces of
      information and were getting lost crammed onto one small muted line. */
@@ -241,10 +354,23 @@
      cards with no lavender anywhere in sight. Colors are scoped custom
      properties matching the app's actual light palette (see
      tailwind.config.js). */
+  /* Slight rotation + z-index above .hero-glow (2026-08-16) -- part of the
+     "break the grid occasionally" pass. Everything else on the page sits
+     dead-level in its column; tilting just this one element (float-tags and
+     sticker rotate with it since they're positioned relative to it) is
+     enough to make the hero feel less like a rigid two-column template
+     without touching the panel's own internals, which still need to read
+     as a straight, trustworthy screenshot of the real app UI. */
   .panel-mock {
-    position: relative;
-    width: 430px; margin-left: auto;
+    position: relative; z-index: 1;
+    /* max-width added (2026-08-16 fix) -- a fixed 430px panel inside a
+       ~334px content column on a 390px-wide phone pushed the document
+       ~34px wider than the viewport, giving the whole page a horizontal
+       scroll. Pre-existing, unrelated to the redesign, but this is the
+       pass where the page got audited at mobile width. */
+    width: 430px; max-width: 100%; margin-left: auto;
     pointer-events: none;
+    transform: rotate(-1.6deg);
     /* var(--cream), not var(--creamSurface) (2026-08-13 fix) -- this
        represents the app's actual root window, which is bg-cream (pure
        white in light mode) per App.tsx, not a tan creamSurface tone. The
@@ -276,6 +402,58 @@
      separately-flipping --accent could land it on a background of a
      similar brightness (nearly invisible) depending on theme. */
   .float-tag i { color: #7C6FE3; font-size: 13px; }
+  /* Sticker (2026-08-16, new) -- the one deliberate "break in harmony" the
+     hero borrows from the logo. FatClipboard's own wordmark is a chunky
+     graffiti bubble-letter lockup (pink/orange gradient + neon green, thick
+     black outline, hard drop shadow) sitting on an otherwise clean
+     white/lavender site -- this reuses that exact language (Luckiest Guy,
+     black stroke, offset hard shadow, neon fill, a few degrees of tilt) at
+     a much smaller scale, like a sticker actually slapped onto the corner
+     of the app screenshot, instead of inventing a new decorative style. Not
+     reused as a general UI pattern -- see the font-family comment in <head>
+     for why this stays a one-off accent. */
+  .sticker {
+    position: absolute; z-index: 4; pointer-events: none;
+    font-family: "Luckiest Guy", "Segoe UI Variable", sans-serif;
+    font-weight: 400; letter-spacing: 0.5px; font-size: 15px; line-height: 1;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px 7px; border-radius: 999px;
+    background: var(--lime); color: var(--limeInk);
+    border: 2.5px solid var(--punchBorder);
+    box-shadow: var(--punchShadow);
+    transform: rotate(-8deg);
+    animation: stickerWiggle 5s ease-in-out infinite;
+  }
+  .sticker i { font-size: 14px; -webkit-text-stroke: 0; }
+  /* Small, slow, and not on a loop that draws the eye -- this is meant to
+     read as "slightly alive," the way a paper sticker catches light when
+     you glance past it, not as an attention-grabbing animation. */
+  @keyframes stickerWiggle {
+    0%, 100% { transform: rotate(-8deg); }
+    50% { transform: rotate(-4deg); }
+  }
+  /* Mirrored wiggle for stickers tilted the other way (2026-08-16, new) --
+     .sticker's own animation hard-codes the -8/-4deg keyframe values, so a
+     plain `transform: rotate(8deg)` override on a variant class would just
+     get clobbered every frame by the running animation. Any sticker tilted
+     clockwise needs to swap to this keyframe set, not just flip its static
+     transform. */
+  @keyframes stickerWiggleAlt {
+    0%, 100% { transform: rotate(8deg); }
+    50% { transform: rotate(4deg); }
+  }
+  /* top/left pushed further out (2026-08-16 fix) -- at -22/-18 the sticker
+     dipped down over the panel's own mini-logo in .panel-brand-row, reading
+     as two competing logos stacked on each other. Further out, it hangs off
+     the corner instead, the way a real sticker would sit on the edge of a
+     laptop rather than in the middle of the screen. */
+  .sticker-hero { top: -40px; left: -34px; }
+  /* Static (non-absolute) sticker variant (2026-08-16) -- for stickers that
+     sit inline in the flow as a section label rather than pinned to the
+     corner of a card. Same look, no positioning assumptions. */
+  .sticker-inline { position: relative; display: inline-flex; margin-bottom: 18px; }
+  .sticker-lime { background: var(--lime); color: var(--limeInk); }
+  .sticker-violet { background: var(--accent); color: #fff; }
   /* Ring switched from a fixed rgba(26,24,22,..) literal to theme-aware
      rgba(var(--ink-rgb),..) (2026-08-17 fix) -- --ink-rgb is dark ink in
      light mode (same 26,24,22 the literal hardcoded, so light mode is
@@ -507,7 +685,12 @@
   .settings-cat { display: flex; align-items: center; justify-content: center; gap: 5px; height: 46px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; line-height: 1.15; text-align: center; border: 1px solid; }
   .settings-cat i { font-size: 13px; color: var(--accent); }
   .settings-cat.on { background: rgba(var(--accent-rgb),0.13); border-color: rgba(var(--accent-rgb),0.25); color: var(--accent); font-weight: 600; }
-  .settings-cat.off { background: var(--creamSurface); border-color: var(--borderLight); color: var(--inkMuted); }
+  /* background: var(--cream), not var(--creamSurface) (2026-08-16 fix) --
+     the app's real unselected filter chip is plain white with a border, no
+     tan fill; creamSurface was a leftover from the pre-rebrand palette and
+     made these chips look like a distinct "disabled" tone that doesn't
+     exist in the app. */
+  .settings-cat.off { background: var(--cream); border-color: var(--borderLight); color: var(--inkMuted); }
 
   /* ---- strip: real category chips, tied to an actual feature not decoration ---- */
   .strip { padding: 32px 0 8px; overflow: hidden; }
@@ -516,28 +699,135 @@
      -- same tinted-accent "on" pill style, since every chip here represents
      something FatClipboard actively detects (there's no "off" state to
      show, so all of them render selected). */
-  .marquee { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  /* Multi-colored + individually tilted (2026-08-16, was eight identical
+     all-lavender pills in a tidy centered row). Each chip is a *different*
+     thing the app detects, so having them all render identically wasted the
+     one spot on the page where variety is truthful rather than decorative.
+     Cycling the four brand hues and giving each a slight alternating tilt
+     turns a flat row into something closer to a strip of stickers -- the
+     single cheapest place on the page to inject the logo's energy, since
+     it's pure chrome with no mockup-accuracy constraints. */
+  .marquee { display: flex; gap: 11px; justify-content: center; flex-wrap: wrap; }
   .marquee span {
-    font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 999px;
-    background: rgba(var(--accent-rgb),0.13); border: 1px solid rgba(var(--accent-rgb),0.25);
-    color: var(--accent);
+    font-size: 13px; font-weight: 700; padding: 8px 15px; border-radius: 999px;
+    border: 2px solid var(--punchBorder);
+    box-shadow: 2.5px 2.5px 0 rgba(26,24,22,0.85);
+    color: #1C1A17;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .marquee span i { color: var(--accent); margin-right: 5px; }
+  html[data-theme="dark"] .marquee span { box-shadow: 2.5px 2.5px 0 rgba(0,0,0,0.8); }
+  .marquee span i { margin-right: 5px; color: inherit; }
+  /* :nth-child cycling rather than a class per chip -- keeps the markup
+     clean and means adding/removing a category doesn't need a matching
+     class change, it just picks up the next color in the rotation. */
+  .marquee span:nth-child(4n+1) { background: var(--lime); transform: rotate(-2deg); }
+  .marquee span:nth-child(4n+2) { background: var(--pink); color: #fff; transform: rotate(1.5deg); }
+  .marquee span:nth-child(4n+3) { background: var(--accent); color: #fff; transform: rotate(-1deg); }
+  .marquee span:nth-child(4n+4) { background: var(--orange); transform: rotate(2deg); }
+  .marquee span:hover { transform: rotate(0deg) translateY(-2px); box-shadow: 3.5px 4.5px 0 rgba(26,24,22,0.85); }
 
   /* ---- features: alternating rows, not a repeated grid ---- */
   .section { padding: 96px 0; }
   .section-head { max-width: 560px; margin: 0 0 64px; }
   .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
   .tag { color: var(--accent); font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; display: block; }
-  .section-head h2 { font-size: 32px; margin: 0 0 12px; letter-spacing: -0.4px; font-weight: 500; }
-  .section-head p { color: var(--inkMuted); font-size: 15.5px; line-height: 1.6; margin: 0; }
+  /* 32px/500 -> 44px/600 (2026-08-16, type-scale contrast pass) -- same
+     reasoning as the h1 bump: section headings were only ~9px larger than
+     the body copy under them, so the page read as one long undifferentiated
+     text weight. A real jump here is what creates scroll rhythm. */
+  .section-head h2 { font-size: 44px; margin: 0 0 14px; letter-spacing: -1px; line-height: 1.1; font-weight: 600; }
+  .section-head p { color: var(--inkMuted); font-size: 16.5px; line-height: 1.6; margin: 0; }
+  /* Marker-pen highlight (2026-08-16, new) -- wraps a phrase inside an h2 to
+     get a rough, hand-drawn swipe of color behind it, like a highlighter
+     pass over printed text. Uses the same "irregular filled shape, not a
+     clean rectangle" idea as the hero's brush underline, so the two read as
+     the same hand. Sits behind the text via a negative z-index on the
+     pseudo-element, with the text itself in a positioned stacking context. */
+  .mark { position: relative; display: inline-block; z-index: 0; padding: 0 0.12em; }
+  .mark::before {
+    content: ""; position: absolute; z-index: -1;
+    /* Bleeds past the text on all four sides (2026-08-16 fix) -- at
+       -0.12em/0.08em the fill was narrower and shorter than the words it was
+       meant to sit behind, so the first and last letters hung off the ends
+       and descenders (the "j" in "junk") were sliced by the bottom edge. */
+    left: -0.18em; right: -0.18em; top: -0.06em; bottom: -0.12em;
+    background: var(--markColor, var(--lime));
+    /* Absolute em radii, not percentages (2026-08-16 fix) -- percentage
+       radii are resolved against the box's own width, so on a wide phrase
+       they produced a lens/ellipse that pinched to nothing at the left and
+       right tips instead of a swipe with consistent thickness. Uneven em
+       values on each corner keep it hand-drawn without that distortion. */
+    border-radius: 0.7em 0.95em 0.75em 0.9em / 0.95em 0.7em 0.9em 0.75em;
+    transform: rotate(-0.8deg);
+    opacity: 0.92;
+  }
+  html[data-theme="dark"] .mark::before { opacity: 0.95; }
+  /* Lime is light enough to keep the heading's normal dark ink on top, but
+     pink and violet are mid-dark saturated fills in *light* mode, so there
+     those two flip the text to white rather than being toned down (a
+     washed-out highlight defeats the point of using them at all). */
+  .mark-pink { --markColor: var(--pink); color: #fff; }
+  .mark-violet { --markColor: var(--accent); color: #fff; }
+  /* ...and flip straight back in dark mode (2026-08-16 fix): --accent
+     resolves to a much lighter lavender there (#B7A9FF), which dropped
+     white-on-violet to roughly 3:1 -- right at the large-text floor and
+     visibly murky. Dark ink on those same lighter fills lands near 7:1. */
+  html[data-theme="dark"] .mark-pink,
+  html[data-theme="dark"] .mark-violet { color: #17150F; }
 
   .feature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 48px 0; }
   .feature-row:not(:last-child) { border-bottom: 1px solid var(--borderLight); }
   .feature-row.rev .f-text { order: 2; }
   .feature-row.rev .f-visual { order: 1; }
-  .f-num { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--accent); margin-bottom: 14px; }
-  .f-text h3 { font-size: 23px; margin: 0 0 12px; font-weight: 500; }
+  /* AI transform row (2026-08-16, new) -- the one feature row that gets the
+     hero's "break the grid / depth+light / graffiti sticker" treatment
+     instead of following the identical alternating layout every other row
+     uses. AI transform is the flagship paid feature, so it's also the one
+     place besides the hero where a bigger type-scale jump and a second
+     sticker moment are earned rather than just decorative repetition.
+     overflow-x: hidden + position: relative scope the glow/sticker bleed to
+     this row only, same reasoning as .hero above -- this row's own box is
+     the wrap's content width, not the viewport, so an unclipped bleed could
+     cause a horizontal scrollbar on narrower screens. */
+  .feature-row.ai-row {
+    grid-template-columns: 0.85fr 1.15fr;
+    position: relative; overflow-x: hidden;
+    padding-top: 64px; padding-bottom: 72px;
+  }
+  /* Small numbered sticker discs (2026-08-16, were plain monospace "01"
+     labels in accent text). Same visual family as the timeline's step
+     discs, at a smaller scale, and colored per row so the four feature rows
+     stop reading as four identical blocks. */
+  .f-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: 50%; margin-bottom: 16px;
+    font-family: "Luckiest Guy", "Segoe UI Variable", sans-serif;
+    font-size: 15px; font-weight: 400; padding-top: 2px; letter-spacing: 0.5px;
+    background: var(--numHue, var(--accent)); color: var(--numInk, #fff);
+    border: 2.5px solid var(--punchBorder);
+    box-shadow: 3px 3px 0 rgba(26,24,22,0.9);
+  }
+  html[data-theme="dark"] .f-num { box-shadow: 3px 3px 0 rgba(0,0,0,0.8); }
+  /* Explicit hue class per badge rather than :nth-of-type on .feature-row
+     (2026-08-16 fix) -- nth-of-type counts *every* sibling <div>, and the
+     Screenshots showcase div sits among these rows, so the positional
+     selectors were landing on the wrong rows entirely (row 1 was picking up
+     the :nth-of-type(3) color). Ordering here mirrors the timeline's
+     lime -> pink -> violet run, plus orange for the fourth. */
+  .num-lime { --numHue: var(--lime); --numInk: var(--limeInk); }
+  .num-pink { --numHue: var(--pink); }
+  .num-violet { --numHue: var(--accent); }
+  .num-orange { --numHue: var(--orange); --numInk: var(--limeInk); }
+  /* 23px/500 -> 27px/650 (2026-08-16) -- the middle feature rows were the
+     flattest stretch of the page after the hero and pricing got their type
+     bumps; this keeps them clearly below the flagship AI row (32px/700)
+     while pulling them well clear of body copy. */
+  .f-text h3 { font-size: 27px; margin: 0 0 12px; font-weight: 650; letter-spacing: -0.4px; }
+  /* Bigger + heavier, matching the h1 type-scale bump (2026-08-16) -- this
+     is the only feature-row heading that gets it, so it visually announces
+     "this one's the flagship" rather than reading as one card in a list of
+     equally-weighted cards. */
+  .ai-row .f-text h3 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
   .f-text p { font-size: 15px; color: var(--inkMuted); line-height: 1.65; margin: 0 0 14px; }
   .f-text .pro-badge { display: inline-block; font-size: 10.5px; font-weight: 700; background: var(--accent); color: var(--onAccent); padding: 2px 9px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
   /* pointer-events: none -- these are static illustrations, not real UI, so
@@ -561,7 +851,49 @@
      that now: var(--cream) is the same color as the page itself, so this
      reads as a plain bordered box, not a second surface layered underneath
      the real cards inside it. */
-  .f-visual { width: 100%; max-width: 440px; margin: 0 auto; background: var(--cream); border: 1px solid var(--borderLight); border-radius: 16px; padding: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  /* Soft ambient shadow added (2026-08-16) -- these frames were a 1px
+     hairline on white sitting on white, which read as nothing at all. A
+     real (blurred, realistic) shadow rather than the hard sticker offset:
+     the frame stands in for the app window, and the app is the one thing on
+     this page that should stay clean rather than graffiti'd. The AI row's
+     own .f-visual override further up still wins for that row. */
+  .f-visual { width: 100%; max-width: 440px; margin: 0 auto; background: var(--cream); border: 1px solid var(--borderLight); border-radius: 16px; padding: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; pointer-events: none; box-shadow: 0 18px 40px -24px rgba(26,24,22,0.35); }
+
+  /* ai-row's .f-visual deliberately opts out of the "flat, frameless" reasoning
+     above (2026-08-16) -- every other mockup card matches the app's own lack
+     of a frame, but this row is meant to look lifted off the page (depth +
+     light pass), so it gets a real shadow, a bit more room, and a slight
+     tilt instead. position: relative so .ai-glow/.sticker-ai below can
+     anchor to it. */
+  .ai-row .f-visual {
+    max-width: 480px; position: relative; z-index: 1;
+    box-shadow: 0 26px 54px -20px rgba(26,24,22,0.28), 0 0 0 1px rgba(var(--ink-rgb),0.06);
+    transform: rotate(1.3deg);
+  }
+  /* Second glow moment (2026-08-16) -- same technique as .hero-glow, sized
+     down, sitting behind this card instead of the hero mockup. Reusing the
+     hero's exact gradient/blur recipe rather than inventing a new one keeps
+     the two "lit from a soft source" moments feeling like one consistent
+     idea instead of two different decorative effects. */
+  .ai-glow {
+    position: absolute; z-index: -1; top: 50%; left: 50%;
+    width: 420px; height: 420px; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(var(--accent-rgb),0.3) 0%, rgba(var(--accent-rgb),0.1) 45%, rgba(var(--accent-rgb),0) 72%);
+    filter: blur(10px);
+    pointer-events: none;
+  }
+  /* Tilts the opposite way from the hero sticker (+8deg vs -8deg) and sits
+     on the top-right corner this time -- enough variation that it reads as
+     "the same idea, used again" rather than a copy-pasted element. */
+  .sticker-ai { top: -20px; right: -16px; animation-name: stickerWiggleAlt; }
+  /* Pink/orange, not neon green (2026-08-16) -- pulled from the "FAT" half
+     of the logo's gradient the same way the hero sticker pulled from the
+     "CLIPBOARD" half's green. Two sticker moments using the two different
+     halves of the wordmark's own palette reads as one consistent idea
+     rather than two unrelated colors. */
+  .sticker-pink { background: linear-gradient(135deg, #FF9466, #FF3D77); color: #fff; }
+  html[data-theme="dark"] .sticker-pink { background: linear-gradient(135deg, #FF9466, #FF3D77); color: #fff; }
 
   .pin-viz { width: 100%; }
   /* ---- dedicated Screenshots section (previously just one alternating
@@ -580,7 +912,19 @@
      own centered block above the showcase, so the two columns need to share
      a top edge (leveled with the mockup) rather than being vertically
      centered against each other. */
-  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 56px; }
+  /* position/overflow added (2026-08-16) so this section can host its own
+     ambient glow, same as .hero and .ai-row -- see .shot-glow below. */
+  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 56px; position: relative; overflow-x: hidden; }
+  /* Third and last glow on the page. Deliberately capped at three (hero,
+     AI transform, screenshots): a glow behind every section stops reading
+     as "this one is lit" and just becomes the page's background. */
+  .shot-glow {
+    position: absolute; z-index: 0; pointer-events: none;
+    top: -60px; left: -80px; width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--accent-rgb),0.26) 0%, rgba(var(--accent-rgb),0.09) 45%, rgba(var(--accent-rgb),0) 72%);
+    filter: blur(10px);
+  }
+  .shot-showcase > *:not(.shot-glow) { position: relative; z-index: 1; }
   .shot-points-head { margin-bottom: 6px; }
   .shot-points-head .tag { display: inline-block; margin-bottom: 10px; }
   .shot-points-head h2 { font-size: 26px; margin: 0 0 10px; letter-spacing: -0.4px; font-weight: 500; }
@@ -665,11 +1009,34 @@
 
   /* ---- how it works: vertical connected timeline ---- */
   .timeline { max-width: 640px; margin: 0 auto; }
-  .tl-item { display: grid; grid-template-columns: 44px 1fr; gap: 20px; position: relative; padding-bottom: 40px; }
+  /* 44px -> 50px track (2026-08-16) -- must stay in sync with .tl-dot's own
+     width below, and with the ::before connector's `left` offset (half the
+     dot width, +2px for its border), or the dashed line stops running
+     through the centre of the discs. */
+  .tl-item { display: grid; grid-template-columns: 50px 1fr; gap: 22px; position: relative; padding-bottom: 44px; }
   .tl-item:last-child { padding-bottom: 0; }
-  .tl-dot { width: 44px; height: 44px; border-radius: 50%; background: var(--ink); color: var(--cream); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; position: relative; z-index: 1; }
-  .tl-item:not(:last-child)::before { content: ""; position: absolute; left: 21px; top: 44px; bottom: 0; width: 1px; background: var(--borderLight); }
-  .tl-text h3 { font-size: 17px; margin: 6px 0 6px; font-weight: 600; }
+  /* Numbered step badges as sticker discs (2026-08-16, were three identical
+     flat ink circles). Each step gets its own brand hue plus the outline +
+     hard-shadow treatment, and the display font, so the "1 / 2 / 3" reads
+     as spray-painted numbers rather than a generic ordered list. Colors run
+     lime -> pink -> violet, ending on the primary accent so the last step
+     (the AI/paid one) lands on the product's main color. */
+  .tl-dot {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--lime); color: var(--limeInk);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Luckiest Guy", "Segoe UI Variable", sans-serif;
+    font-weight: 400; font-size: 22px; line-height: 1; padding-top: 3px;
+    position: relative; z-index: 1;
+    border: 2.5px solid var(--punchBorder);
+    box-shadow: var(--punchShadow);
+  }
+  .tl-item:nth-child(2) .tl-dot { background: var(--pink); color: #fff; }
+  .tl-item:nth-child(3) .tl-dot { background: var(--accent); color: #fff; }
+  /* Dashed, not solid (2026-08-16) -- a hand-drawn-feeling connector to
+     match the sticker discs it now joins, instead of a hairline rule. */
+  .tl-item:not(:last-child)::before { content: ""; position: absolute; left: 24px; top: 52px; bottom: 0; width: 0; border-left: 2px dashed rgba(var(--ink-rgb),0.18); }
+  .tl-text h3 { font-size: 21px; margin: 8px 0 6px; font-weight: 700; letter-spacing: -0.3px; }
   .tl-text p { font-size: 14.5px; color: var(--inkMuted); margin: 0; line-height: 1.6; }
   /* Small chip row under each step (2026-08-09) -- the timeline read as
      three plain paragraphs with nothing to look at, thin next to the
@@ -678,11 +1045,65 @@
      gives it a bit more visual weight without turning it into a fourth
      detailed feature block. */
   .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .tl-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: rgba(var(--accent-rgb),0.1); border: 1px solid rgba(var(--accent-rgb),0.22); color: var(--accent); }
+  /* --chipHue driven per step (2026-08-16) -- each step's chips pick up that
+     step's own dot color instead of every chip in the section being
+     lavender, so a step reads as one colored unit (disc + label + chips)
+     rather than a colored disc next to unrelated lavender pills. Kept as a
+     light tint + colored text, not a solid fill: these are supporting
+     detail, and solid sticker-style chips here would compete with the
+     numbered discs that are supposed to lead. */
+  .tl-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px;
+    background: color-mix(in srgb, var(--chipHue, var(--accent)) 14%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--chipHue, var(--accent)) 40%, transparent);
+    color: color-mix(in srgb, var(--chipHue, var(--accent)) 78%, var(--ink));
+  }
+  .tl-item:nth-child(1) .tl-chips { --chipHue: #8FBF1F; }
+  .tl-item:nth-child(2) .tl-chips { --chipHue: var(--pink); }
+  .tl-item:nth-child(3) .tl-chips { --chipHue: var(--accent); }
+  /* Lime is too low-contrast against a light page as *text*, so step 1 uses
+     a deepened version of it above rather than the raw --lime that its disc
+     (which has dark text on a lime fill) can safely use. In dark mode the
+     relationship inverts and the raw neon reads fine. */
+  html[data-theme="dark"] .tl-item:nth-child(1) .tl-chips { --chipHue: var(--lime); }
   .tl-chip i { font-size: 12px; }
 
   /* ---- pricing: inline comparison, not floating cards ---- */
-  .price-table { max-width: 720px; margin: 0 auto; border: 1px solid var(--borderLight); border-radius: 18px; overflow: hidden; background: var(--creamSurface); }
+  /* Two nested elements on purpose (2026-08-16): the *table* must clip
+     (overflow: hidden) so the Pro tint band's square corners don't poke
+     past the rounded corner radius, but the "7-DAY TRIAL" sticker has to
+     hang *outside* that same boundary -- one element can't do both. The
+     wrapper carries the sticker and the positioning context; the table
+     carries the clip. */
+  .price-table-wrap { max-width: 720px; margin: 0 auto; position: relative; }
+  /* White + hard outline/shadow (2026-08-16, was a flat cream box with a
+     hairline border) -- pricing is the page's decision point and was
+     visually the flattest thing on it. Same sticker treatment as the
+     buttons so the table reads as a solid object sitting on the page. */
+  .price-table {
+    position: relative; overflow: hidden;
+    border: 2.5px solid var(--punchBorder); border-radius: 20px;
+    background: var(--cream);
+    box-shadow: 7px 7px 0 rgba(26,24,22,0.9);
+  }
+  html[data-theme="dark"] .price-table { box-shadow: 7px 7px 0 rgba(0,0,0,0.8); }
+  /* Tints the whole Pro column top-to-bottom (2026-08-16, new). Sits behind
+     the rows as one continuous band rather than tinting each cell, so
+     there's no seam at every row divider. Its width/offset are derived from
+     the shared 1.4fr/1fr/1fr grid: the last of three columns spanning a
+     1.4+1+1 = 3.4fr track, inset by the table's own 20px side padding. */
+  .price-pro-band {
+    position: absolute; z-index: 0; pointer-events: none;
+    top: 0; bottom: 0;
+    right: 0;
+    width: calc((100% - 40px) * (1 / 3.4) + 20px);
+    background: rgba(var(--accent-rgb),0.07);
+    border-left: 2px dashed rgba(var(--accent-rgb),0.28);
+  }
+  /* Every real row needs to sit above the band, or the tint covers them. */
+  .price-head, .price-row, .price-cta-row, .price-fineprint { position: relative; z-index: 1; }
+  .price-sticker { top: -20px; right: -18px; animation-name: stickerWiggleAlt; }
   /* Three separate grid rows (2026-08-09), not one grid item per column
      with plan-name/amount/subtext block-stacked inside it -- nesting them
      let the extra "or $29.99/yr…" line in Pro's column push things around
@@ -696,8 +1117,14 @@
   .price-head { border-bottom: 1px solid var(--borderLight); padding: 22px 0 20px; }
   .price-head .plan-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--inkMuted); }
   .price-head .plan-name.pro { color: var(--accent); }
-  .price-head .amount { font-size: 26px; font-weight: 700; margin-top: 6px; }
-  .price-head .amount span { font-size: 13px; font-weight: 500; color: var(--inkMuted); }
+  /* 26px -> 40px, display face (2026-08-16) -- the actual price is the
+     single most-scanned number on the page and was rendering at roughly
+     body-copy scale. Luckiest Guy here (rather than only on stickers) is
+     deliberate: a price tag is exactly the kind of thing that gets
+     hand-lettered, so it's the one non-sticker place the display face
+     earns its keep. */
+  .price-head .amount { font-family: "Luckiest Guy", "Segoe UI Variable", sans-serif; font-weight: 400; font-size: 40px; margin-top: 8px; letter-spacing: 0.5px; line-height: 1.05; }
+  .price-head .amount span { font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 13px; font-weight: 500; color: var(--inkMuted); letter-spacing: 0; }
   .price-head .subtext { font-size: 11.5px; color: var(--inkMuted); margin-top: 4px; }
   .price-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; }
   .price-row:not(:last-child) { border-bottom: 1px solid var(--borderLight); }
@@ -717,24 +1144,273 @@
   .price-cta-row .btn-secondary:hover { filter: brightness(1.15); border-color: var(--ink); }
 
   /* ---- cta band ---- */
-  .cta-band { background: var(--ink); color: var(--cream); border-radius: 24px; padding: 60px 48px; text-align: center; }
-  .cta-band h2 { font-size: 30px; margin: 0 0 12px; font-weight: 500; }
-  .cta-band p { color: rgba(var(--cream-rgb),0.65); font-size: 15.5px; margin: 0 0 28px; }
+  /* Was flat solid ink -- the last thing on the page and the final ask, so
+     it should be the loudest moment, not the quietest. Now: two colored
+     glows bleeding in from the corners (same radial recipe as .hero-glow,
+     just tinted with two different brand hues so it reads as spray haze on
+     a wall), a much bigger heading, and room for a sticker. overflow:
+     hidden keeps the glows inside the rounded corners. */
+  .cta-band {
+    position: relative; overflow: hidden;
+    background: var(--charcoal); color: #F2EEE3;
+    border-radius: 28px; padding: 76px 48px; text-align: center;
+    border: 2.5px solid var(--punchBorder);
+  }
+  .cta-band::before, .cta-band::after {
+    content: ""; position: absolute; z-index: 0; pointer-events: none;
+    width: 460px; height: 460px; border-radius: 50%;
+    filter: blur(20px);
+  }
+  .cta-band::before { top: -230px; left: -120px; background: radial-gradient(circle, rgba(198,242,78,0.34) 0%, rgba(198,242,78,0) 70%); }
+  .cta-band::after { bottom: -250px; right: -110px; background: radial-gradient(circle, rgba(255,61,119,0.34) 0%, rgba(255,61,119,0) 70%); }
+  .cta-band > * { position: relative; z-index: 1; }
+  /* 30px -> 52px (2026-08-16) -- the biggest type on the page after the
+     hero h1, which is appropriate for the page's closing call to action. */
+  .cta-band h2 { font-size: 52px; margin: 0 0 14px; font-weight: 600; letter-spacing: -1.2px; line-height: 1.05; }
+  .cta-band p { color: rgba(242,238,227,0.7); font-size: 16.5px; margin: 0 0 30px; }
+  /* Lime CTA inside the band, overriding the global lavender .btn-primary
+     -- on a near-black panel the neon green is both higher-contrast and a
+     direct callback to the logo. */
+  .cta-band .btn-primary { background: var(--lime); color: #1C1A17; border-color: #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.75); }
+  .cta-band .btn-primary:hover { box-shadow: 2px 2px 0 rgba(0,0,0,0.75); }
 
   footer { padding: 44px 0 32px; border-top: 1px solid var(--borderLight); }
   .foot-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-  .foot-links { display: flex; gap: 22px; font-size: 13px; color: var(--inkMuted); }
+  /* flex-wrap added (2026-08-16 fix) -- six links at 22px gaps need ~396px
+     and this row never wrapped, so it punched ~62px past a 390px phone
+     viewport and was the last thing giving the page a horizontal scroll. */
+  .foot-links { display: flex; flex-wrap: wrap; gap: 14px 22px; font-size: 13px; color: var(--inkMuted); }
   .foot-copy { font-size: 12.5px; color: var(--inkMuted); }
+
+  /* ---- "why not Win+V?" comparison (2026-08-16, new) ------------------
+     Windows ships a clipboard history built in, free, already installed --
+     the single biggest objection this page had no answer to. Two cards
+     rather than another row-by-row table, so it doesn't read as a second
+     pricing grid: the Windows card stays deliberately plain, the
+     FatClipboard card gets the punch treatment.
+
+     Both cards list honest positives for the *other* side (Win+V really is
+     free and syncs across devices; FatClipboard really is Windows-only and
+     needs installing). Conceding the true advantages is what makes the
+     rest of the comparison believable. */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; max-width: 900px; margin: 0 auto; align-items: start; }
+  .vs-card { border-radius: 20px; padding: 26px 24px 24px; background: var(--cream); }
+  .vs-card.them { border: 2px solid var(--borderLight); }
+  .vs-card.us {
+    border: 2.5px solid var(--punchBorder);
+    box-shadow: 6px 6px 0 rgba(26,24,22,0.9);
+    background: color-mix(in srgb, var(--accent) 5%, var(--cream));
+  }
+  html[data-theme="dark"] .vs-card.us { box-shadow: 6px 6px 0 rgba(0,0,0,0.8); }
+  .vs-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .vs-head h3 { font-size: 19px; margin: 0; font-weight: 700; letter-spacing: -0.3px; }
+  .vs-sub { font-size: 12.5px; color: var(--inkMuted); margin: 0 0 18px; }
+  .vs-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 11px; }
+  .vs-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 14px; line-height: 1.5; align-items: start; }
+  .vs-list i { font-size: 15px; margin-top: 1px; }
+  .vs-list .ti-x { color: #D93A5C; }
+  .vs-list .ti-check { color: #2F9E44; }
+  /* Muted marker for the honest caveats on our own card, so they read as
+     "fair disclosure" rather than as a failure the way a red x would. */
+  .vs-list .ti-minus { color: var(--inkMuted); opacity: 0.55; }
+  .vs-note { margin: 26px auto 0; max-width: 900px; text-align: center; font-size: 13.5px; color: var(--inkMuted); }
+
+  /* ---- dark band (2026-08-16, generalized) -----------------------------
+     A charcoal, outlined, glowing slab that a whole section can sit inside.
+     Started life as the privacy section's own treatment; promoted to a
+     shared class once "How it works" wanted it too, so the two can't drift
+     apart. Each user tints its own glow via --bandGlowFrom/To.
+
+     Content inside a band is on a *dark* surface regardless of the page
+     theme, so anything themed with --ink/--inkMuted needs an explicit
+     override here (see the .dark-band descendant rules further down);
+     that's the cost of this pattern and the reason not to use it on more
+     than two or three sections. */
+  .dark-band {
+    position: relative; overflow: hidden;
+    background: var(--charcoal); color: #F2EEE3;
+    border: 2.5px solid var(--punchBorder);
+    border-radius: 28px; padding: 56px 48px;
+    --bandGlowFrom: rgba(198,242,78,0.28);
+    --bandGlowTo: rgba(198,242,78,0);
+  }
+  /* Re-point the sticker tokens for everything *inside* a band (2026-08-16).
+     In light mode --punchBorder is #1C1A17, which is the band's own
+     background colour -- so the step discs' outlines and hard shadows
+     vanished into the surface and they rendered as flat circles instead of
+     stickers. Pure black is the only thing darker than charcoal, so it's
+     what gives an outline on this surface anything to be. Declared on a
+     separate selector rather than in the block above so the band's own
+     border keeps using the outer (page-level) token and stays readable
+     against the white page behind it. */
+  .dark-band > *, .dark-band::before, .dark-band::after {
+    --punchBorder: #0C0B0A;
+    --punchShadow: 4px 4px 0 rgba(0,0,0,0.8);
+  }
+  .dark-band::before {
+    content: ""; position: absolute; inset: auto auto -240px -140px;
+    width: 460px; height: 460px; border-radius: 50%; filter: blur(20px); pointer-events: none;
+    background: radial-gradient(circle, var(--bandGlowFrom) 0%, var(--bandGlowTo) 70%);
+  }
+  .dark-band > * { position: relative; z-index: 1; }
+  /* kbd is a fixed near-black chip by design (see its own rule up top), and
+     near-black on charcoal is invisible -- inside a band it inverts to a
+     translucent light chip instead. */
+  .dark-band kbd {
+    background: rgba(242,238,227,0.15); color: #F2EEE3;
+    border-bottom-color: rgba(242,238,227,0.3);
+  }
+
+  /* ---- "how it works" on a band (2026-08-16) ---------------------------
+     Timeline copy and its connector are themed off --ink/--inkMuted, which
+     are dark in light mode, so each needs flipping for the dark surface. */
+  .how-band {
+    --bandGlowFrom: rgba(183,169,255,0.3);
+    --bandGlowTo: rgba(183,169,255,0);
+  }
+  /* Second glow, opposite corner -- keeps a band this tall from going flat
+     in its top-right quadrant the way a single bottom-left glow would. */
+  .how-band::after {
+    content: ""; position: absolute; inset: -220px -140px auto auto;
+    width: 440px; height: 440px; border-radius: 50%; filter: blur(20px); pointer-events: none;
+    background: radial-gradient(circle, rgba(255,61,119,0.22) 0%, rgba(255,61,119,0) 70%);
+  }
+  .dark-band .tl-text h3 { color: #F2EEE3; }
+  .dark-band .tl-text p { color: rgba(242,238,227,0.72); }
+  .dark-band .tl-item:not(:last-child)::before { border-left-color: rgba(242,238,227,0.22); }
+  /* Step 1's chips use a deepened lime (#8FBF1F) on white because raw neon
+     is unreadable as text there -- on the dark band that reverses, and the
+     raw --lime is both readable and on-brand. Same swap the dark *theme*
+     already makes; this applies it by surface instead. */
+  .dark-band .tl-item:nth-child(1) .tl-chips { --chipHue: var(--lime); }
+  .dark-band .tl-chip {
+    background: color-mix(in srgb, var(--chipHue, var(--accent)) 20%, transparent);
+    border-color: color-mix(in srgb, var(--chipHue, var(--accent)) 52%, transparent);
+    color: color-mix(in srgb, var(--chipHue, var(--accent)) 68%, #F2EEE3);
+  }
+
+  .privacy-band h2 { font-size: 40px; margin: 0 0 14px; font-weight: 600; letter-spacing: -1px; line-height: 1.1; }
+  .privacy-lead { color: rgba(242,238,227,0.72); font-size: 16.5px; line-height: 1.6; margin: 0 auto 32px; max-width: 620px; }
+  .privacy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; }
+  .privacy-item { background: rgba(242,238,227,0.06); border: 1px solid rgba(242,238,227,0.12); border-radius: 16px; padding: 20px; }
+  .privacy-item i { font-size: 22px; color: var(--lime); }
+  .privacy-item h4 { font-size: 15.5px; margin: 12px 0 7px; font-weight: 700; }
+  .privacy-item p { font-size: 13.5px; line-height: 1.55; color: rgba(242,238,227,0.68); margin: 0; }
+  /* The AI-exception disclosure. Called out separately and in a warmer
+     tone rather than folded into the three cards above: it's the one place
+     data *does* leave the machine, and burying that would undercut the
+     whole section. */
+  .privacy-exception {
+    margin: 26px auto 0; max-width: 700px; text-align: left;
+    background: rgba(198,242,78,0.08); border: 1px solid rgba(198,242,78,0.28);
+    border-radius: 14px; padding: 16px 18px;
+    font-size: 13.5px; line-height: 1.6; color: rgba(242,238,227,0.82);
+    display: grid; grid-template-columns: 20px 1fr; gap: 12px;
+  }
+  .privacy-exception i { color: var(--lime); font-size: 16px; margin-top: 2px; }
+
+  /* ---- FAQ (2026-08-16, new) -------------------------------------------
+     Native <details>/<summary> rather than a JS accordion: keyboard and
+     screen-reader behaviour, and in-page browser find, all work for free,
+     and the answers stay in the DOM for search engines. */
+  .faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .faq-item { border: 2px solid var(--borderLight); border-radius: 14px; background: var(--cream); overflow: hidden; }
+  .faq-item[open] { border-color: rgba(var(--accent-rgb),0.45); }
+  .faq-item summary {
+    cursor: pointer; list-style: none; padding: 17px 20px;
+    font-size: 16px; font-weight: 650; letter-spacing: -0.2px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    /* \ea5f is ti-chevron-down -- verified against tabler-icons.min.css
+       rather than guessed. \ea61 (the previous value) is chevron-*right*,
+       which rotated to point left when open instead of flipping up. */
+    content: "\ea5f";
+    font-family: "tabler-icons"; font-size: 16px; color: var(--accent);
+    flex-shrink: 0; transition: transform 0.18s ease;
+  }
+  .faq-item[open] summary::after { transform: rotate(180deg); }
+  .faq-item summary:hover { background: rgba(var(--ink-rgb),0.03); }
+  .faq-answer { padding: 0 20px 18px; font-size: 14.5px; line-height: 1.65; color: var(--inkMuted); margin: 0; }
+  .faq-answer a { color: var(--accent); text-decoration: underline; }
+
+  /* ---- Mac waitlist (2026-08-16, new) ----------------------------------
+     Non-Windows visitors previously hit "Windows only" and left with no
+     way to stay in touch. Sits inside the closing CTA band so it catches
+     them at exactly the moment they'd otherwise bounce. */
+  .waitlist { margin: 28px auto 0; max-width: 480px; }
+  .waitlist-label { font-size: 13.5px; color: rgba(242,238,227,0.66); margin: 0 0 12px; }
+  .waitlist-form { display: flex; gap: 10px; }
+  .waitlist-form input {
+    flex: 1; min-width: 0; padding: 12px 15px; font: inherit; font-size: 14.5px;
+    border-radius: 11px; border: 2.5px solid var(--punchBorder);
+    background: #F2EEE3; color: #1C1A17;
+  }
+  .waitlist-form input::placeholder { color: #6E6859; }
+  .waitlist-form input:focus { outline: 3px solid rgba(198,242,78,0.55); outline-offset: 1px; }
+  .waitlist-form button { white-space: nowrap; }
+  .waitlist-msg { font-size: 13.5px; margin: 12px 0 0; min-height: 1.2em; }
+  .waitlist-msg.ok { color: var(--lime); }
+  .waitlist-msg.err { color: #FF8FA8; }
 
   @media (max-width: 900px) {
     .hero-grid { grid-template-columns: 1fr; }
-    .feature-row, .feature-row.rev { grid-template-columns: 1fr; gap: 24px; }
+    /* min-width: 0 on the grid items + an explicit 100% width on the panel
+       (2026-08-16 fix) -- a grid item's `min-width: auto` floors the track
+       at the item's own declared width, so .panel-mock's `width: 430px`
+       kept the single mobile column 430px wide no matter how narrow the
+       viewport got, and `max-width: 100%` couldn't help because 100% was
+       resolving against that already-too-wide track. Rotation is also
+       dropped here: a rotated box's bounding rect is wider than its layout
+       width, which was adding a few more pixels of overflow on top. */
+    .hero-grid > * { min-width: 0; }
+    .panel-mock { width: 100%; transform: none; margin-top: 40px; }
+    /* Float-tags reflow into normal flow on mobile (2026-08-16 fix) -- they
+       hang off the panel's corners at negative offsets, which works when
+       the panel sits beside the copy but made them land on top of the CTA
+       row and the "Free forever" badge once the grid stacks. As static
+       chips they stay readable (they carry real information -- the hotkey)
+       instead of being hidden outright. */
+    .panel-mock .float-tag {
+      position: static; display: inline-flex; margin: 0 6px 8px 0;
+      box-shadow: none;
+    }
+    /* .feature-row.ai-row explicitly listed here (2026-08-16) -- its own
+       grid-template-columns rule above has higher specificity (two classes)
+       than the plain .feature-row selector this list used to rely on, so
+       without listing it by name it would keep its desktop 0.85fr/1.15fr
+       split instead of collapsing to one column on mobile. */
+    .feature-row, .feature-row.rev, .feature-row.ai-row { grid-template-columns: 1fr; gap: 24px; }
     .feature-row.rev .f-text, .feature-row.rev .f-visual { order: unset; }
+    .ai-row .f-text h3 { font-size: 26px; }
+    .ai-row .f-visual { transform: none; }
+    .sticker-hero, .sticker-ai { display: none; }
     .shot-showcase { grid-template-columns: 1fr; margin-top: 32px; }
     .navlinks { display: none; }
     h1 { font-size: 36px; }
     .price-head-row, .price-row { grid-template-columns: 1fr 1fr 1fr; font-size: 12px; }
     .price-cta-row { flex-wrap: wrap; }
+    .vs-grid { grid-template-columns: 1fr; gap: 20px; }
+    .privacy-grid { grid-template-columns: 1fr; }
+    .dark-band, .cta-band { padding: 44px 22px; border-radius: 22px; }
+    .privacy-band h2 { font-size: 30px; }
+    .cta-band h2 { font-size: 34px; }
+    .section-head h2 { font-size: 32px; }
+    /* Stacked so the email field isn't squeezed to a few characters wide
+       next to the submit button on a phone. */
+    .waitlist-form { flex-direction: column; }
+    .waitlist-form button { justify-content: center; }
+    /* Theme toggle collapses to icon-only on mobile (2026-08-16 fix) --
+       "Try dark mode" plus a now-nowrap "Download free" made .nav-right
+       ~297px wide, which overflowed a 390px viewport. font-size: 0 is the
+       lever here because the toggle's label is a bare text node written by
+       JS (no element to hide); the icon re-declares its own size. The
+       button's aria-label is set separately in that same script, so the
+       accessible name survives the text being hidden. */
+    .theme-toggle { font-size: 0; gap: 0; padding: 9px 11px; }
+    .theme-toggle i { font-size: 16px; }
+    .navcta { padding: 8px 13px; }
   }
 </style>
 </head>
@@ -745,9 +1421,10 @@
     <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
     <div class="navlinks">
       <a href="#how-it-works">How it works</a>
-      <a href="#screenshots">Screenshots</a>
       <a href="#features">Features</a>
+      <a href="#why">vs Win+V</a>
       <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
     </div>
     <div class="nav-right">
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
@@ -758,6 +1435,7 @@
 
 <section class="hero wrap">
   <div class="hero-grid">
+    <div class="hero-glow" aria-hidden="true"></div>
     <div>
       <span class="eyebrow">Now with AI-powered transforms</span>
       <h1 class="serif">Your clipboard,<br><em>elevated.</em></h1>
@@ -771,6 +1449,7 @@
     </div>
 
     <div class="panel-mock">
+      <div class="sticker sticker-hero"><i class="ti ti-bolt"></i> IT'S FREE</div>
       <div class="float-tag hotkey-tag">Summon it anywhere · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></div>
       <div class="float-tag top"><i class="ti ti-sparkles"></i> AI transform in one click</div>
       <div class="panel">
@@ -840,11 +1519,17 @@
      whole flow reads better as an orientation right after the hero, before
      diving into the numbered feature-by-feature detail below, rather than
      as a recap sandwiched between Features and Pricing. -->
-<section class="section" id="how-it-works" style="background: var(--creamSurface);">
+<!-- creamSurface background removed (2026-08-16) -- this was the last tan
+     band left on the page. It made sense when the site was cream/green and
+     needed a tonal break between white sections, but post-rebrand every
+     other section is plain white and the colored step discs now give this
+     one its own identity, so the band just read as a stray leftover. -->
+<section class="section" id="how-it-works">
   <div class="wrap">
-    <div class="section-head center" style="max-width: 640px;">
-      <span class="tag">How it works</span>
-      <h2 class="serif">Three steps to a clipboard that works for you</h2>
+    <div class="dark-band how-band">
+    <div class="section-head center" style="max-width: 660px; margin-bottom: 48px;">
+      <span class="sticker sticker-inline sticker-lime"><i class="ti ti-bolt"></i> HOW IT WORKS</span>
+      <h2 class="serif">Three steps to a clipboard that <span class="mark mark-violet">works for you</span></h2>
     </div>
     <div class="timeline">
       <div class="tl-item">
@@ -883,17 +1568,20 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </section>
 
 <section class="section" id="features">
   <div class="wrap">
     <div class="section-head center">
-      <span class="tag">Features</span>
-      <h2 class="serif">FatClipboard turns your clipboard from a one-item junk drawer into a searchable, organized library</h2>
+      <span class="sticker sticker-inline sticker-violet"><i class="ti ti-stack-2"></i> FEATURES</span>
+      <h2 class="serif">Your clipboard, from <span class="mark mark-pink">junk drawer</span> to searchable library</h2>
+      <p>One hotkey, everything you've copied, organized before you even ask.</p>
     </div>
 
     <div id="screenshots" class="shot-showcase" style="margin-top: 32px;">
+      <div class="shot-glow" aria-hidden="true"></div>
       <div class="shot-mock-card">
         <!-- Search bar first, then the tab row, then the sub-toggle (2026-08-09)
              -- matches the real app's actual top-to-bottom order (search input
@@ -962,7 +1650,7 @@
 
     <div class="feature-row">
       <div class="f-text">
-        <div class="f-num">01</div>
+        <div class="f-num num-lime">01</div>
         <h3>Folders that keep you organized</h3>
         <p>Save important snippets into folders like "Email templates" or "Brand colors" so they're easy to find instead of buried in an endless feed. Mix text and screenshots in the same folder.</p>
       </div>
@@ -997,7 +1685,7 @@
 
     <div class="feature-row rev">
       <div class="f-text">
-        <div class="f-num">02</div>
+        <div class="f-num num-pink">02</div>
         <h3>Pin what matters</h3>
         <p>Keep your most-used snippets, like API keys, signatures, and addresses, pinned to the top, always one click away, no matter how much you've copied since.</p>
       </div>
@@ -1023,13 +1711,15 @@
       </div>
     </div>
 
-    <div class="feature-row">
+    <div class="feature-row ai-row">
       <div class="f-text">
-        <div class="f-num">03</div>
+        <div class="f-num num-violet">03</div>
         <h3>AI transform<span class="pro-badge">PRO</span></h3>
         <p>Select any copied text and instantly fix grammar, change tone, summarize, or translate, then paste the result straight back where you need it, without leaving your app. Pro also unlocks custom AI filters, so you can search your history with plain-English rules like "things related to the Johnson project."</p>
       </div>
       <div class="f-visual">
+        <div class="ai-glow" aria-hidden="true"></div>
+        <div class="sticker sticker-ai sticker-pink"><i class="ti ti-sparkles"></i> AI MAGIC</div>
         <div class="transform-viz">
           <div class="tv-label-row">
             <span class="tv-label">Input</span>
@@ -1082,7 +1772,7 @@
 
     <div class="feature-row rev">
       <div class="f-text">
-        <div class="f-num">04</div>
+        <div class="f-num num-orange">04</div>
         <h3>Set it up the way you actually work</h3>
         <p>Pick your global hotkey, choose which AI presets and category filters show up, switch between light and dark, and keep an eye on your plan, all in one settings screen, organized into clear sections instead of one long list.</p>
       </div>
@@ -1121,14 +1811,101 @@
   </div>
 </section>
 
+<!-- Facts about Win+V below are as of Aug 2026 and deliberately
+     conservative: the 25-item cap and the "cleared on restart unless
+     pinned" behaviour are long-standing documented behaviour, and the
+     absence of search in clipboard history is confirmed by Microsoft's own
+     support answers (it's the one pane in that flyout without a search
+     box, unlike Recent/Emoji/GIF). Worth re-checking before any future
+     Windows release makes a claim here stale. -->
+<section class="section" id="why">
+  <div class="wrap">
+    <div class="section-head center" style="max-width: 660px;">
+      <span class="sticker sticker-inline sticker-violet"><i class="ti ti-help-circle"></i> BUT WINDOWS HAS ONE</span>
+      <h2 class="serif">"Can't I just use <span class="mark">Win+V</span>?"</h2>
+      <p>You can, and for occasional use it's fine. Here's exactly where it stops.</p>
+    </div>
+
+    <div class="vs-grid">
+      <div class="vs-card them">
+        <div class="vs-head"><i class="ti ti-brand-windows" style="font-size:20px;color:var(--inkMuted);"></i><h3>Windows Win+V</h3></div>
+        <p class="vs-sub">Built into Windows, free</p>
+        <ul class="vs-list">
+          <li><i class="ti ti-check"></i><span>Already there, nothing to install</span></li>
+          <li><i class="ti ti-check"></i><span>Optional sync across your devices with a Microsoft account</span></li>
+          <li><i class="ti ti-x"></i><span>Stops at 25 items</span></li>
+          <li><i class="ti ti-x"></i><span>No search at all &mdash; you scroll a small popup looking for it</span></li>
+          <li><i class="ti ti-x"></i><span>Cleared every time you restart, unless you pinned it first</span></li>
+          <li><i class="ti ti-x"></i><span>No folders, categories or tags</span></li>
+          <li><i class="ti ti-x"></i><span>Stores screenshots, but can't search the text inside them</span></li>
+          <li><i class="ti ti-x"></i><span>Paste it exactly as you copied it, or not at all</span></li>
+        </ul>
+      </div>
+
+      <div class="vs-card us">
+        <div class="vs-head"><img src="./assets/fatclipboard-logo.png" alt="" style="height:18px;width:auto;" /><h3>FatClipboard</h3></div>
+        <p class="vs-sub">Free tier, Pro from $3.99/mo</p>
+        <ul class="vs-list">
+          <li><i class="ti ti-check"></i><span>100 items and 7 days free &mdash; unlimited history on Pro</span></li>
+          <li><i class="ti ti-check"></i><span>Instant search as you type, plus AI search by meaning</span></li>
+          <li><i class="ti ti-check"></i><span>Everything survives restarts, pinned or not</span></li>
+          <li><i class="ti ti-check"></i><span>Folders, pins, and automatic categories for links, addresses and more</span></li>
+          <li><i class="ti ti-check"></i><span>Reads the text inside screenshots so you can search it</span></li>
+          <li><i class="ti ti-check"></i><span>Fix grammar, change tone, summarize or translate before pasting</span></li>
+          <li><i class="ti ti-minus"></i><span>Windows only for now, and you do have to install it</span></li>
+          <li><i class="ti ti-minus"></i><span>No cross-device sync &mdash; history stays on the machine it was copied on</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="vs-note">Still not sure? The free tier covers all of the above except the AI features, forever.</p>
+  </div>
+</section>
+
+<section class="section" id="privacy" style="padding-top: 24px;">
+  <div class="wrap">
+    <div class="dark-band privacy-band">
+      <div style="text-align:center;">
+        <span class="sticker sticker-inline sticker-lime"><i class="ti ti-lock"></i> YOUR STUFF STAYS YOURS</span>
+        <h2 class="serif">Your clipboard never leaves your computer.</h2>
+        <p class="privacy-lead">A clipboard manager sees everything &mdash; passwords, card numbers, private messages. So FatClipboard keeps your history in a database on your own machine, and there is no feature that uploads it.</p>
+      </div>
+      <div class="privacy-grid">
+        <div class="privacy-item">
+          <i class="ti ti-device-desktop"></i>
+          <h4>Stored locally, always</h4>
+          <p>Your history lives in a local database on your PC. There's no cloud copy, no backup on our side, and no sync.</p>
+        </div>
+        <div class="privacy-item">
+          <i class="ti ti-eye-off"></i>
+          <h4>We can't read it</h4>
+          <p>Your account holds an email address and which plan you're on. It has never held clipboard content, and there's nowhere for it to go.</p>
+        </div>
+        <div class="privacy-item">
+          <i class="ti ti-photo"></i>
+          <h4>Screenshot text stays offline</h4>
+          <p>Reading text out of your screenshots runs on your own machine using Windows' built-in OCR. No image is ever uploaded.</p>
+        </div>
+      </div>
+      <div class="privacy-exception">
+        <i class="ti ti-info-circle"></i>
+        <span><strong>The one exception, stated plainly:</strong> AI features (transform and smart search) can't run offline. When you use one, that single snippet is sent to our server, passed to the AI provider, and the result comes back. It isn't logged or saved at either end &mdash; and if you never touch the AI features, nothing you copy ever leaves your machine.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="pricing">
   <div class="wrap">
     <div class="section-head center" style="max-width: 640px;">
-      <span class="tag">Pricing</span>
-      <h2 class="serif">Start free. Upgrade when AI earns its keep.</h2>
+      <span class="sticker sticker-inline sticker-pink"><i class="ti ti-tag"></i> PRICING</span>
+      <h2 class="serif">Start free. Upgrade when AI <span class="mark">earns its keep.</span></h2>
     </div>
 
-    <div class="price-table">
+    <div class="price-table-wrap">
+      <div class="sticker price-sticker sticker-lime">7-DAY TRIAL</div>
+      <div class="price-table">
+      <div class="price-pro-band" aria-hidden="true"></div>
       <div class="price-head">
         <div class="price-head-row">
           <div></div>
@@ -1160,9 +1937,50 @@
         <div><a class="btn btn-secondary" href="#download">Download free</a></div>
         <div><a class="btn btn-primary" href="#download">Start 7-day free trial</a></div>
       </div>
-      <div style="padding: 0 20px 20px; text-align: center; font-size: 12.5px; color: var(--inkMuted);">
+      <div class="price-fineprint" style="padding: 0 20px 20px; text-align: center; font-size: 12.5px; color: var(--inkMuted);">
         Pro starts with a 7-day free trial, no card charged until it ends.
       </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq" style="padding-top: 24px;">
+  <div class="wrap">
+    <div class="section-head center" style="max-width: 620px;">
+      <span class="sticker sticker-inline sticker-pink"><i class="ti ti-message-question"></i> QUESTIONS</span>
+      <h2 class="serif">Before you <span class="mark mark-violet">download</span></h2>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>Will it slow my PC down?</summary>
+        <p class="faq-answer">No. It sits idle in the background listening for clipboard changes and does nothing until you copy something or press the hotkey. There's no indexing job, no background upload, and no scanning of your files.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is my clipboard data sent anywhere?</summary>
+        <p class="faq-answer">Your history is stored only on your own machine and is never uploaded. The single exception is the AI features: when you run a transform or a smart search, that one snippet is sent to be processed and the result returned. It isn't stored. If you never use the AI features, nothing you copy leaves your PC. See <a href="#privacy">the privacy section</a> for the full detail.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Windows says "unknown publisher" when I install it. Is that normal?</summary>
+        <p class="faq-answer">Yes, and it's expected right now. Windows shows that warning for any app that hasn't been through paid code signing yet, regardless of what the app does. Code signing is on the way, which will remove the warning. Until then you can click "More info" then "Run anyway".</p>
+      </details>
+      <details class="faq-item">
+        <summary>What happens when the 7-day trial ends?</summary>
+        <p class="faq-answer">If you don't cancel, the subscription starts and you're billed the plan you picked. If you do cancel during the trial, you're charged nothing and simply drop back to the free tier when it ends. Nothing in your history is deleted when you move back to free, though the free item limits start applying again.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I cancel any time?</summary>
+        <p class="faq-answer">Yes, from a self-serve billing page inside your account, in a couple of clicks. There's no phone call, no email to send, and no cancellation fee.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do I need an account to use the free version?</summary>
+        <p class="faq-answer">Yes, a free account with an email and password. It's what carries your plan across devices later, and what lets you upgrade without re-entering anything. Your clipboard history itself stays local either way.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is there a Mac version?</summary>
+        <p class="faq-answer">Not yet, it's Windows only for now. You can leave your email below and you'll hear from us if and when a Mac build happens.</p>
+      </details>
     </div>
   </div>
 </section>
@@ -1176,6 +1994,20 @@
         <a class="btn btn-primary" href="#"><i class="ti ti-download"></i> Download for Windows</a>
       </div>
       <p style="font-size:12.5px;color:rgba(var(--cream-rgb),0.55);margin-top:14px;">Windows only for now. Mac support is on the roadmap.</p>
+
+      <!-- Posts to POST /waitlist on the same server the app already talks
+           to. Progressive enhancement: it's a real <form>, so the markup is
+           meaningful without JS, and the submit handler below intercepts to
+           keep people on the page. -->
+      <div class="waitlist">
+        <p class="waitlist-label">On a Mac? Leave your email and we'll tell you when there's a build.</p>
+        <form class="waitlist-form" id="waitlistForm" novalidate>
+          <label for="waitlistEmail" class="sr-only">Email address</label>
+          <input type="email" id="waitlistEmail" name="email" placeholder="you@example.com" autocomplete="email" required />
+          <button class="btn btn-primary" type="submit">Notify me</button>
+        </form>
+        <p class="waitlist-msg" id="waitlistMsg" role="status" aria-live="polite"></p>
+      </div>
     </div>
   </div>
 </section>
@@ -1272,6 +2104,68 @@
     );
 
     sections.forEach(function (s) { observer.observe(s.el); });
+  })();
+</script>
+
+<script>
+  // Mac waitlist (2026-08-16). Posts to POST /waitlist on the same server
+  // the desktop app already uses. SERVER_URL is the one thing to change if
+  // the backend ever moves.
+  (function () {
+    var SERVER_URL = "https://clipboard-manager-production.up.railway.app";
+
+    var form = document.getElementById("waitlistForm");
+    if (!form) return;
+    var input = document.getElementById("waitlistEmail");
+    var msg = document.getElementById("waitlistMsg");
+    var button = form.querySelector("button");
+    var sending = false;
+
+    function say(text, kind) {
+      msg.textContent = text;
+      msg.className = "waitlist-msg" + (kind ? " " + kind : "");
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (sending) return;
+
+      var email = (input.value || "").trim();
+      // Intentionally loose: the server validates properly, and an
+      // over-strict front-end pattern rejecting a valid address is a worse
+      // failure here than letting one bad string reach an endpoint that
+      // already has to handle bad input anyway.
+      if (!email || email.indexOf("@") < 1 || email.indexOf(".", email.indexOf("@")) < 0) {
+        say("That doesn't look like an email address.", "err");
+        input.focus();
+        return;
+      }
+
+      sending = true;
+      button.disabled = true;
+      say("Adding you…");
+
+      fetch(SERVER_URL + "/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, platform: "mac" })
+      })
+        .then(function (res) {
+          // The endpoint answers 200 whether or not the address was already
+          // on the list, so the response can't be used to probe who signed
+          // up -- the same reasoning as /auth/forgot-password.
+          if (!res.ok) throw new Error("http " + res.status);
+          say("You're on the list. We'll email you when there's a Mac build.", "ok");
+          form.reset();
+        })
+        .catch(function () {
+          say("Couldn't reach the server just now. Try again in a moment.", "err");
+        })
+        .then(function () {
+          sending = false;
+          button.disabled = false;
+        });
+    });
   })();
 </script>
 
