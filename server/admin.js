@@ -115,6 +115,103 @@ async function dailySignupCounts() {
   return rows;
 }
 
+// --- Website traffic (page_events, written by analytics.js) --------------
+//
+// Reads only -- writing happens over in analytics.js, which owns the
+// table (creates it lazily, whitelists what event types get in, etc.).
+// Wrapped in `safe()` everywhere it's called below so a server that hasn't
+// received its first pageview yet (table doesn't exist) degrades to a
+// "not set up yet" banner instead of a 500, same pattern as the
+// Stripe/Anthropic sections.
+
+async function trafficStats() {
+  const { rows } = await pool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE event = 'pageview' AND created_at >= now() - interval '7 days')::int AS pageviews_7d,
+      COUNT(*) FILTER (WHERE event = 'pageview' AND created_at >= now() - interval '30 days')::int AS pageviews_30d,
+      COUNT(DISTINCT session_id) FILTER (WHERE event = 'pageview' AND session_id <> '' AND created_at >= now() - interval '7 days')::int AS visitors_7d,
+      COUNT(DISTINCT session_id) FILTER (WHERE event = 'pageview' AND session_id <> '' AND created_at >= now() - interval '30 days')::int AS visitors_30d,
+      COUNT(*) FILTER (WHERE event = 'download_click' AND created_at >= now() - interval '7 days')::int AS downloads_7d,
+      COUNT(*) FILTER (WHERE event = 'download_click' AND created_at >= now() - interval '30 days')::int AS downloads_30d,
+      COUNT(*) FILTER (WHERE event = 'download_click')::int AS downloads_alltime
+    FROM page_events
+  `);
+  return rows[0];
+}
+
+// Mac waitlist signups, read straight from waitlist.js's own table rather
+// than duplicated into page_events -- one source of truth for that number.
+async function waitlistStats() {
+  const { rows } = await pool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS signups_7d,
+      COUNT(*) FILTER (WHERE created_at >= now() - interval '30 days')::int AS signups_30d,
+      COUNT(*)::int AS signups_alltime
+    FROM waitlist
+  `);
+  return rows[0];
+}
+
+async function topPaths(days) {
+  const { rows } = await pool.query(
+    `SELECT path, COUNT(*)::int AS n
+     FROM page_events
+     WHERE event = 'pageview' AND created_at >= now() - ($1 || ' days')::interval
+     GROUP BY path ORDER BY n DESC LIMIT 8`,
+    [days]
+  );
+  return rows;
+}
+
+async function topReferrers(days) {
+  const { rows } = await pool.query(
+    `SELECT COALESCE(NULLIF(referrer, ''), '(direct)') AS referrer, COUNT(*)::int AS n
+     FROM page_events
+     WHERE event = 'pageview' AND created_at >= now() - ($1 || ' days')::interval
+     GROUP BY 1 ORDER BY n DESC LIMIT 8`,
+    [days]
+  );
+  return rows;
+}
+
+// One row per calendar day that had at least one pageview -- same sparse
+// shape as dailySignupCounts, filled in by buildPageviewSeries below.
+async function dailyPageviewCounts() {
+  const { rows } = await pool.query(`
+    SELECT date_trunc('day', created_at)::date AS day, COUNT(*)::int AS n
+    FROM page_events
+    WHERE event = 'pageview'
+    GROUP BY day
+    ORDER BY day
+  `);
+  return rows;
+}
+
+// Dense daily series for the chart, same fill-the-gaps approach as
+// buildTimeSeries below but simpler (one series, no subscription-interval
+// math) -- kept separate rather than generalizing buildTimeSeries since the
+// two have little in common besides "walk from day 0 to today."
+function buildPageviewSeries(dayRows) {
+  if (!dayRows.length) return { labels: [], series: [] };
+
+  const dayMsFor = (r) => dayFloor(new Date(r.day).getTime());
+  const todayMs = dayFloor(Date.now());
+  const startMs = Math.min(...dayRows.map(dayMsFor));
+  const totalDays = Math.max(1, Math.round((todayMs - startMs) / DAY_MS) + 1);
+
+  const byDay = new Map();
+  dayRows.forEach((r) => byDay.set(dayMsFor(r), r.n));
+
+  const labels = [];
+  const series = [];
+  for (let i = 0; i < totalDays; i++) {
+    const dayMs = startMs + i * DAY_MS;
+    labels.push(new Date(dayMs).toISOString().slice(0, 10));
+    series.push(byDay.get(dayMs) || 0);
+  }
+  return { labels, series };
+}
+
 // --- Stripe: real revenue numbers -----------------------------------------
 //
 // Deliberately not derived from our own tier/subscription_status columns --
@@ -411,6 +508,23 @@ function statCard(label, value, sublabel) {
   `;
 }
 
+function tableCard(title, rows, labelKey, valueKey, emptyText) {
+  const body = rows.length
+    ? rows
+        .map(
+          (r) =>
+            `<tr><td>${escapeHtml(r[labelKey])}</td><td class="num">${escapeHtml(r[valueKey])}</td></tr>`
+        )
+        .join("")
+    : `<tr><td colspan="2" class="empty">${escapeHtml(emptyText)}</td></tr>`;
+  return `
+    <div class="chart-card">
+      <div class="table-title">${escapeHtml(title)}</div>
+      <table class="mini-table"><tbody>${body}</tbody></table>
+    </div>
+  `;
+}
+
 function renderDashboard({
   userStats,
   mrrCents,
@@ -423,8 +537,19 @@ function renderDashboard({
   anthropicError,
   voyageCostUSD30d,
   series,
+  trafficConfigured,
+  trafficError,
+  traffic,
+  waitlist,
+  topPathRows,
+  topReferrerRows,
+  pageviewSeries,
 }) {
   const free = userStats.total - userStats.pro;
+  const conversionRate =
+    trafficConfigured && traffic.visitors_30d > 0
+      ? (((waitlist.signups_30d + traffic.downloads_30d) / traffic.visitors_30d) * 100).toFixed(1) + "%"
+      : "—";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -468,6 +593,12 @@ function renderDashboard({
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
   .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(26,24,22,0.05); }
   .chart-card canvas { max-height: 220px; }
+  .table-title { font-weight: 600; font-size: 12.5px; color: var(--ink); margin-bottom: 10px; }
+  .mini-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .mini-table td { padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--ink); }
+  .mini-table tr:last-child td { border-bottom: 0; }
+  .mini-table td.num { text-align: right; color: var(--inkMuted); font-variant-numeric: tabular-nums; }
+  .mini-table td.empty { color: var(--inkMuted); text-align: center; padding: 16px 0; }
 </style>
 </head>
 <body>
@@ -479,6 +610,23 @@ function renderDashboard({
     ${!stripeConfigured ? `<div class="warning">Stripe isn't configured on this server (STRIPE_SECRET_KEY missing) -- revenue figures and the Pro/MRR charts below are unavailable.</div>` : ""}
     ${!anthropicConfigured ? `<div class="warning">ANTHROPIC_ADMIN_KEY isn't set -- Anthropic cost is unavailable. This is a separate key from ANTHROPIC_API_KEY, and needs an Organization set up in the Anthropic Console first. See server/.env.example.</div>` : ""}
     ${anthropicConfigured && anthropicError ? `<div class="warning">Couldn't reach Anthropic's Cost API: ${escapeHtml(anthropicError)}</div>` : ""}
+    ${trafficConfigured && trafficError ? `<div class="warning">Couldn't load website traffic: ${escapeHtml(trafficError)}</div>` : ""}
+    ${!trafficConfigured ? `<div class="warning">No website traffic recorded yet -- this fills in once the tracking snippet on website/index.html sends its first pageview.</div>` : ""}
+
+    <div class="section-title">Website (traffic &amp; conversions)</div>
+    <div class="grid">
+      ${statCard("Visitors (7d)", traffic.visitors_7d)}
+      ${statCard("Visitors (30d)", traffic.visitors_30d)}
+      ${statCard("Pageviews (30d)", traffic.pageviews_30d, `${traffic.pageviews_7d} in last 7d`)}
+      ${statCard("Download clicks (30d)", traffic.downloads_30d, `${traffic.downloads_alltime} all-time`)}
+      ${statCard("Mac waitlist (30d)", waitlist.signups_30d, `${waitlist.signups_alltime} all-time`)}
+      ${statCard("Visitor → conversion (30d)", conversionRate, "downloads + waitlist signups ÷ visitors")}
+    </div>
+    <div class="charts" style="margin-bottom:28px;">
+      <div class="chart-card"><canvas id="chart-pageviews"></canvas></div>
+      ${tableCard("Top pages (30d)", topPathRows, "path", "n", "No pageviews yet")}
+      ${tableCard("Top referrers (30d)", topReferrerRows, "referrer", "n", "No pageviews yet")}
+    </div>
 
     <div class="section-title">Accounts</div>
     <div class="grid">
@@ -512,6 +660,7 @@ function renderDashboard({
 
   <script>
     const SERIES = ${JSON.stringify(series)};
+    const PAGEVIEW_SERIES = ${JSON.stringify(pageviewSeries)};
 
     const rootStyle = getComputedStyle(document.documentElement);
     const accent = rootStyle.getPropertyValue("--accent").trim();
@@ -533,11 +682,13 @@ function renderDashboard({
       },
     };
 
-    function lineChart(canvasId, title, data, formatY) {
-      new Chart(document.getElementById(canvasId), {
+    function lineChart(canvasId, title, labels, data, formatY) {
+      var el = document.getElementById(canvasId);
+      if (!el) return;
+      new Chart(el, {
         type: "line",
         data: {
-          labels: SERIES.labels,
+          labels: labels,
           datasets: [{
             label: title,
             data,
@@ -560,9 +711,15 @@ function renderDashboard({
       });
     }
 
-    lineChart("chart-users", "Total users (cumulative)", SERIES.usersSeries);
-    lineChart("chart-pro", "Pro subscribers", SERIES.proSeries);
-    lineChart("chart-mrr", "MRR", SERIES.mrrSeries, (v) => "$" + v.toFixed(2));
+    if (PAGEVIEW_SERIES.labels.length) {
+      lineChart("chart-pageviews", "Pageviews per day", PAGEVIEW_SERIES.labels, PAGEVIEW_SERIES.series);
+    } else {
+      var pvCanvas = document.getElementById("chart-pageviews");
+      if (pvCanvas) pvCanvas.replaceWith(Object.assign(document.createElement("div"), { className: "table-title", textContent: "No pageviews yet" }));
+    }
+    lineChart("chart-users", "Total users (cumulative)", SERIES.labels, SERIES.usersSeries);
+    lineChart("chart-pro", "Pro subscribers", SERIES.labels, SERIES.proSeries);
+    lineChart("chart-mrr", "MRR", SERIES.labels, SERIES.mrrSeries, (v) => "$" + v.toFixed(2));
   </script>
 </body>
 </html>`;
@@ -592,6 +749,27 @@ router.get("/", requireAdmin, async (_req, res) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * DAY_MS);
 
+    const DEFAULT_TRAFFIC = {
+      pageviews_7d: 0,
+      pageviews_30d: 0,
+      visitors_7d: 0,
+      visitors_30d: 0,
+      downloads_7d: 0,
+      downloads_30d: 0,
+      downloads_alltime: 0,
+    };
+    const DEFAULT_WAITLIST = { signups_7d: 0, signups_30d: 0, signups_alltime: 0 };
+
+    // Both page_events (analytics.js) and waitlist (waitlist.js) create
+    // their own tables lazily on first write, so on a freshly deployed
+    // server -- before the first real pageview/signup ever lands -- these
+    // queries fail with "relation ... does not exist." That's an expected,
+    // temporary state, not a real error, so it's treated differently from
+    // any other failure (a genuinely broken query, a connection drop):
+    // suppressed from the error banner, but still flips the "not set up
+    // yet" notice on instead of quietly showing all-zero stats.
+    const missingTable = (err) => !!err && /does not exist/i.test(err);
+
     const [
       userStats,
       signupRows,
@@ -600,6 +778,11 @@ router.get("/", requireAdmin, async (_req, res) => {
       subsEver,
       anthropicCost,
       voyageCost,
+      trafficResult,
+      waitlistResult,
+      topPathRows,
+      topReferrerRows,
+      pageviewRows,
     ] = await Promise.all([
       getUserStats(),
       dailySignupCounts(),
@@ -614,9 +797,16 @@ router.get("/", requireAdmin, async (_req, res) => {
         ? safe(() => anthropicCostUSD(thirtyDaysAgo.toISOString(), now.toISOString()), null)
         : { value: null, error: null },
       safe(() => voyageCostEstimateUSD(30), null),
+      safe(trafficStats, DEFAULT_TRAFFIC),
+      safe(waitlistStats, DEFAULT_WAITLIST),
+      safe(() => topPaths(30), []),
+      safe(() => topReferrers(30), []),
+      safe(dailyPageviewCounts, []),
     ]);
 
     const series = buildTimeSeries(signupRows, subsEver.value);
+    const pageviewSeries = buildPageviewSeries(pageviewRows.value);
+    const trafficTableMissing = missingTable(trafficResult.error);
 
     res.set("Content-Type", "text/html; charset=utf-8").send(
       renderDashboard({
@@ -631,6 +821,13 @@ router.get("/", requireAdmin, async (_req, res) => {
         anthropicError: anthropicCost.error,
         voyageCostUSD30d: voyageCost.value,
         series,
+        trafficConfigured: !trafficTableMissing,
+        trafficError: trafficTableMissing ? null : trafficResult.error,
+        traffic: trafficResult.value,
+        waitlist: waitlistResult.value,
+        topPathRows: topPathRows.value,
+        topReferrerRows: topReferrerRows.value,
+        pageviewSeries,
       })
     );
   } catch (err) {

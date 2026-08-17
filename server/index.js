@@ -24,6 +24,7 @@ const { sendWelcomeEmail, sendPasswordResetEmail } = require("./email");
 const billing = require("./billing");
 const admin = require("./admin");
 const createWaitlistRouter = require("./waitlist");
+const createAnalyticsRouter = require("./analytics");
 
 const PORT = process.env.PORT || 8787;
 const APP_SHARED_SECRET = process.env.APP_SHARED_SECRET || "";
@@ -107,6 +108,10 @@ app.use("/admin", admin.router);
 // first use, so an issue with this optional marketing endpoint can never
 // stop the server booting for auth/billing/transform. See waitlist.js.
 app.use(createWaitlistRouter(pool));
+// Same lazy-table pattern as waitlist.js, same reasoning: website traffic
+// tracking is optional and must never be able to take the real API down.
+// See analytics.js.
+app.use(createAnalyticsRouter(pool));
 
 // --- Accounts -----------------------------------------------------------
 //

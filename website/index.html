@@ -230,14 +230,17 @@
   .theme-toggle i { font-size: 14px; }
 
   /* ---- hero: asymmetric split, not centered-stack ---- */
-  /* overflow-x: hidden, not visible (2026-08-16) -- .hero *is* .wrap (see
-     the <section class="hero wrap"> markup), so its box is only
-     max-width:1120px + padding, not the full viewport. The glow blob below
-     needs to bleed toward the section's own edge without risking a
-     page-wide horizontal scrollbar on viewports narrower than ~1176px,
-     where there's no margin outside .wrap to bleed into safely. overflow-y
-     is left alone (auto by default) since nothing here overflows
-     vertically in a way that needs scrolling. */
+  /* overflow-x: CLIP, not hidden (2026-08-16 fix). .hero *is* .wrap (see the
+     <section class="hero wrap"> markup), so its box is only max-width:1120px
+     + padding, not the full viewport -- the glow needs to be stopped from
+     causing a page-wide horizontal scrollbar on viewports under ~1176px.
+
+     `hidden` did that, but with a side effect: per spec, overflow: hidden on
+     one axis forces the other axis to compute to auto, so the box clipped
+     *vertically* too. That's what sliced the glow into a hard-edged
+     rectangle. `clip` constrains only the axis it's declared on, so the
+     glow can extend past the section top/bottom and fade out naturally
+     while horizontal overflow is still prevented. */
   /* Horizontal padding restored to 28px (2026-08-16 fix) -- .hero is also
      .wrap, and this rule's `padding: 88px 0 40px` shorthand was silently
      zeroing out .wrap's own `0 28px` (same specificity, later in the file).
@@ -245,18 +248,28 @@
      against the viewport edge with no margin at all, and on desktop the
      hero column started 28px left of every other section's content, so
      nothing on the page lined up with the hero. */
-  .hero { padding: 88px 28px 40px; position: relative; overflow-x: hidden; }
+  .hero { padding: 88px 28px 40px; position: relative; overflow-x: clip; }
   .hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; position: relative; }
   /* Ambient glow blob (2026-08-16, new) -- part of "depth and light" pass.
      A large, heavily blurred radial gradient sitting behind the mockup
      panel so the hero reads as lit from one soft source instead of flat
      print-on-white. Purely decorative: absolutely positioned, zero layout
      impact, ignored by screen readers via aria-hidden on its element. */
+  /* Same fix as .shot-glow below -- kept inside the clip box, and faded to
+     zero at the circle's own edge via `closest-side`, so .hero's
+     overflow-x: clip has nothing left to slice a straight line through. */
   .hero-glow {
-    position: absolute; z-index: 0; top: -120px; right: -40px;
-    width: 560px; height: 560px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(var(--accent-rgb),0.35) 0%, rgba(var(--accent-rgb),0.12) 45%, rgba(var(--accent-rgb),0) 72%);
-    filter: blur(10px);
+    position: absolute; z-index: 0; top: 0; right: 0;
+    /* min(px, 100%) + aspect-ratio (2026-08-16) -- a fixed 620px circle is
+       wider than a phone viewport, so horizontal clipping cut straight
+       through it while the gradient was still opaque. Capping the width at
+       the container's own width makes the zero-alpha radius land exactly on
+       the left/right edges at every viewport, so a seam is impossible. */
+    width: min(620px, 100%); aspect-ratio: 1;
+    background: radial-gradient(closest-side circle,
+      rgba(var(--accent-rgb),0.34) 0%,
+      rgba(var(--accent-rgb),0.13) 45%,
+      rgba(var(--accent-rgb),0) 100%);
     pointer-events: none;
   }
   .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 700; color: var(--accent); margin-bottom: 22px; }
@@ -785,13 +798,13 @@
      uses. AI transform is the flagship paid feature, so it's also the one
      place besides the hero where a bigger type-scale jump and a second
      sticker moment are earned rather than just decorative repetition.
-     overflow-x: hidden + position: relative scope the glow/sticker bleed to
+     overflow-x: clip + position: relative scope the glow/sticker bleed to
      this row only, same reasoning as .hero above -- this row's own box is
      the wrap's content width, not the viewport, so an unclipped bleed could
      cause a horizontal scrollbar on narrower screens. */
   .feature-row.ai-row {
     grid-template-columns: 0.85fr 1.15fr;
-    position: relative; overflow-x: hidden;
+    position: relative; overflow-x: clip;
     padding-top: 64px; padding-bottom: 72px;
   }
   /* Small numbered sticker discs (2026-08-16, were plain monospace "01"
@@ -870,19 +883,34 @@
     box-shadow: 0 26px 54px -20px rgba(26,24,22,0.28), 0 0 0 1px rgba(var(--ink-rgb),0.06);
     transform: rotate(1.3deg);
   }
-  /* Second glow moment (2026-08-16) -- same technique as .hero-glow, sized
-     down, sitting behind this card instead of the hero mockup. Reusing the
-     hero's exact gradient/blur recipe rather than inventing a new one keeps
-     the two "lit from a soft source" moments feeling like one consistent
-     idea instead of two different decorative effects. */
+  /* Second glow moment (2026-08-16) -- same closest-side technique as
+     .hero-glow and .shot-glow, so all three are one idea rather than three
+     subtly different effects.
+
+     Anchored to .ai-row, NOT to .f-visual (2026-08-16 fix). It used to live
+     inside the card with z-index: -1, on the assumption that would put it
+     behind the card's own white background. It doesn't: .ai-row .f-visual
+     sets `position: relative; z-index: 1`, which makes it a *stacking
+     context*, and a negative z-index child can only go behind its parent's
+     background when the parent isn't one. So the glow painted on top of the
+     card instead -- a purple wash over the whole mockup, including areas
+     that are plain white in the real app. The mockups have to stay an
+     honest picture of the product, so it now sits behind the card as a
+     sibling and only shows as ambient light around its edges. */
   .ai-glow {
-    position: absolute; z-index: -1; top: 50%; left: 50%;
-    width: 420px; height: 420px; border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(circle, rgba(var(--accent-rgb),0.3) 0%, rgba(var(--accent-rgb),0.1) 45%, rgba(var(--accent-rgb),0) 72%);
-    filter: blur(10px);
-    pointer-events: none;
+    position: absolute; z-index: 0; pointer-events: none;
+    top: 50%; right: 0;
+    width: min(620px, 100%); aspect-ratio: 1;
+    transform: translateY(-50%);
+    background: radial-gradient(closest-side circle,
+      rgba(var(--accent-rgb),0.26) 0%,
+      rgba(var(--accent-rgb),0.10) 45%,
+      rgba(var(--accent-rgb),0) 100%);
   }
+  /* Both real columns sit above the glow. .f-visual already had z-index: 1;
+     .f-text needs a stacking position of its own or the glow would wash over
+     the heading and body copy the same way it was washing over the card. */
+  .ai-row .f-text { position: relative; z-index: 1; }
   /* Tilts the opposite way from the hero sticker (+8deg vs -8deg) and sits
      on the top-right corner this time -- enough variation that it reads as
      "the same idea, used again" rather than a copy-pasted element. */
@@ -914,15 +942,32 @@
      centered against each other. */
   /* position/overflow added (2026-08-16) so this section can host its own
      ambient glow, same as .hero and .ai-row -- see .shot-glow below. */
-  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 56px; position: relative; overflow-x: hidden; }
+  .shot-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; margin-top: 56px; position: relative; overflow-x: clip; }
   /* Third and last glow on the page. Deliberately capped at three (hero,
      AI transform, screenshots): a glow behind every section stops reading
      as "this one is lit" and just becomes the page's background. */
+  /* Sits fully inside its container, and fades to zero alpha exactly at the
+     circle's own edge (2026-08-16 fix).
+
+     It previously used negative offsets (top:-60/left:-80) to bleed past the
+     section edge -- but .shot-showcase used overflow-x: hidden at the time,
+     and overflow: hidden on one axis forces the other axis to clip too
+     (that container now uses overflow-x: clip, which doesn't). So the glow was being sliced off along two straight lines while
+     its gradient was still at ~25% alpha, which read as an odd rectangular
+     panel with hard edges rather than ambient light.
+
+     `closest-side` is what guarantees this can't come back: it makes the
+     gradient's 100% stop land on the nearest box edge, so the alpha is
+     already 0 by the time the boundary is reached, whatever the size. The
+     blur() is gone too -- it was only ever softening the symptom, and it's
+     an expensive filter on a 500px box. */
   .shot-glow {
     position: absolute; z-index: 0; pointer-events: none;
-    top: -60px; left: -80px; width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(var(--accent-rgb),0.26) 0%, rgba(var(--accent-rgb),0.09) 45%, rgba(var(--accent-rgb),0) 72%);
-    filter: blur(10px);
+    top: 0; left: 0; width: min(620px, 100%); aspect-ratio: 1;
+    background: radial-gradient(closest-side circle,
+      rgba(var(--accent-rgb),0.30) 0%,
+      rgba(var(--accent-rgb),0.12) 45%,
+      rgba(var(--accent-rgb),0) 100%);
   }
   .shot-showcase > *:not(.shot-glow) { position: relative; z-index: 1; }
   .shot-points-head { margin-bottom: 6px; }
@@ -1189,10 +1234,17 @@
      pricing grid: the Windows card stays deliberately plain, the
      FatClipboard card gets the punch treatment.
 
-     Both cards list honest positives for the *other* side (Win+V really is
-     free and syncs across devices; FatClipboard really is Windows-only and
-     needs installing). Conceding the true advantages is what makes the
-     rest of the comparison believable. */
+     The Windows card still credits Win+V with what it genuinely does well
+     (it really is free, already installed, and syncs across devices) --
+     conceding a competitor's real advantages is what makes the rest of the
+     comparison believable rather than reading as a sales pitch.
+
+     FatClipboard's own caveats (Windows-only, no cross-device sync) used to
+     sit at the bottom of the right-hand card, but they read as drawbacks in
+     a list that is otherwise about capability, so they were removed
+     (2026-08-16). Both facts are still disclosed on the page -- Windows-only
+     in the FAQ and the closing CTA, and the absence of sync in the privacy
+     section -- so this trims the sales page without hiding anything. */
   .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; max-width: 900px; margin: 0 auto; align-items: start; }
   .vs-card { border-radius: 20px; padding: 26px 24px 24px; background: var(--cream); }
   .vs-card.them { border: 2px solid var(--borderLight); }
@@ -1210,9 +1262,6 @@
   .vs-list i { font-size: 15px; margin-top: 1px; }
   .vs-list .ti-x { color: #D93A5C; }
   .vs-list .ti-check { color: #2F9E44; }
-  /* Muted marker for the honest caveats on our own card, so they read as
-     "fair disclosure" rather than as a failure the way a red x would. */
-  .vs-list .ti-minus { color: var(--inkMuted); opacity: 0.55; }
   .vs-note { margin: 26px auto 0; max-width: 900px; text-align: center; font-size: 13.5px; color: var(--inkMuted); }
 
   /* ---- dark band (2026-08-16, generalized) -----------------------------
@@ -1717,8 +1766,8 @@
         <h3>AI transform<span class="pro-badge">PRO</span></h3>
         <p>Select any copied text and instantly fix grammar, change tone, summarize, or translate, then paste the result straight back where you need it, without leaving your app. Pro also unlocks custom AI filters, so you can search your history with plain-English rules like "things related to the Johnson project."</p>
       </div>
+      <div class="ai-glow" aria-hidden="true"></div>
       <div class="f-visual">
-        <div class="ai-glow" aria-hidden="true"></div>
         <div class="sticker sticker-ai sticker-pink"><i class="ti ti-sparkles"></i> AI MAGIC</div>
         <div class="transform-viz">
           <div class="tv-label-row">
@@ -1852,8 +1901,6 @@
           <li><i class="ti ti-check"></i><span>Folders, pins, and automatic categories for links, addresses and more</span></li>
           <li><i class="ti ti-check"></i><span>Reads the text inside screenshots so you can search it</span></li>
           <li><i class="ti ti-check"></i><span>Fix grammar, change tone, summarize or translate before pasting</span></li>
-          <li><i class="ti ti-minus"></i><span>Windows only for now, and you do have to install it</span></li>
-          <li><i class="ti ti-minus"></i><span>No cross-device sync &mdash; history stays on the machine it was copied on</span></li>
         </ul>
       </div>
     </div>
@@ -2166,6 +2213,73 @@
           button.disabled = false;
         });
     });
+  })();
+</script>
+
+<script>
+  // Lightweight first-party analytics (2026-08-17). No cookies, no
+  // third-party script tag, no PII -- the only thing kept client-side is a
+  // random anonymous id in localStorage, purely so the admin dashboard can
+  // count distinct visitors instead of raw pageviews (it isn't tied to an
+  // account or any personal data). Posts to the same server SERVER_URL
+  // above, at POST /api/event -- see server/analytics.js. Mac waitlist
+  // conversions are already counted from the waitlist table itself in the
+  // admin dashboard, so they're not duplicated here.
+  (function () {
+    var SERVER_URL = "https://clipboard-manager-production.up.railway.app";
+
+    function sessionId() {
+      try {
+        var key = "fc_sid";
+        var existing = localStorage.getItem(key);
+        if (existing) return existing;
+        var id =
+          (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
+          Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem(key, id);
+        return id;
+      } catch (e) {
+        return ""; // private browsing / storage disabled -- still send the event, just without a session id
+      }
+    }
+
+    function send(event) {
+      var payload = JSON.stringify({
+        event: event,
+        path: location.pathname + location.hash,
+        referrer: document.referrer || "",
+        sid: sessionId(),
+      });
+      try {
+        if (navigator.sendBeacon) {
+          var ok = navigator.sendBeacon(
+            SERVER_URL + "/api/event",
+            new Blob([payload], { type: "application/json" })
+          );
+          if (ok) return;
+        }
+      } catch (e) {}
+      // Fallback when sendBeacon is unavailable or refuses the payload --
+      // keepalive lets the request outlive a page unload much like
+      // sendBeacon does.
+      try {
+        fetch(SERVER_URL + "/api/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    send("pageview");
+
+    var downloadBtn = document.querySelector("#download .ctaRow .btn-primary");
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", function () {
+        send("download_click");
+      });
+    }
   })();
 </script>
 
