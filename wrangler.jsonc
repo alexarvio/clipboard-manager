@@ -6,8 +6,11 @@
   //
   // "name" becomes the *.workers.dev subdomain Cloudflare assigns by
   // default -- irrelevant once the real custom domain (fatclipboard.com)
-  // is attached to this project in the dashboard, but has to be set.
-  "name": "clipboard-manager",
+  // is attached to this project in the dashboard, but has to be set, and
+  // it has to match the project name Cloudflare actually created
+  // ("clipboard-manager" was already taken by someone else, so the
+  // dashboard project is "fatclipboard" instead).
+  "name": "fatclipboard",
   "compatibility_date": "2026-08-17",
   "assets": {
     "directory": "./website"
