@@ -1,0 +1,15 @@
+{
+  // Tells Cloudflare Workers to serve website/ as plain static files --
+  // no Worker script, no server code. This is what makes the "Connect to
+  // Git" deploy flow (which defaults to expecting a Worker + `wrangler
+  // deploy`) work for what's really just a static marketing site.
+  //
+  // "name" becomes the *.workers.dev subdomain Cloudflare assigns by
+  // default -- irrelevant once the real custom domain (fatclipboard.com)
+  // is attached to this project in the dashboard, but has to be set.
+  "name": "clipboard-manager",
+  "compatibility_date": "2026-08-17",
+  "assets": {
+    "directory": "./website"
+  }
+}
