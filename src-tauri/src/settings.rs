@@ -161,7 +161,11 @@ fn default_tier() -> String {
 }
 
 fn default_server_url() -> String {
-    "https://clipboard-manager-production.up.railway.app".into()
+    // Custom domain (2026-08-23), CNAME'd to the same Railway service --
+    // the old clipboard-manager-production.up.railway.app URL still works
+    // and still resolves to the identical server, this is just the
+    // branded address new installs should default to.
+    "https://api.fatclipboard.com".into()
 }
 
 /// Must match APP_SHARED_SECRET on the deployed server (see the doc comment
