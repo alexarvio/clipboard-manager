@@ -15,7 +15,7 @@
 <meta name="twitter:title" content="FatClipboard: Your clipboard, elevated." />
 <meta name="twitter:description" content="A Windows clipboard manager with unlimited searchable history, folders, screenshot OCR search, and AI transforms. Free to download." />
 <!-- Sets html[data-theme] before first paint so a saved/system dark
-     preference doesn't flash light for a frame — the actual toggle button
+     preference doesn't flash light for a frame. The actual toggle button
      wiring lives in a second script near the end of <body>. -->
 <script>
   (function () {
@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="./tabler-icons.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Luckiest Guy (2026-08-16, new) — the chunky rounded bubble-letter face
+<!-- Luckiest Guy (2026-08-16, new): the chunky rounded bubble-letter face
      used for the "sticker" accents (.sticker class below). Deliberately not
      used anywhere else on the page: the logo is the one place this site
      already breaks its own clean/minimal rules with a graffiti-style
@@ -120,11 +120,11 @@
             <div class="item-row"><span class="item-date">Jun 28, 5:23 PM</span></div>
           </div>
           <div class="panel-item">
-            <div class="item-text">#7C6FE3 — brand lavender</div>
+            <div class="item-text">#7C6FE3: brand lavender</div>
             <div class="item-row"><span class="item-date">Jun 28, 5:19 PM</span></div>
           </div>
           <div class="panel-item">
-            <div class="item-text">Q3 handover doc — needs the revised timeline before Friday</div>
+            <div class="item-text">Q3 handover doc: needs the revised timeline before Friday</div>
             <div class="item-row"><span class="item-date">Jun 28, 5:11 PM</span></div>
           </div>
         </div>
@@ -148,11 +148,11 @@
   </div>
 </section>
 
-<!-- Moved above Features (2026-08-09) — a quick three-step overview of the
+<!-- Moved above Features (2026-08-09): a quick three-step overview of the
      whole flow reads better as an orientation right after the hero, before
      diving into the numbered feature-by-feature detail below, rather than
      as a recap sandwiched between Features and Pricing. -->
-<!-- creamSurface background removed (2026-08-16) — this was the last tan
+<!-- creamSurface background removed (2026-08-16): this was the last tan
      band left on the page. It made sense when the site was cream/green and
      needed a tonal break between white sections, but post-rebrand every
      other section is plain white and the colored step discs now give this
@@ -216,8 +216,8 @@
     <div id="screenshots" class="shot-showcase" style="margin-top: 32px;">
       <div class="shot-glow" aria-hidden="true"></div>
       <div class="shot-mock-card">
-        <!-- Search bar first, then the tab row, then the sub-toggle (2026-08-09)
-             — matches the real app's actual top-to-bottom order (search input
+        <!-- Search bar first, then the tab row, then the sub-toggle (2026-08-09):
+             matches the real app's actual top-to-bottom order (search input
              directly under the logo row, tabs below that), which had gotten
              reversed here with the search bar sitting last. -->
         <div class="shot-search-lg">
@@ -366,13 +366,13 @@
           <div class="tv-box">
             <!-- Instruction is now a Presets/Custom tab switcher (2026-08-13,
                  was one flex-wrap row mixing builtins and custom presets
-                 together) — only one group shows at a time. None of these
+                 together): only one group shows at a time. None of these
                  five are BUILTIN_PRESETS (see lib/presets.ts); they're saved
                  *custom* presets (what "Save as preset" produces), so
                  Custom is the tab shown active/selected here. Five chips
                  (2026-08-16, grew from an initial three) deliberately span
-                 different use cases — translation, math, finance, real
-                 estate, legal — to show this is a general-purpose tool,
+                 different use cases (translation, math, finance, real
+                 estate, legal) to show this is a general-purpose tool,
                  not just a copy-editing one. Spanish stays selected, its
                  instruction fills the box below; the rest sit unselected
                  next to it. -->
@@ -695,7 +695,7 @@
 </script>
 
 <script>
-  // Active-section nav pill (2026-08-09) — highlights whichever nav link
+  // Active-section nav pill (2026-08-09): highlights whichever nav link
   // matches the section currently scrolled into view, using the same green
   // pill styling as the "Try dark mode" toggle (see .navlinks a.active).
   (function () {
@@ -784,7 +784,7 @@
         .then(function (res) {
           // The endpoint answers 200 whether or not the address was already
           // on the list, so the response can't be used to probe who signed
-          // up — the same reasoning as /auth/forgot-password.
+          // up, the same reasoning as /auth/forgot-password.
           if (!res.ok) throw new Error("http " + res.status);
           say("You're on the list. We'll email you when there's a Mac build.", "ok");
           form.reset();
@@ -802,11 +802,11 @@
 
 <script>
   // Lightweight first-party analytics (2026-08-17). No cookies, no
-  // third-party script tag, no PII — the only thing kept client-side is a
+  // third-party script tag, no PII. The only thing kept client-side is a
   // random anonymous id in localStorage, purely so the admin dashboard can
   // count distinct visitors instead of raw pageviews (it isn't tied to an
   // account or any personal data). Posts to the same server SERVER_URL
-  // above, at POST /api/event — see server/analytics.js. Mac waitlist
+  // above, at POST /api/event (see server/analytics.js). Mac waitlist
   // conversions are already counted from the waitlist table itself in the
   // admin dashboard, so they're not duplicated here.
   (function () {
@@ -823,7 +823,7 @@
         localStorage.setItem(key, id);
         return id;
       } catch (e) {
-        return ""; // private browsing / storage disabled — still send the event, just without a session id
+        return ""; // private browsing / storage disabled; still send the event, just without a session id
       }
     }
 
@@ -843,8 +843,8 @@
           if (ok) return;
         }
       } catch (e) {}
-      // Fallback when sendBeacon is unavailable or refuses the payload —
-      // keepalive lets the request outlive a page unload much like
+      // Fallback when sendBeacon is unavailable or refuses the payload.
+      // Keepalive lets the request outlive a page unload much like
       // sendBeacon does.
       try {
         fetch(SERVER_URL + "/api/event", {
@@ -861,7 +861,7 @@
     // Every real download link on the page (nav, hero, pricing, CTA band)
     // now points straight at the installer instead of just scrolling to
     // #download, so track clicks on all of them, not just the one in the
-    // CTA band — otherwise most download clicks would go uncounted.
+    // CTA band, otherwise most download clicks would go uncounted.
     document.querySelectorAll('a[href*="releases/download/"]').forEach(function (btn) {
       btn.addEventListener("click", function () {
         send("download_click");

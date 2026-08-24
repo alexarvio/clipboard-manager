@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Windows Clipboard Manager — FatClipboard (Better Than Win+V)</title>
-<meta name="description" content="Looking for the best clipboard manager for Windows 11? See exactly where Win+V falls short — 25-item cap, no search, cleared on restart — and how FatClipboard fixes each one. Free to download." />
+<title>Windows Clipboard Manager | FatClipboard (Better Than Win+V)</title>
+<meta name="description" content="Looking for the best clipboard manager for Windows 11? See exactly where Win+V falls short (25-item cap, no search, cleared on restart) and how FatClipboard fixes each one. Free to download." />
 <link rel="canonical" href="https://fatclipboard.com/windows-clipboard-manager.html" />
 
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Windows Clipboard Manager — FatClipboard" />
+<meta property="og:title" content="Windows Clipboard Manager | FatClipboard" />
 <meta property="og:description" content="Unlimited, searchable clipboard history for Windows. See exactly where Win+V falls short and how FatClipboard fixes it." />
 <meta property="og:url" content="https://fatclipboard.com/windows-clipboard-manager.html" />
 <meta property="og:image" content="https://fatclipboard.com/assets/fatclipboard-logo.png" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Windows Clipboard Manager — FatClipboard" />
+<meta name="twitter:title" content="Windows Clipboard Manager | FatClipboard" />
 <meta name="twitter:description" content="Unlimited, searchable clipboard history for Windows. See exactly where Win+V falls short and how FatClipboard fixes it." />
 
 <script>
@@ -44,7 +44,7 @@
       "name": "Does Windows 11 have a built-in clipboard manager?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes — press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast."
+        "text": "Yes, press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast."
       }
     },
     {
@@ -60,7 +60,7 @@
       "name": "Is there a free clipboard manager for Windows?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost — no account charge, no trial required. Pro adds unlimited history and AI features starting at $3.99/mo."
+        "text": "Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost, with no account charge and no trial required. Pro adds unlimited history and AI features starting at $3.99/mo."
       }
     },
     {
@@ -68,7 +68,7 @@
       "name": "Can I search my clipboard history on Windows?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Not with Windows' built-in Win+V panel — it's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording."
+        "text": "Not with Windows' built-in Win+V panel. It's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording."
       }
     },
     {
@@ -76,7 +76,7 @@
       "name": "Does a clipboard manager slow down my PC?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey — no background indexing job, no constant disk scanning, no upload."
+        "text": "A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey. No background indexing job, no constant disk scanning, no upload."
       }
     }
   ]
@@ -107,7 +107,7 @@
     <div class="section-head center" style="max-width: 760px;">
       <span class="sticker sticker-inline sticker-violet"><i class="ti ti-brand-windows"></i> WINDOWS CLIPBOARD MANAGERS, COMPARED</span>
       <h1 class="serif">The best clipboard manager for <span class="mark">Windows</span></h1>
-      <p>Windows 11 ships with a clipboard history built in — Win+V. It's genuinely useful for the occasional copy-paste. But if you copy things all day, you'll hit its limits within a week: a hard 25-item cap, no search, and everything wiped the next time you restart. Here's exactly where it stops, and what a purpose-built Windows clipboard manager gets you instead.</p>
+      <p>Windows 11 ships with a clipboard history built in: Win+V. It's genuinely useful for the occasional copy-paste. But if you copy things all day, you'll hit its limits within a week: a hard 25-item cap, no search, and everything wiped the next time you restart. Here's exactly where it stops, and what a purpose-built Windows clipboard manager gets you instead.</p>
     </div>
   </div>
 </section>
@@ -244,11 +244,11 @@
 
 <script>
   // Lightweight first-party analytics (2026-08-17). No cookies, no
-  // third-party script tag, no PII — the only thing kept client-side is a
+  // third-party script tag, no PII. The only thing kept client-side is a
   // random anonymous id in localStorage, purely so the admin dashboard can
   // count distinct visitors instead of raw pageviews (it isn't tied to an
   // account or any personal data). Posts to the same server SERVER_URL
-  // above, at POST /api/event — see server/analytics.js. Mac waitlist
+  // above, at POST /api/event (see server/analytics.js). Mac waitlist
   // conversions are already counted from the waitlist table itself in the
   // admin dashboard, so they're not duplicated here.
   (function () {
@@ -265,7 +265,7 @@
         localStorage.setItem(key, id);
         return id;
       } catch (e) {
-        return ""; // private browsing / storage disabled — still send the event, just without a session id
+        return ""; // private browsing / storage disabled; still send the event, just without a session id
       }
     }
 
@@ -285,8 +285,8 @@
           if (ok) return;
         }
       } catch (e) {}
-      // Fallback when sendBeacon is unavailable or refuses the payload —
-      // keepalive lets the request outlive a page unload much like
+      // Fallback when sendBeacon is unavailable or refuses the payload.
+      // Keepalive lets the request outlive a page unload much like
       // sendBeacon does.
       try {
         fetch(SERVER_URL + "/api/event", {
@@ -303,7 +303,7 @@
     // Every real download link on the page (nav, hero, pricing, CTA band)
     // now points straight at the installer instead of just scrolling to
     // #download, so track clicks on all of them, not just the one in the
-    // CTA band — otherwise most download clicks would go uncounted.
+    // CTA band, otherwise most download clicks would go uncounted.
     document.querySelectorAll('a[href*="releases/download/"]').forEach(function (btn) {
       btn.addEventListener("click", function () {
         send("download_click");
