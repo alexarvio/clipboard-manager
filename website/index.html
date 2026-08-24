@@ -54,7 +54,7 @@
     </div>
     <div class="nav-right">
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
-      <a class="navcta" href="#download"><i class="ti ti-download"></i> Download free</a>
+      <a class="navcta" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download free</a>
     </div>
   </nav>
 </header>
@@ -68,7 +68,7 @@
       <p class="sub">FatClipboard remembers everything you copy, including the words inside your screenshots, and makes all of it searchable.</p>
       <p class="sub">Organize it into folders, rewrite or summarize any snippet with AI, and get back to it all instantly with one hotkey. Runs quietly, stays entirely on your machine.</p>
       <div class="ctaRow">
-        <a class="btn btn-primary" href="#download"><i class="ti ti-download"></i> Download for Windows</a>
+        <a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download for Windows</a>
         <a class="btn btn-secondary" href="#how-it-works"><i class="ti ti-player-play"></i> See how it works</a>
       </div>
       <div class="free-badge"><i class="ti ti-rosette-discount-check"></i> Free forever for core features</div>
@@ -558,8 +558,8 @@
       <div class="price-row"><div class="feature-name">Custom AI search filters</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
       <div class="price-cta-row">
         <div></div>
-        <div><a class="btn btn-secondary" href="#download">Download free</a></div>
-        <div><a class="btn btn-primary" href="#download">Start 7-day free trial</a></div>
+        <div><a class="btn btn-secondary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe">Download free</a></div>
+        <div><a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe">Start 7-day free trial</a></div>
       </div>
       <div class="price-fineprint" style="padding: 0 20px 20px; text-align: center; font-size: 12.5px; color: var(--inkMuted);">
         Pro starts with a 7-day free trial, no card charged until it ends.
@@ -852,12 +852,15 @@
 
     send("pageview");
 
-    var downloadBtn = document.querySelector("#download .ctaRow .btn-primary");
-    if (downloadBtn) {
-      downloadBtn.addEventListener("click", function () {
+    // Every real download link on the page (nav, hero, pricing, CTA band)
+    // now points straight at the installer instead of just scrolling to
+    // #download, so track clicks on all of them, not just the one in the
+    // CTA band -- otherwise most download clicks would go uncounted.
+    document.querySelectorAll('a[href*="releases/download/"]').forEach(function (btn) {
+      btn.addEventListener("click", function () {
         send("download_click");
       });
-    }
+    });
   })();
 </script>
 

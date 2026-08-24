@@ -96,7 +96,7 @@
     </div>
     <div class="nav-right">
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
-      <a class="navcta" href="./index.html#download"><i class="ti ti-download"></i> Download free</a>
+      <a class="navcta" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download free</a>
     </div>
   </nav>
 </header>
@@ -216,7 +216,7 @@
       <h2 class="serif">Stop losing what you copy.</h2>
       <p>FatClipboard is free to download and takes less than a minute to set up.</p>
       <div class="ctaRow" style="justify-content:center;">
-        <a class="btn btn-primary" href="./index.html#download"><i class="ti ti-download"></i> Download for Windows</a>
+        <a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download for Windows</a>
       </div>
       <p style="font-size:12.5px;color:rgba(var(--cream-rgb),0.55);margin-top:14px;">Windows only for now. Mac support is on the roadmap.</p>
     </div>
@@ -265,6 +265,77 @@
     });
 
     syncButton();
+  })();
+</script>
+
+
+<script>
+  // Lightweight first-party analytics (2026-08-17). No cookies, no
+  // third-party script tag, no PII -- the only thing kept client-side is a
+  // random anonymous id in localStorage, purely so the admin dashboard can
+  // count distinct visitors instead of raw pageviews (it isn't tied to an
+  // account or any personal data). Posts to the same server SERVER_URL
+  // above, at POST /api/event -- see server/analytics.js. Mac waitlist
+  // conversions are already counted from the waitlist table itself in the
+  // admin dashboard, so they're not duplicated here.
+  (function () {
+    var SERVER_URL = "https://api.fatclipboard.com";
+
+    function sessionId() {
+      try {
+        var key = "fc_sid";
+        var existing = localStorage.getItem(key);
+        if (existing) return existing;
+        var id =
+          (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
+          Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem(key, id);
+        return id;
+      } catch (e) {
+        return ""; // private browsing / storage disabled -- still send the event, just without a session id
+      }
+    }
+
+    function send(event) {
+      var payload = JSON.stringify({
+        event: event,
+        path: location.pathname + location.hash,
+        referrer: document.referrer || "",
+        sid: sessionId(),
+      });
+      try {
+        if (navigator.sendBeacon) {
+          var ok = navigator.sendBeacon(
+            SERVER_URL + "/api/event",
+            new Blob([payload], { type: "application/json" })
+          );
+          if (ok) return;
+        }
+      } catch (e) {}
+      // Fallback when sendBeacon is unavailable or refuses the payload --
+      // keepalive lets the request outlive a page unload much like
+      // sendBeacon does.
+      try {
+        fetch(SERVER_URL + "/api/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    send("pageview");
+
+    // Every real download link on the page (nav, hero, pricing, CTA band)
+    // now points straight at the installer instead of just scrolling to
+    // #download, so track clicks on all of them, not just the one in the
+    // CTA band -- otherwise most download clicks would go uncounted.
+    document.querySelectorAll('a[href*="releases/download/"]').forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        send("download_click");
+      });
+    });
   })();
 </script>
 
