@@ -483,3 +483,21 @@ h1, h2, h3, .section-head p { text-wrap: balance; }
 @media (max-width: 700px) {
   .price-row > div { padding: 6px 14px; font-size: 11.5px; }
 }
+
+/* ---- 14. scroll reveal ----------------------------------------------
+   assets/reveal.js adds .reveal-init right before it starts observing an
+   element -- never present in the markup, and skipped entirely under
+   prefers-reduced-motion or when IntersectionObserver isn't available -- so
+   a JS failure or a disabled-JS visitor always sees the page in its normal,
+   fully-visible state. The hidden state only ever exists because JS put it
+   there, never as a default anyone could get stuck behind. */
+.reveal-init {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-init.is-visible {
+  opacity: 1;
+  transform: none;
+}
