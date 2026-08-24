@@ -429,3 +429,30 @@ html[data-theme="dark"] .tl-item:nth-child(2) .tl-chips { --chipHue: #B7A9FF; }
 
 /* Footer links get the same affordance on hover. */
 .foot-links a:hover { color: var(--accent); }
+
+/* ---- 12. .privacy-item outside a dark band -----------------------------
+   These cards were written for the homepage's dark privacy band and hardcode
+   near-white values: rgba(242,238,227,0.68) body text on a 6% white tint.
+   The SEO page reuses the same markup on a plain white section, where that
+   renders as white text on white -- the three "other clipboard managers"
+   descriptions were effectively invisible. Pre-existing, unrelated to the
+   restyle, but this is the pass where it got caught.
+
+   Defaults now assume a normal page surface; the dark-band case restores
+   the original values, scoped so it only applies where it's actually true. */
+.privacy-item {
+  background: var(--surface);
+  border: 1px solid var(--borderLight);
+  box-shadow: var(--shadowSoft);
+}
+.privacy-item p { color: var(--inkMuted); }
+.privacy-item i { color: var(--accent); }
+
+.dark-band .privacy-item {
+  background: rgba(242,238,227,0.06);
+  border-color: rgba(242,238,227,0.12);
+  box-shadow: none;
+}
+.dark-band .privacy-item h4 { color: #F2EEE3; }
+.dark-band .privacy-item p { color: rgba(242,238,227,0.68); }
+.dark-band .privacy-item i { color: var(--lime); }
