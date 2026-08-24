@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Windows Clipboard Manager — FatClipboard (Better Than Win+V)</title>
+<meta name="description" content="Looking for the best clipboard manager for Windows 11? See exactly where Win+V falls short — 25-item cap, no search, cleared on restart — and how FatClipboard fixes each one. Free to download." />
+<link rel="canonical" href="https://fatclipboard.com/windows-clipboard-manager.html" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Windows Clipboard Manager — FatClipboard" />
+<meta property="og:description" content="Unlimited, searchable clipboard history for Windows. See exactly where Win+V falls short and how FatClipboard fixes it." />
+<meta property="og:url" content="https://fatclipboard.com/windows-clipboard-manager.html" />
+<meta property="og:image" content="https://fatclipboard.com/assets/fatclipboard-logo.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Windows Clipboard Manager — FatClipboard" />
+<meta name="twitter:description" content="Unlimited, searchable clipboard history for Windows. See exactly where Win+V falls short and how FatClipboard fixes it." />
+
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem("fc-theme");
+      var theme = saved === "dark" || saved === "light"
+        ? saved
+        : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {}
+  })();
+</script>
+<link rel="stylesheet" href="./tabler-icons.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&family=Luckiest+Guy&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/site.css" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does Windows 11 have a built-in clipboard manager?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I get more than 25 items in Windows clipboard history?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Windows' native Win+V clipboard caps out at 25 items with no setting to raise it. To keep a longer, searchable history you need a third-party clipboard manager like FatClipboard, which stores unlimited items on its free tier and keeps them across restarts."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a free clipboard manager for Windows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost — no account charge, no trial required. Pro adds unlimited history and AI features starting at $3.99/mo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I search my clipboard history on Windows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not with Windows' built-in Win+V panel — it's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does a clipboard manager slow down my PC?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey — no background indexing job, no constant disk scanning, no upload."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="./index.html"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></a>
+    <div class="navlinks">
+      <a href="./index.html#how-it-works">How it works</a>
+      <a href="./index.html#features">Features</a>
+      <a href="./index.html#why">vs Win+V</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./index.html#faq">FAQ</a>
+    </div>
+    <div class="nav-right">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
+      <a class="navcta" href="./index.html#download"><i class="ti ti-download"></i> Download free</a>
+    </div>
+  </nav>
+</header>
+
+<section class="section" style="padding-top: 56px;">
+  <div class="wrap">
+    <div class="section-head center" style="max-width: 760px;">
+      <span class="sticker sticker-inline sticker-violet"><i class="ti ti-brand-windows"></i> WINDOWS CLIPBOARD MANAGERS, COMPARED</span>
+      <h1 class="serif">The best clipboard manager for <span class="mark">Windows</span></h1>
+      <p>Windows 11 ships with a clipboard history built in — Win+V. It's genuinely useful for the occasional copy-paste. But if you copy things all day, you'll hit its limits within a week: a hard 25-item cap, no search, and everything wiped the next time you restart. Here's exactly where it stops, and what a purpose-built Windows clipboard manager gets you instead.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why" style="padding-top: 8px;">
+  <div class="wrap">
+    <div class="vs-grid">
+      <div class="vs-card them">
+        <div class="vs-head"><i class="ti ti-brand-windows" style="font-size:20px;color:var(--inkMuted);"></i><h3>Windows Win+V</h3></div>
+        <p class="vs-sub">Built into Windows, free</p>
+        <ul class="vs-list">
+          <li><i class="ti ti-check"></i><span>Already there, nothing to install</span></li>
+          <li><i class="ti ti-check"></i><span>Optional sync across your devices with a Microsoft account</span></li>
+          <li><i class="ti ti-x"></i><span>Stops at 25 items</span></li>
+          <li><i class="ti ti-x"></i><span>No search at all &mdash; you scroll a small popup looking for it</span></li>
+          <li><i class="ti ti-x"></i><span>Cleared every time you restart, unless you pinned it first</span></li>
+          <li><i class="ti ti-x"></i><span>No folders, categories or tags</span></li>
+          <li><i class="ti ti-x"></i><span>Stores screenshots, but can't search the text inside them</span></li>
+          <li><i class="ti ti-x"></i><span>Paste it exactly as you copied it, or not at all</span></li>
+        </ul>
+      </div>
+
+      <div class="vs-card us">
+        <div class="vs-head"><img src="./assets/fatclipboard-logo.png" alt="" style="height:18px;width:auto;" /><h3>FatClipboard</h3></div>
+        <p class="vs-sub">Free tier, Pro from $3.99/mo</p>
+        <ul class="vs-list">
+          <li><i class="ti ti-check"></i><span>100 items and 7 days free &mdash; unlimited history on Pro</span></li>
+          <li><i class="ti ti-check"></i><span>Instant search as you type, plus AI search by meaning</span></li>
+          <li><i class="ti ti-check"></i><span>Everything survives restarts, pinned or not</span></li>
+          <li><i class="ti ti-check"></i><span>Folders, pins, and automatic categories for links, addresses and more</span></li>
+          <li><i class="ti ti-check"></i><span>Reads the text inside screenshots so you can search it</span></li>
+          <li><i class="ti ti-check"></i><span>Fix grammar, change tone, summarize or translate before pasting</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="vs-note">Still not sure? The free tier covers all of the above except the AI features, forever.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head center" style="max-width: 700px;">
+      <span class="sticker sticker-inline sticker-lime"><i class="ti ti-list-search"></i> OTHER OPTIONS</span>
+      <h2 class="serif">Other Windows clipboard managers worth knowing about</h2>
+      <p>FatClipboard isn't the only third-party option out there — here's honestly where it fits among the rest.</p>
+    </div>
+    <div class="privacy-grid">
+      <div class="privacy-item">
+        <i class="ti ti-apps"></i>
+        <h4>Ditto</h4>
+        <p>A long-running, free, open-source clipboard manager. Powerful and lightweight, but the interface is dated and there's no OCR, AI, or semantic search.</p>
+      </div>
+      <div class="privacy-item">
+        <i class="ti ti-apps"></i>
+        <h4>ClipClip</h4>
+        <p>Organizes clips into tabs and supports images well. Free version is ad-supported; going ad-free requires a one-time paid upgrade.</p>
+      </div>
+      <div class="privacy-item">
+        <i class="ti ti-apps"></i>
+        <h4>ClipboardFusion</h4>
+        <p>Strong for macro/automation power users who want scripted text transforms. Steeper learning curve if you just want fast search and paste.</p>
+      </div>
+    </div>
+    <p class="vs-note">If you want modern search, screenshot OCR, and AI transforms without configuring macros, that's the gap FatClipboard is built for.</p>
+  </div>
+</section>
+
+<section class="section" id="faq" style="padding-top: 8px;">
+  <div class="wrap">
+    <div class="section-head center" style="max-width: 620px;">
+      <span class="sticker sticker-inline sticker-pink"><i class="ti ti-message-question"></i> COMMON QUESTIONS</span>
+      <h2 class="serif">Windows clipboard manager, <span class="mark mark-violet">answered</span></h2>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>Does Windows 11 have a built-in clipboard manager?</summary>
+        <p class="faq-answer">Yes &mdash; press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do I get more than 25 items in Windows clipboard history?</summary>
+        <p class="faq-answer">Windows' native Win+V clipboard caps out at 25 items with no setting to raise it. To keep a longer, searchable history you need a third-party clipboard manager like FatClipboard, which stores unlimited items on Pro (100 items free) and keeps them across restarts.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is there a free clipboard manager for Windows?</summary>
+        <p class="faq-answer">Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost &mdash; no account charge, no trial required. Pro adds unlimited history and AI features starting at $3.99/mo.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I search my clipboard history on Windows?</summary>
+        <p class="faq-answer">Not with Windows' built-in Win+V panel &mdash; it's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does a clipboard manager slow down my PC?</summary>
+        <p class="faq-answer">A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey &mdash; no background indexing job, no constant disk scanning, no upload.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is my clipboard data private?</summary>
+        <p class="faq-answer">Your clipboard history is stored only in a local database on your own PC and is never uploaded. The one exception is the optional AI features (transform and smart search): the specific snippet you act on is sent to be processed and the result returned, and it isn't logged. See the <a href="./index.html#privacy">privacy section</a> for the full detail.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="download">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2 class="serif">Stop losing what you copy.</h2>
+      <p>FatClipboard is free to download and takes less than a minute to set up.</p>
+      <div class="ctaRow" style="justify-content:center;">
+        <a class="btn btn-primary" href="./index.html#download"><i class="ti ti-download"></i> Download for Windows</a>
+      </div>
+      <p style="font-size:12.5px;color:rgba(var(--cream-rgb),0.55);margin-top:14px;">Windows only for now. Mac support is on the roadmap.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="foot-row">
+    <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
+    <div class="foot-links">
+      <a href="./index.html#screenshots">Screenshots</a>
+      <a href="./index.html#features">Features</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./privacy.html">Privacy</a>
+      <a href="./terms.html">Terms</a>
+      <a href="mailto:contact@fatclipboard.com">Contact</a>
+    </div>
+    <div class="foot-copy">© 2026 FatClipboard. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById("themeToggle");
+    if (!btn) return;
+
+    function iconFor(theme) {
+      return theme === "dark" ? "ti-sun" : "ti-moon";
+    }
+
+    function labelFor(theme) {
+      return theme === "dark" ? "Light mode" : "Try dark mode";
+    }
+
+    function syncButton() {
+      var theme = document.documentElement.getAttribute("data-theme") || "light";
+      btn.innerHTML = '<i class="ti ' + iconFor(theme) + '"></i> ' + labelFor(theme);
+    }
+
+    btn.addEventListener("click", function () {
+      var current = document.documentElement.getAttribute("data-theme") || "light";
+      var next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem("fc-theme", next); } catch (e) {}
+      syncButton();
+    });
+
+    syncButton();
+  })();
+</script>
+
+</body>
+</html>
