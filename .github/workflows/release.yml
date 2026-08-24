@@ -14,6 +14,12 @@ on:
 jobs:
   release:
     runs-on: windows-latest
+    # The default GITHUB_TOKEN is read-only unless a workflow explicitly
+    # asks for more (either via this block, or a repo/org setting). Without
+    # this, tauri-action's release-creation step fails with "Resource not
+    # accessible by integration" even though the build itself succeeds.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
