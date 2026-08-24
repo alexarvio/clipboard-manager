@@ -64,7 +64,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRGMTJGNDExQzE5MzJDNzMKUldSekxKUEJFZlFTVDRaSy8wcTFPcXdVOHRXU0hCWU9kSmI5THVSa0xCYktDTU1ZdzZnL01NRmMK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJENTJDMTg5QTQxNTNGMkYKUldRdlB4V2tpY0ZTTFpFU05PVHVmTkUvWTdSa25nZE5nY1NqSkF1SVRrYTkrQ1lvUUVUQjNnQjIK",
       "endpoints": [
         "https://github.com/alexarvio/clipboard-manager/releases/latest/download/latest.json"
       ]

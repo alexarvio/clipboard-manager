@@ -29,16 +29,14 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set this as a repo secret (Settings -> Secrets and variables ->
-          # Actions) before the first run -- see docs/auto-updates.md for
-          # where the private key file itself is.
+          # Both set as repo secrets (Settings -> Secrets and variables ->
+          # Actions) -- see docs/auto-updates.md for where the private key
+          # file itself is. This key uses a real (non-blank) password, set
+          # as its own secret, to avoid an earlier issue where a
+          # blank-password key failed to decode when the password env var
+          # was omitted or set to an empty string.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # The key was generated with a blank password (--ci -p ""), but
-          # minisign/rsign still encrypts the key even with an empty
-          # password -- decoding it requires this env var to literally be
-          # set to an empty string. GitHub Secrets can't store a blank
-          # value, so this is a plain workflow-level env var, not a secret.
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: app-v__VERSION__
           releaseName: "FatClipboard v__VERSION__"
