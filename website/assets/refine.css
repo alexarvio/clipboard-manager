@@ -456,3 +456,50 @@ html[data-theme="dark"] .tl-item:nth-child(2) .tl-chips { --chipHue: #B7A9FF; }
 .dark-band .privacy-item h4 { color: #F2EEE3; }
 .dark-band .privacy-item p { color: rgba(242,238,227,0.68); }
 .dark-band .privacy-item i { color: var(--lime); }
+
+/* ---- 13. competitor comparison rows ------------------------------------
+   Replaces a three-card grid that named Ditto/ClipClip/ClipboardFusion,
+   described what each was good at, and never mentioned FatClipboard. Under
+   a heading reading "worth knowing about", that wasn't a comparison -- it
+   was a referral list on our own domain, pointing people at other products
+   right before the pricing table.
+
+   Each row is now an actual comparison and resolves in one direction: what
+   the tool is (short, and true -- the page's credibility depends on it),
+   where it stops, and what you get here instead. The competitor names stay
+   in the markup, including in the h2, because people searching them is why
+   this page ranks at all -- they're just no longer the thing being sold. */
+.cmp-list {
+  max-width: 900px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.cmp-row {
+  display: grid; grid-template-columns: 220px 1fr; gap: 28px;
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--borderLight);
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: var(--shadowSoft);
+}
+.cmp-name h3 { font-size: 18px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.3px; }
+.cmp-name p { font-size: 12.5px; color: var(--inkMuted); margin: 0; line-height: 1.45; }
+.cmp-points { display: flex; flex-direction: column; gap: 9px; }
+.cmp-points p {
+  display: grid; grid-template-columns: 18px 1fr; gap: 10px;
+  font-size: 14px; line-height: 1.5; margin: 0; align-items: start;
+}
+.cmp-points i { font-size: 14px; margin-top: 2px; }
+.cmp-stop { color: var(--inkMuted); }
+.cmp-stop i { color: #D93A5C; }
+/* The FatClipboard line carries full-strength ink and the accent tick, so
+   within each row the eye lands on it last and hardest. */
+.cmp-us { color: var(--ink); font-weight: 500; }
+.cmp-us i { color: var(--accent); }
+@media (max-width: 760px) {
+  .cmp-row { grid-template-columns: 1fr; gap: 14px; padding: 20px; }
+}
+
+/* Headings were breaking into badly-weighted lines once the type scale came
+   down -- "ClipboardFusion" alone on line two of the comparison h2. */
+h1, h2, h3, .section-head p { text-wrap: balance; }
