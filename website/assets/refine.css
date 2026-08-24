@@ -1,0 +1,431 @@
+/* ==========================================================================
+   2026-08-24 -- "serious, still friendly" pass
+   ==========================================================================
+   Context: the 2026-08-16 pass borrowed the logo's graffiti language
+   (Luckiest Guy, thick black outlines, hard offset shadows, a few degrees of
+   tilt on everything) and spread it across the whole page, in four hues at
+   once -- lime, pink, orange AND lavender, often within a single component
+   row. Sat with for a week it reads as a sticker pack rather than a product
+   people are asked to install and pay for, and it no longer matches the app
+   it's selling: the real UI (see tailwind.config.js) is a disciplined
+   white/lavender system with soft elevation and no outlines anywhere.
+
+   This block does NOT delete the personality -- the big pill labels stay,
+   the color stays, the logo keeps its full graffiti lockup. What changes:
+
+     1. Pills stop being tilted bubble-font stickers and become straight,
+        tight, uppercase labels. Same shape and prominence, adult typography.
+     2. One accent does the work (lavender, exactly the app's), with lime
+        kept as the single "free / positive / included" signal. Pink and
+        orange retire to the logo, which is where they came from.
+     3. Hard 4px offset shadows + 2.5px black outlines are replaced by the
+        app's own soft two-layer elevation (see boxShadow.card/float in
+        tailwind.config.js) plus a hairline ring.
+     4. Gradients carry the depth instead of outlines -- on buttons, step
+        discs, bands and the glows behind mockups.
+     5. Mockups sit straight, larger, and uncluttered, because they're the
+        actual product evidence on the page and were the thing hardest to
+        read.
+
+   Kept as a separate appended block rather than edited in place so the
+   previous pass's reasoning stays legible in the file above -- every rule
+   here is a deliberate override of something documented, not a replacement
+   of the file's history.
+   ========================================================================== */
+
+/* ---- 1. new tokens: gradients + soft elevation --------------------------
+   The page had no gradient or elevation tokens at all -- every shadow was
+   written inline as a literal, which is why they drifted into eight
+   different values. These four cover every surface on the page. */
+:root {
+  --accentDeep: #6355D6;
+  --gradAccent: linear-gradient(135deg, #8B7BEC 0%, #6355D6 100%);
+  --gradAccentSoft: linear-gradient(135deg, rgba(124,111,227,0.16) 0%, rgba(124,111,227,0.05) 100%);
+  --limeTint: rgba(198,242,78,0.30);
+  --limeDeep: #3F5A08;
+  /* Two-layer soft elevation, ported from the app's own shadow scale: a
+     tight 1-2px contact shadow so the edge reads as touching the page, plus
+     a wide low-opacity cast so it reads as lifted off it. */
+  --shadowSoft: 0 1px 2px rgba(26,24,22,0.05), 0 8px 24px -12px rgba(26,24,22,0.22);
+  --shadowLift: 0 2px 6px rgba(26,24,22,0.06), 0 28px 56px -24px rgba(26,24,22,0.34);
+  --shadowAccent: 0 2px 6px rgba(99,85,214,0.22), 0 16px 32px -14px rgba(99,85,214,0.65);
+  /* A hairline ring is what actually defines an edge once the black
+     outlines are gone -- shadows alone can't, since a shadow is by
+     definition darker than the page and this page is white. */
+  --ringSoft: 0 0 0 1px rgba(var(--ink-rgb),0.07);
+}
+html[data-theme="dark"] {
+  --accentDeep: #C9BCFF;
+  --gradAccent: linear-gradient(135deg, #C4B7FF 0%, #8E7CF0 100%);
+  --gradAccentSoft: linear-gradient(135deg, rgba(183,169,255,0.18) 0%, rgba(183,169,255,0.06) 100%);
+  --limeTint: rgba(198,242,78,0.20);
+  --limeDeep: #DCF79B;
+  --shadowSoft: 0 1px 2px rgba(0,0,0,0.32), 0 8px 24px -12px rgba(0,0,0,0.55);
+  --shadowLift: 0 2px 6px rgba(0,0,0,0.38), 0 28px 56px -24px rgba(0,0,0,0.7);
+  --shadowAccent: 0 2px 6px rgba(0,0,0,0.35), 0 16px 32px -14px rgba(142,124,240,0.5);
+  --ringSoft: 0 0 0 1px rgba(255,255,255,0.09);
+}
+
+/* ---- 2. pill labels (were: rotated bubble-font stickers) ----------------
+   The shape and the prominence are what worked and are kept: a big, filled,
+   fully-rounded label that announces each section. What goes is everything
+   that made it read as a novelty -- the display face, the tilt, the
+   never-quite-still wiggle animation, the outline and the hard shadow. */
+.sticker {
+  font-family: inherit;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.13em;
+  text-transform: uppercase; line-height: 1;
+  padding: 11px 20px 10px; gap: 8px;
+  border: 0;
+  background: var(--gradAccentSoft), var(--cream);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.24);
+  transform: none;
+  animation: none;
+}
+.sticker i { font-size: 13px; }
+.sticker-inline { margin-bottom: 20px; }
+/* Lime variant keeps its job as the "free / no catch" signal, now as a
+   readable tinted pill instead of a full-saturation neon fill. */
+.sticker-lime {
+  background: var(--limeTint);
+  color: var(--limeDeep);
+  box-shadow: inset 0 0 0 1px rgba(198,242,78,0.55);
+}
+.sticker-violet {
+  background: var(--gradAccentSoft), var(--cream);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.24);
+}
+/* Inside a dark band the tinted-pill treatment needs its own values -- a
+   1px inset ring at 24% is invisible on charcoal, and --cream resolves to
+   charcoal there so the gradient has nothing to sit on. */
+.dark-band .sticker,
+.cta-band .sticker {
+  background: rgba(255,255,255,0.07);
+  color: #F2EEE3;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
+}
+.dark-band .sticker-lime,
+.cta-band .sticker-lime {
+  background: rgba(198,242,78,0.16);
+  color: #DCF79B;
+  box-shadow: inset 0 0 0 1px rgba(198,242,78,0.4);
+}
+
+/* ---- 3. category chips (were: 4-color rotated outlined stickers) --------
+   Eight chips in four hues at four different angles was the single loudest
+   thing on the page, and it sat directly under the hero. As one uniform
+   card-like chip set they do their actual job -- "look how many kinds of
+   thing this recognises" -- without shouting over the headline above them.
+   :nth-child(n) matches the existing per-color rules' specificity exactly
+   and wins on source order, so the whole rainbow rotation collapses. */
+.marquee { gap: 10px; }
+.marquee span,
+.marquee span:nth-child(n) {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--borderLight);
+  box-shadow: var(--shadowSoft);
+  font-size: 13px; font-weight: 600; padding: 9px 16px;
+  transform: none;
+}
+.marquee span i { color: var(--accent); }
+.marquee span:hover,
+.marquee span:nth-child(n):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadowLift);
+  border-color: rgba(var(--accent-rgb),0.4);
+}
+
+/* ---- 4. heading highlight marks ----------------------------------------
+   Two problems, both visible on the live page: the fill was saturated
+   enough to need white text (so the highlighted phrase read as a separate
+   inserted object rather than emphasis within the sentence), and it bled
+   0.18em past the words on every side, which put the pill physically on top
+   of the adjacent word -- "junk drawer" was overlapping "to" in the
+   Features heading. A translucent tint behind unchanged dark text fixes
+   both: emphasis reads as emphasis, and the bleed can stay small. */
+.mark { padding: 0 0.08em; margin: 0 0.1em; }
+.mark::before {
+  left: -0.1em; right: -0.1em; top: 0.02em; bottom: -0.04em;
+  border-radius: 0.45em 0.6em 0.5em 0.55em / 0.6em 0.45em 0.55em 0.5em;
+  transform: rotate(-0.5deg);
+  opacity: 1;
+}
+.mark-violet { --markColor: rgba(var(--accent-rgb),0.26); color: inherit; }
+.mark-lime   { --markColor: var(--limeTint); color: inherit; }
+.mark-pink   { --markColor: rgba(var(--accent-rgb),0.26); color: inherit; }
+html[data-theme="dark"] .mark-violet,
+html[data-theme="dark"] .mark-lime,
+html[data-theme="dark"] .mark-pink { color: inherit; }
+
+/* ---- 5. buttons --------------------------------------------------------
+   Primary actions move from flat-fill-plus-hard-shadow to a lavender
+   gradient with an accent-tinted glow, and lift on hover instead of
+   sliding diagonally into their own shadow. The nav CTA joins them: it was
+   the one lime button on the page, which made the two most important
+   buttons (nav "Download free" and hero "Download for Windows") look like
+   different actions in different systems. */
+.btn { border-radius: 12px; }
+.btn-primary {
+  background: var(--gradAccent);
+  color: var(--onAccent);
+  border: 0;
+  box-shadow: var(--shadowAccent);
+}
+.btn-primary:hover,
+html[data-theme="dark"] .btn-primary:hover {
+  filter: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(99,85,214,0.26), 0 22px 44px -16px rgba(99,85,214,0.8);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: var(--shadowAccent); }
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--borderLight);
+  box-shadow: var(--shadowSoft);
+}
+.btn-secondary:hover {
+  border-color: rgba(var(--accent-rgb),0.45);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadowLift);
+}
+.navcta,
+html[data-theme="dark"] .navcta {
+  background: var(--gradAccent);
+  color: var(--onAccent);
+  border: 0;
+  padding: 9px 17px;
+  box-shadow: 0 1px 3px rgba(99,85,214,0.3), 0 8px 18px -8px rgba(99,85,214,0.75);
+}
+.navcta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(99,85,214,0.32), 0 12px 24px -8px rgba(99,85,214,0.9);
+}
+
+/* ---- 6. numbered discs -------------------------------------------------
+   The timeline ran lime -> pink -> violet and the feature rows ran
+   lime -> pink -> violet -> orange, so a reader scanning the page met seven
+   differently-colored circles that encoded nothing: the steps aren't
+   different in kind, they're just in order. One gradient disc for all of
+   them puts that ordering back in the numeral, where it belongs. */
+.f-num,
+.num-lime, .num-pink, .num-violet, .num-orange {
+  font-family: inherit;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.04em; padding-top: 0;
+  background: var(--gradAccent);
+  color: var(--onAccent);
+  border: 0;
+  box-shadow: var(--shadowAccent);
+}
+html[data-theme="dark"] .f-num { box-shadow: var(--shadowAccent); }
+.tl-dot,
+.tl-item:nth-child(2) .tl-dot,
+.tl-item:nth-child(3) .tl-dot {
+  font-family: inherit;
+  font-size: 19px; font-weight: 800; padding-top: 0;
+  background: var(--gradAccent);
+  color: var(--onAccent);
+  border: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 14px 28px -12px rgba(142,124,240,0.6);
+}
+.tl-item:not(:last-child)::before { border-left-style: solid; border-left-width: 1px; }
+
+/* ---- 7. mockups: straight, bigger, calmer ------------------------------
+   These are the only real evidence on the page of what the product looks
+   like, and all three were tilted -- which cost legibility for a styling
+   idea ("break the grid") that the rest of the page no longer needs, now
+   that gradients and elevation are creating the visual interest instead.
+   Straight also means the panel's own internal grid lines up with the
+   page's, so it reads as a screenshot rather than a decoration. */
+/* Width is scoped to desktop deliberately: the mobile rule that resets this
+   to 100% lives in site.css's max-width:900px block, and an unscoped width
+   here would come later in the cascade at equal specificity and beat it,
+   putting a 470px panel inside a 430px viewport. */
+.panel-mock { transform: none; }
+@media (min-width: 901px) { .panel-mock { width: 470px; } }
+.panel {
+  border-radius: 22px;
+  box-shadow: var(--shadowLift), var(--ringSoft);
+}
+.ai-row .f-visual {
+  transform: none;
+  box-shadow: var(--shadowLift), var(--ringSoft);
+}
+.f-visual { border-radius: 20px; box-shadow: var(--shadowSoft), var(--ringSoft); border: 0; }
+/* Float tags were solid near-black chips, which on a white page read as
+   heavier than the mockup they were annotating. As light cards with the
+   same elevation language as everything else they annotate instead of
+   compete, and the accent icon ties them to the product. */
+.panel-mock .float-tag {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadowLift), var(--ringSoft);
+  border-radius: 12px;
+  font-weight: 600;
+}
+.float-tag i { color: var(--accent); }
+.hotkey-tag kbd {
+  background: rgba(var(--ink-rgb),0.07);
+  color: var(--ink);
+  border-bottom-color: rgba(var(--ink-rgb),0.16);
+}
+/* Glows get stronger now that they, not outlines, are what gives the
+   mockups presence on the page. */
+.hero-glow { width: min(720px, 110%); }
+
+/* ---- 8. dark bands -----------------------------------------------------
+   Flat charcoal inside a 2.5px black outline, with one lime blob bleeding
+   in from a corner. The outline did nothing (black on near-black) and the
+   lime blob was the only warm thing in an otherwise cool section. Replaced
+   with a real gradient ground plus a lavender glow, so the band reads as a
+   lit surface rather than a black rectangle someone drew a border on. */
+.dark-band, .cta-band {
+  border: 0;
+  border-radius: 30px;
+  background:
+    radial-gradient(120% 90% at 15% 0%, rgba(124,111,227,0.22) 0%, rgba(124,111,227,0) 60%),
+    linear-gradient(165deg, #262229 0%, #1C1A17 48%, #221D30 100%);
+  box-shadow: var(--shadowLift);
+}
+.dark-band { padding: 64px 52px; }
+.dark-band::before {
+  background: radial-gradient(circle, rgba(183,169,255,0.30) 0%, rgba(183,169,255,0) 70%);
+}
+.cta-band::before { background: radial-gradient(circle, rgba(183,169,255,0.34) 0%, rgba(183,169,255,0) 70%); }
+.cta-band::after  { background: radial-gradient(circle, rgba(198,242,78,0.20) 0%, rgba(198,242,78,0) 70%); }
+/* Step chips inside the band ran lime / pink / violet to match the discs
+   they sat under; with the discs unified they follow. */
+.dark-band .tl-item:nth-child(1) .tl-chips,
+.dark-band .tl-item:nth-child(2) .tl-chips,
+.dark-band .tl-item:nth-child(3) .tl-chips { --chipHue: #B7A9FF; }
+
+/* ---- 9. pricing --------------------------------------------------------
+   The price table carried the heaviest treatment on the page (2.5px outline
+   + a 7px hard offset shadow) at exactly the moment a visitor is deciding
+   whether to trust the product with a card. Soft elevation reads as more
+   expensive, not less. The amount drops the display face for the same
+   reason -- a hand-lettered price tag is a jumble-sale cue. */
+.price-table, html[data-theme="dark"] .price-table {
+  border: 1px solid var(--borderLight);
+  border-radius: 22px;
+  box-shadow: var(--shadowLift);
+}
+.price-head .amount {
+  font-family: inherit;
+  font-size: 42px; font-weight: 700; letter-spacing: -1.5px;
+}
+.vs-card.us, html[data-theme="dark"] .vs-card.us {
+  border: 1px solid rgba(var(--accent-rgb),0.3);
+  box-shadow: var(--shadowLift);
+}
+.vs-card.them { border: 1px solid var(--borderLight); box-shadow: var(--shadowSoft); }
+.waitlist-form input {
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: #F2EEE3;
+}
+.waitlist-form input::placeholder { color: rgba(242,238,227,0.5); }
+.waitlist-form input:focus { outline: 2px solid rgba(183,169,255,0.7); }
+
+/* ---- 10. type scale ----------------------------------------------------
+   66px/44px were set when the page needed to out-shout its own decoration.
+   With the decoration calmed down they can come back to a scale that reads
+   as confident rather than loud, and the tighter measure keeps hero lines
+   from running long. */
+h1 { font-size: 58px; letter-spacing: -1.6px; }
+.section-head h2 { font-size: 40px; letter-spacing: -1.2px; }
+.section-head { margin-bottom: 56px; }
+.sub { font-size: 16.5px; max-width: 440px; }
+@media (max-width: 900px) {
+  h1 { font-size: 42px; letter-spacing: -1px; }
+  .section-head h2 { font-size: 31px; letter-spacing: -0.8px; }
+  .dark-band { padding: 44px 24px; }
+}
+
+/* ---- 11. round-two corrections ----------------------------------------- */
+
+/* Default mark fill. Only .mark-violet/.mark-lime were being overridden
+   above, so any .mark without a variant class (the pricing heading's "earns
+   its keep") kept falling through to the original full-saturation
+   var(--lime) and rendered twice as loud as its siblings. */
+.mark::before { background: var(--markColor, var(--limeTint)); }
+/* A translucent tint that reads as a highlight on white barely registers on
+   charcoal, so inside a band the marks get their own brighter values. */
+.dark-band .mark-violet, .cta-band .mark-violet { --markColor: rgba(183,169,255,0.34); }
+.dark-band .mark-lime, .cta-band .mark-lime { --markColor: rgba(198,242,78,0.30); }
+
+/* The closing CTA's buttons were the last lime-with-black-outline holdout,
+   so the page's final call to action didn't match the two above it. */
+.cta-band .btn-primary,
+.cta-band .btn-primary:hover {
+  background: var(--gradAccent);
+  color: var(--onAccent);
+  border-color: transparent;
+}
+.cta-band .btn-primary { box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 18px 36px -14px rgba(142,124,240,0.75); }
+.cta-band .btn-primary:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.35), 0 24px 44px -16px rgba(142,124,240,0.9); }
+
+/* Band grounds: the 165deg ramp put #262229 in the top-right corner, which
+   against the charcoal below it read as a muddy maroon wash rather than a
+   light source. Cooled to a neutral charcoal with the only warmth coming
+   from the lavender glow, which is now explicitly placed top-left. */
+.dark-band, .cta-band {
+  background:
+    radial-gradient(90% 70% at 12% -10%, rgba(140,124,240,0.28) 0%, rgba(140,124,240,0) 62%),
+    linear-gradient(170deg, #221F26 0%, #1B1A1F 55%, #1C1A22 100%);
+}
+
+/* Trial pill sat half-off the table's top-right corner and clipped it. */
+/* Actual class is .price-sticker; it sat at right:-18px, hanging off the
+   table's corner rather than resting on it. */
+.price-sticker { top: -19px; right: 20px; }
+
+/* Hero: three floating annotations plus a corner sticker around one 470px
+   panel meant the thing they were annotating had to compete with four
+   labels. The hotkey tag is the one that earns its place (it's the single
+   most important interaction and appears nowhere else in the hero), the
+   folder tag anchors the bottom edge; the other two are removed in the
+   markup. Repositioned now that the panel no longer tilts. */
+.hotkey-tag { top: -22px; right: 8px; }
+.float-tag.bottom { bottom: -16px; left: -10px; }
+
+/* .sticker-pink kept an orange->pink gradient fill, and its dark-mode rule
+   carried enough specificity to survive the base .sticker override above,
+   so PRICING and QUESTIONS were still rendering in the retired hues. */
+.sticker-pink,
+html[data-theme="dark"] .sticker-pink {
+  background: var(--gradAccentSoft), var(--cream);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.24);
+}
+
+/* The top-right glow on the how-it-works band was pink at 22%, which over
+   charcoal read as a maroon wash in the corner rather than as light. Same
+   lavender as the opposite corner, so the band looks lit from two soft
+   sources instead of stained. */
+.how-band::after {
+  background: radial-gradient(circle, rgba(183,169,255,0.22) 0%, rgba(183,169,255,0) 70%);
+}
+
+/* Step 1's chips had a dark-theme-specific lime rule carrying an attribute
+   selector, which outranked the band-scoped unification above and left one
+   step in the timeline still coloured differently from the other two. */
+html[data-theme="dark"] .dark-band .tl-item:nth-child(1) .tl-chips,
+html[data-theme="dark"] .tl-item:nth-child(1) .tl-chips,
+html[data-theme="dark"] .tl-item:nth-child(2) .tl-chips { --chipHue: #B7A9FF; }
+
+/* The internal link into the SEO comparison page inherited .vs-note's muted
+   grey and had no underline, so the one piece of internal linking on the
+   page didn't read as clickable to a person or as emphasised to a crawler. */
+.vs-note a {
+  color: var(--accent); font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: rgba(var(--accent-rgb),0.4);
+}
+.vs-note a:hover { text-decoration-color: var(--accent); }
+
+/* Footer links get the same affordance on hover. */
+.foot-links a:hover { color: var(--accent); }
