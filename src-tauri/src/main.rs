@@ -26,6 +26,15 @@ use tauri_plugin_updater::UpdaterExt;
 
 pub struct AppState {
     pub conn: Mutex<Connection>,
+    // Which account's history conn currently points at (see
+    // db::account_key/db::open_for_account) -- kept alongside conn rather
+    // than recomputed from settings.user_email on every access because the
+    // background clipboard watcher thread (clipboard_listener.rs) needs it
+    // too, for screenshot files, and reading a Mutex<String> here is cheaper
+    // than re-normalizing/re-hashing an email on every single clipboard
+    // change. Always kept in sync with conn: the two are swapped together
+    // by run_auth_request/auth_logout/delete_account, never independently.
+    pub account_key: Mutex<String>,
     pub settings: Mutex<Settings>,
     // Timestamp of the last time the panel was shown. Windows can fire a
     // spurious Focused(false) right as a hidden/transparent/always-on-top
@@ -1340,6 +1349,18 @@ async fn run_auth_request(
     settings::save(&settings);
     *state.settings.lock().unwrap() = settings.clone();
 
+    // Swap to this account's own isolated clip history (see
+    // db::open_for_account) rather than whatever conn was already open --
+    // that's what actually stops signing into a second email on the same
+    // machine from showing the first account's folders/pins. A no-op file
+    // open if this account was already the one signed into (e.g. the same
+    // person logging back in), and the one-time legacy-history migration if
+    // this is the very first account ever signed into on this machine.
+    let new_key = db::account_key(&settings.user_email);
+    let new_conn = db::open_for_account(&new_key);
+    *state.conn.lock().unwrap() = new_conn;
+    *state.account_key.lock().unwrap() = new_key;
+
     // Covers logging into an existing Pro account on a device that's never
     // embedded its history before (a fresh install, or one that was Free
     // last time it saved settings) -- same backfill as save_settings.
@@ -1388,7 +1409,18 @@ fn auth_logout(state: tauri::State<AppState>) -> Settings {
     settings.tier = "free".into();
     settings.first_name = String::new();
     settings::save(&settings);
-    settings.clone()
+    let result = settings.clone();
+    drop(settings);
+
+    // Swap conn back off whichever account was just signed out of -- see
+    // the matching swap in run_auth_request. AuthGate blocks all real
+    // command usage while signed out anyway, but there's no reason to
+    // leave a just-logged-out account's history reachable through conn in
+    // the meantime.
+    *state.conn.lock().unwrap() = db::open_for_account("");
+    *state.account_key.lock().unwrap() = String::new();
+
+    result
 }
 
 /// Permanently deletes the signed-in account on the server (see
@@ -1434,7 +1466,17 @@ async fn delete_account(state: tauri::State<'_, AppState>) -> Result<Settings, S
     settings.tier = "free".into();
     settings.first_name = String::new();
     settings::save(&settings);
-    Ok(settings.clone())
+    let result = settings.clone();
+    drop(settings);
+
+    // Same conn swap as auth_logout -- the account's own history file on
+    // disk is untouched (see this function's own doc comment above), this
+    // just stops pointing the live conn at an account that no longer
+    // exists.
+    *state.conn.lock().unwrap() = db::open_for_account("");
+    *state.account_key.lock().unwrap() = String::new();
+
+    Ok(result)
 }
 
 #[derive(serde::Serialize)]
@@ -1943,14 +1985,22 @@ fn main() {
                 }
             });
 
-            let conn = Connection::open(db::db_path()).expect("failed to open db");
-            db::init(&conn);
-
+            // Settings (including any signed-in account from a previous launch)
+            // load *before* the db connection opens, not after, so the very
+            // first connection this run already lands in the right
+            // account's own history instead of the pre-account/legacy
+            // location and needing an immediate swap -- see
+            // db::open_for_account for what "right" means here, including
+            // the one-time legacy-file migration for whichever account
+            // turns out to be first.
             let settings = settings::load();
             let hotkey = settings.hotkey.clone();
+            let account_key = db::account_key(&settings.user_email);
+            let conn = db::open_for_account(&account_key);
 
             app.manage(AppState {
                 conn: Mutex::new(conn),
+                account_key: Mutex::new(account_key),
                 settings: Mutex::new(settings),
                 last_shown: Mutex::new(Instant::now()),
                 last_self_set: Mutex::new(None),

@@ -18,24 +18,106 @@ pub struct ClipItem {
     pub category: String,
 }
 
-pub fn db_path() -> PathBuf {
+/// Deterministic FNV-1a 64-bit hash, hex-encoded. Used only to turn an
+/// account's email into a short, filesystem-safe, and *stable across app
+/// updates* folder name (std's DefaultHasher is explicitly not guaranteed
+/// stable across Rust/std versions, which would silently orphan existing
+/// per-account folders on some future update -- this is deliberately a
+/// hand-rolled, well-known algorithm instead of a dependency, so its output
+/// never changes).
+fn fnv1a_hex(bytes: &[u8]) -> String {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
+}
+
+/// Turns a signed-in account's email into the key used to namespace that
+/// account's local clip history (see db_path/screenshots_dir below). Empty
+/// string (nobody signed in yet -- a fresh install before AuthGate's first
+/// signup/login completes) is its own explicit case, not just "an account
+/// with an empty email": it means the pre-account/legacy on-disk location,
+/// with no "accounts" subfolder at all.
+pub fn account_key(email: &str) -> String {
+    let normalized = email.trim().to_lowercase();
+    if normalized.is_empty() {
+        return String::new();
+    }
+    fnv1a_hex(normalized.as_bytes())
+}
+
+/// Every account gets its own isolated clip history: this is what closes the
+/// bug reported 2026-08-24 (signing into a second account on the same
+/// machine and seeing the first account's folders/pins, because both were
+/// reading the one shared history.sqlite this function used to always
+/// return regardless of who was signed in). An empty key still returns the
+/// original unscoped path, for the brief pre-login window on a fresh
+/// install where nobody has signed up yet -- see open_for_account for the
+/// one-time migration that moves that legacy file into the *first* account
+/// signed into on a given machine.
+pub fn db_path(key: &str) -> PathBuf {
     let mut dir = dirs::config_dir().expect("no config dir");
     dir.push("clip");
+    if !key.is_empty() {
+        dir.push("accounts");
+        dir.push(key);
+    }
     std::fs::create_dir_all(&dir).ok();
     dir.push("history.sqlite");
     dir
 }
 
-/// Where full-resolution + thumbnail screenshot PNGs live on disk. Images
-/// are never stored as SQLite blobs (see the "Screenshots" section below for
-/// why) -- this directory holds the actual files, and the `screenshots`
-/// table just points at them.
-pub fn screenshots_dir() -> PathBuf {
+/// Where full-resolution + thumbnail screenshot PNGs live on disk, scoped to
+/// `key` the same way db_path is and for the same reason -- images are
+/// never stored as SQLite blobs (see the "Screenshots" section below for
+/// why), so isolating the database alone isn't enough; the files backing it
+/// need to move with it.
+pub fn screenshots_dir(key: &str) -> PathBuf {
     let mut dir = dirs::config_dir().expect("no config dir");
     dir.push("clip");
+    if !key.is_empty() {
+        dir.push("accounts");
+        dir.push(key);
+    }
     dir.push("screenshots");
     std::fs::create_dir_all(&dir).ok();
     dir
+}
+
+/// Opens (creating and migrating on first use) the clip history for the
+/// account identified by `key` -- see account_key. If this account has
+/// never been opened on this machine before *and* the old pre-account
+/// shared history still exists, that legacy history.sqlite/screenshots dir
+/// is moved in wholesale (not copied -- this only ever needs to happen
+/// once, for whichever account is the first one signed into after this
+/// per-account split shipped) rather than left behind empty on disk or,
+/// worse, silently reused by a second/third account later. Any account
+/// signed into afterward starts genuinely empty -- that's the actual fix
+/// for the cross-account leak this whole thing exists to close.
+pub fn open_for_account(key: &str) -> Connection {
+    let target_db = db_path(key);
+    let target_shots = screenshots_dir(key);
+
+    if !key.is_empty() && !target_db.exists() {
+        let legacy_db = db_path("");
+        if legacy_db.exists() {
+            std::fs::rename(&legacy_db, &target_db).ok();
+        }
+        let legacy_shots = screenshots_dir("");
+        // screenshots_dir() above already created target_shots as an empty
+        // dir; remove it first so rename() lands the legacy directory (with
+        // its contents) at that path instead of failing/nesting inside it.
+        if legacy_shots.exists() && legacy_shots != target_shots {
+            std::fs::remove_dir(&target_shots).ok();
+            std::fs::rename(&legacy_shots, &target_shots).ok();
+        }
+    }
+
+    let conn = Connection::open(&target_db).expect("failed to open db");
+    init(&conn);
+    conn
 }
 
 #[derive(Serialize, Clone)]
@@ -1340,14 +1422,21 @@ fn read_as_data_uri(path: &std::path::Path) -> String {
 
 /// Encodes `rgba` (raw RGBA8 bytes from arboard::Clipboard::get_image(), as
 /// captured by the watcher thread in main.rs) to PNG, writes both a
-/// full-resolution copy and a downscaled thumbnail to screenshots_dir(),
-/// and inserts the row. Returns the new row's id.
-pub fn insert_screenshot(conn: &Connection, rgba: &[u8], width: u32, height: u32) -> Option<i64> {
+/// full-resolution copy and a downscaled thumbnail to this account's own
+/// screenshots_dir(account_key), and inserts the row. Returns the new row's
+/// id.
+pub fn insert_screenshot(
+    conn: &Connection,
+    account_key: &str,
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+) -> Option<i64> {
     let img = image::RgbaImage::from_raw(width, height, rgba.to_vec())?;
     let dynamic = image::DynamicImage::ImageRgba8(img);
 
     let id_seed = chrono::Local::now().timestamp_millis();
-    let dir = screenshots_dir();
+    let dir = screenshots_dir(account_key);
     let full_path = dir.join(format!("{id_seed}.png"));
     let thumb_path = dir.join(format!("{id_seed}_thumb.png"));
 

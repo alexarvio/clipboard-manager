@@ -264,9 +264,15 @@ fn check_clipboard(app_handle: tauri::AppHandle) {
         }
 
         let tier = state.settings.lock().unwrap().tier.clone();
+        let account_key = state.account_key.lock().unwrap().clone();
         let conn = state.conn.lock().unwrap();
-        let new_screenshot_id =
-            db::insert_screenshot(&conn, &image.bytes, image.width as u32, image.height as u32);
+        let new_screenshot_id = db::insert_screenshot(
+            &conn,
+            &account_key,
+            &image.bytes,
+            image.width as u32,
+            image.height as u32,
+        );
         db::trim_screenshots_for_tier(&conn, &tier);
         drop(conn);
 
