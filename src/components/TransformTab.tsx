@@ -554,14 +554,69 @@ export default function TransformTab({
   }
 
   if (tier !== "pro") {
+    // Blurred preview + "PRO FEATURE" pill (2026-08-24, replaces the old
+    // plain-text-only gate) -- the backdrop below is a static, non-
+    // interactive mockup of the real Input/Instruction layout further down
+    // this file, built from fixed placeholder copy rather than the live
+    // component tree. That's deliberate: it can't accidentally fire any of
+    // the tier==="pro"-gated effects/handlers above (see the useEffect at
+    // ~line 281) even if that guard ever moves, since none of this markup
+    // reads or touches real state.
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-2.5">
-        <i className="ti ti-sparkles text-[26px] text-accent dark:text-accentDark" />
-        <p className="text-[13px] font-medium">AI Transform is a Pro feature</p>
-        <p className="text-[12px] text-inkMuted dark:text-inkMutedDark max-w-[220px]">
-          Paste in anything -- an email, a paragraph you found online, whatever -- and run it
-          through a prompt without saving it first. Upgrade to Pro to turn it on.
-        </p>
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 overflow-hidden px-4 pt-8 pb-3 space-y-3 blur-[3px] opacity-70 pointer-events-none select-none"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark">
+                Input
+              </p>
+              <span className="flex items-center gap-1 text-[10px] text-inkMuted dark:text-inkMutedDark">
+                <i className="ti ti-photo-up text-[11px]" />
+                Add image
+              </span>
+            </div>
+            <div
+              style={{ height: 72 }}
+              className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2 text-[13px]"
+            >
+              Following up on our call yesterday -- here's the summary you asked for...
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-inkMuted dark:text-inkMutedDark mb-1">
+              Instruction
+            </p>
+            <div className="bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                {["Summarize", "Fix grammar", "To bullet points", "Make formal", "Shorten", "Translate"].map((p) => (
+                  <div
+                    key={p}
+                    className="flex items-center justify-center h-9 px-2 rounded-lg text-[11px] leading-tight bg-accent/10 dark:bg-accentDark/15 text-ink dark:text-cream"
+                  >
+                    {p}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute inset-0 bg-gradient-to-b from-cream/10 via-cream/50 to-cream dark:from-charcoal/10 dark:via-charcoal/50 dark:to-charcoal" />
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center gap-2.5">
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/15 dark:bg-accentDark/20 text-accent dark:text-accentDark">
+            <i className="ti ti-sparkles text-[10px]" />
+            PRO FEATURE
+          </span>
+          <p className="text-[13px] font-medium">AI Transform is a Pro feature</p>
+          <p className="text-[12px] text-inkMuted dark:text-inkMutedDark max-w-[220px]">
+            Paste in anything -- an email, a paragraph you found online, whatever -- and run it
+            through a prompt without saving it first. Upgrade to Pro to turn it on.
+          </p>
+        </div>
       </div>
     );
   }
