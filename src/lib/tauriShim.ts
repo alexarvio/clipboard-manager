@@ -309,6 +309,23 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       return undefined as T;
     }
 
+    // Mirrors main.rs's verify_email. No real code was ever sent in
+    // browser preview, so this accepts any 6-digit string -- good enough to
+    // exercise the UI flow without a real email round-trip.
+    case "verify_email": {
+      await delay(null, 300);
+      const code = (args.code as string) ?? "";
+      if (!/^\d{6}$/.test(code)) throw "that code is invalid or has expired";
+      return undefined as T;
+    }
+
+    // Mirrors main.rs's resend_verification -- nothing to actually send in
+    // browser preview.
+    case "resend_verification": {
+      await delay(null, 300);
+      return undefined as T;
+    }
+
     // Mirrors main.rs's refresh_account_status (GET /auth/me + update local
     // tier). Just returns whatever the mock settings currently say, which
     // is what lets the start_checkout timeout above actually get noticed.

@@ -92,4 +92,40 @@ async function sendPasswordResetEmail(toEmail, token) {
   });
 }
 
-module.exports = { sendWelcomeEmail, sendPasswordResetEmail };
+function verificationEmailHtml(code) {
+  return `
+    <div style="font-family: -apple-system, Segoe UI, sans-serif; max-width: 480px; margin: 0 auto; color: #1A1816; line-height: 1.6;">
+      <p style="font-size: 20px; margin: 0 0 16px;">Verify your email</p>
+      <p>Paste this code into Clip to verify your email address. You need a verified email before starting a Pro trial.</p>
+      <p style="margin: 24px 0; text-align: center;">
+        <span style="display: inline-block; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 24px; letter-spacing: 0.12em; background: #FFFFFF; border-radius: 8px; padding: 12px 20px;">${code}</span>
+      </p>
+      <p style="color: #6E6859; font-size: 13px;">This code expires in 30 minutes and can only be used once. If you didn't create a Clip account, you can safely ignore this email.</p>
+      <p style="color: #6E6859; font-size: 13px; margin-top: 24px;">-- The Clip team</p>
+    </div>
+  `;
+}
+
+// NOT fire-and-forget when called from /auth/resend-verification (an
+// explicit user action -- a failure there should surface as an error
+// rather than vanish), but IS fire-and-forget when called right after
+// signup (same reasoning as sendWelcomeEmail: verifying isn't required to
+// use the free tier, so a slow/down email provider should never be able to
+// block account creation). The caller decides whether to await this.
+async function sendVerificationEmail(toEmail, code) {
+  if (!resend) {
+    console.warn(
+      "[clip-server] RESEND_API_KEY not set -- verification email not sent. " +
+        `For local testing, the verification code is: ${code}`
+    );
+    return;
+  }
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: toEmail,
+    subject: "Verify your email for Clip",
+    html: verificationEmailHtml(code),
+  });
+}
+
+module.exports = { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail };

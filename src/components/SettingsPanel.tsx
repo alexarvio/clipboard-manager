@@ -178,6 +178,21 @@ export default function SettingsPanel({
   const [portalLoading, setPortalLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Trial-abuse fix (2026-08-25, see docs/billing-flow.md): start_checkout
+  // fails with this exact message (mirrored from server/billing.js's
+  // email_unverified error) when the signed-in account hasn't verified its
+  // email yet. Matching on the literal string rather than a structured
+  // error code keeps the Rust command layer untouched (it already just
+  // forwards the server's error string) -- see verify_email/
+  // resend_verification in main.rs.
+  const EMAIL_UNVERIFIED_MESSAGE = "verify your email before starting a trial";
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<"monthly" | "annual" | null>(null);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+
   // First-name editing (2026-08-06) -- separate from the rest of `settings`
   // since this one field is server-authoritative (stored on the account in
   // Postgres, not just locally), so it needs its own save action hitting
@@ -300,9 +315,55 @@ export default function SettingsPanel({
         }
       }, 3000);
     } catch (err) {
-      setCheckoutError(typeof err === "string" ? err : "Couldn't start checkout. Is the server running?");
+      const message = typeof err === "string" ? err : "Couldn't start checkout. Is the server running?";
+      if (message === EMAIL_UNVERIFIED_MESSAGE) {
+        // Swap to the code-entry form instead of showing this as a dead-end
+        // error -- see the needsVerification render branch below. Remember
+        // which plan they were trying to start so submitVerifyCode can
+        // retry it automatically once verification succeeds.
+        setPendingPlan(plan);
+        setNeedsVerification(true);
+        setVerifyError(null);
+      } else {
+        setCheckoutError(message);
+      }
     } finally {
       setCheckoutStarting(null);
+    }
+  }
+
+  async function submitVerifyCode() {
+    if (verifying) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      await invoke("verify_email", { code: verifyCode.trim() });
+      setNeedsVerification(false);
+      setVerifyCode("");
+      setResendState("idle");
+      // Now that the account is verified, retry the trial they were
+      // originally starting -- no reason to make them click the plan
+      // button a second time.
+      if (pendingPlan) {
+        await startCheckout(pendingPlan);
+      }
+    } catch (err) {
+      setVerifyError(typeof err === "string" ? err : "That code is invalid or has expired.");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function resendVerificationCode() {
+    if (resendState === "sending") return;
+    setResendState("sending");
+    setVerifyError(null);
+    try {
+      await invoke("resend_verification");
+      setResendState("sent");
+    } catch (err) {
+      setVerifyError(typeof err === "string" ? err : "Couldn't send that -- try again in a moment.");
+      setResendState("idle");
     }
   }
 
@@ -556,6 +617,58 @@ export default function SettingsPanel({
                 className="text-[11.5px] px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        ) : needsVerification ? (
+          <div>
+            <p className="text-[13px] font-medium mb-1">Verify your email</p>
+            <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-3">
+              We sent a 6-digit code to your email — enter it below to start your trial.
+            </p>
+            {verifyError && (
+              <p className="text-[12px] text-red-500 dark:text-red-400 mb-3">{verifyError}</p>
+            )}
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="123456"
+                className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-borderLight dark:border-borderDark bg-transparent tracking-[0.2em] text-center"
+              />
+              <button
+                onClick={submitVerifyCode}
+                disabled={verifying || verifyCode.length !== 6}
+                className="text-[12px] px-4 py-2 rounded-lg bg-ink dark:bg-cream text-cream dark:text-charcoal font-medium disabled:opacity-50"
+              >
+                {verifying ? "Verifying…" : "Verify"}
+              </button>
+            </div>
+            <div className="flex items-center justify-between text-[11.5px]">
+              <button
+                onClick={resendVerificationCode}
+                disabled={resendState === "sending"}
+                className="text-inkMuted dark:text-inkMutedDark hover:underline disabled:opacity-50"
+              >
+                {resendState === "sending"
+                  ? "Sending…"
+                  : resendState === "sent"
+                  ? "Code sent — check your inbox"
+                  : "Resend code"}
+              </button>
+              <button
+                onClick={() => {
+                  setNeedsVerification(false);
+                  setVerifyCode("");
+                  setVerifyError(null);
+                  setPendingPlan(null);
+                }}
+                className="text-inkMuted dark:text-inkMutedDark hover:underline"
+              >
+                Back
               </button>
             </div>
           </div>

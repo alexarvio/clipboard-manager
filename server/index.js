@@ -20,7 +20,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { pool, initDb } = require("./db");
-const { sendWelcomeEmail, sendPasswordResetEmail } = require("./email");
+const { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail } = require("./email");
 const billing = require("./billing");
 const admin = require("./admin");
 const createWaitlistRouter = require("./waitlist");
@@ -147,6 +147,47 @@ const authAttemptLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "too many attempts -- try again in a few minutes" },
 });
+// --- Email verification ----------------------------------------------------
+//
+// Same shape as the password-reset flow (see below): a short-lived, hashed,
+// single-use code, generated with crypto's CSPRNG. A 6-digit numeric code
+// rather than the reset flow's long base64url token -- this one gets typed
+// in right after signup while the inbox is already open, so short and easy
+// to copy/retype beats maximally unguessable; 30 minutes and a rate limit
+// on both sending and checking keep brute-forcing a 6-digit space
+// impractical in that window (1,000,000 possibilities, 5 guesses per 15
+// minutes per the limiter below).
+
+const VERIFICATION_CODE_TTL_MS = 30 * 60 * 1000;
+
+function hashVerificationCode(code) {
+  return crypto.createHash("sha256").update(code).digest("hex");
+}
+
+function generateVerificationCode() {
+  return String(crypto.randomInt(100000, 1000000)); // always 6 digits
+}
+
+// Invalidates any outstanding code for this account first, same reasoning
+// as the password-reset flow -- only the most recently sent code should
+// work. Returns the plaintext code so the caller can email it; never
+// awaited by the signup route itself (verification isn't required to use
+// the free tier -- see billing.js), but awaited by /auth/resend-verification
+// since that's an explicit user action that should surface a failure.
+async function issueVerificationCode(userId) {
+  const code = generateVerificationCode();
+  const codeHash = hashVerificationCode(code);
+  const expiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MS);
+
+  await pool.query("DELETE FROM email_verification_codes WHERE user_id = $1", [userId]);
+  await pool.query(
+    "INSERT INTO email_verification_codes (user_id, code_hash, expires_at) VALUES ($1, $2, $3)",
+    [userId, codeHash, expiresAt]
+  );
+
+  return code;
+}
+
 app.use(["/auth/signup", "/auth/login"], authAttemptLimiter);
 
 app.post("/auth/signup", async (req, res) => {
@@ -212,6 +253,16 @@ app.post("/auth/signup", async (req, res) => {
   // errors internally (see email.js), and there's no reason to make someone
   // wait on an email provider round-trip just to finish signing up.
   sendWelcomeEmail(normalizedEmail);
+
+  // Also fire-and-forget, same reasoning: verifying an email is only ever
+  // required later, right before starting a Pro trial (see
+  // billing.js::createCheckoutSession), never to finish signup or use the
+  // free tier. issueVerificationCode's own errors would reject this
+  // promise -- catch here so an unawaited rejection doesn't crash the
+  // process on an unhandled rejection.
+  issueVerificationCode(userId)
+    .then((code) => sendVerificationEmail(normalizedEmail, code))
+    .catch((err) => console.error("[clip-server] failed to send verification email:", err));
 
   res.json({
     token: signSession(user),
@@ -282,11 +333,78 @@ app.post("/auth/update-profile", requireAuth, async (req, res) => {
 // account's current tier (e.g. after upgrading on another device, once
 // real billing exists).
 app.get("/auth/me", requireAuth, async (req, res) => {
-  const { rows } = await pool.query("SELECT email, tier, first_name FROM users WHERE id = $1", [
-    req.authUser.sub,
-  ]);
+  const { rows } = await pool.query(
+    "SELECT email, tier, first_name, email_verified FROM users WHERE id = $1",
+    [req.authUser.sub]
+  );
   if (!rows[0]) return res.status(404).json({ error: "account not found" });
   res.json({ user: { ...rows[0], first_name: rows[0].first_name || "" } });
+});
+
+// Generous but bounded -- covers someone retrying a mistyped code a few
+// times, or asking for a fresh one because the first email landed in spam,
+// without letting a compromised/scripted session hammer either endpoint.
+const verificationLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "too many attempts -- try again in a few minutes" },
+});
+app.use(["/auth/verify-email", "/auth/resend-verification"], verificationLimiter);
+
+// Submits the 6-digit code from the verification email. Requires an active
+// session (unlike password reset, which has no session yet to require) --
+// this is always something someone does from inside the already-signed-in
+// app, prompted the moment they try to start a Pro trial unverified (see
+// billing.js).
+app.post("/auth/verify-email", requireAuth, async (req, res) => {
+  const { code } = req.body || {};
+  if (typeof code !== "string" || !code.trim()) {
+    return res.status(400).json({ error: "verification code is required" });
+  }
+
+  const codeHash = hashVerificationCode(code.trim());
+  const { rows } = await pool.query(
+    `SELECT id, expires_at, used_at FROM email_verification_codes
+     WHERE user_id = $1 AND code_hash = $2`,
+    [req.authUser.sub, codeHash]
+  );
+  const row = rows[0];
+
+  const invalid = () => res.status(400).json({ error: "that code is invalid or has expired" });
+  if (!row) return invalid();
+  if (row.used_at) return invalid();
+  if (new Date(row.expires_at).getTime() < Date.now()) return invalid();
+
+  await pool.query("UPDATE users SET email_verified = true WHERE id = $1", [req.authUser.sub]);
+  await pool.query("UPDATE email_verification_codes SET used_at = now() WHERE id = $1", [row.id]);
+
+  res.json({ ok: true });
+});
+
+// Sends a fresh code, invalidating whatever was issued before (at signup,
+// or by a previous resend) -- see issueVerificationCode. Awaited, unlike
+// the fire-and-forget send at signup, since this is an explicit "resend my
+// code" action and a silent failure here would just leave someone staring
+// at an inbox that never gets anything.
+app.post("/auth/resend-verification", requireAuth, async (req, res) => {
+  const { rows } = await pool.query("SELECT id, email, email_verified FROM users WHERE id = $1", [
+    req.authUser.sub,
+  ]);
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: "account not found" });
+  if (user.email_verified) return res.json({ ok: true, message: "already verified" });
+
+  try {
+    const code = await issueVerificationCode(user.id);
+    await sendVerificationEmail(user.email, code);
+  } catch (err) {
+    console.error("[clip-server] failed to resend verification email:", err);
+    return res.status(502).json({ error: "couldn't send that -- try again in a moment" });
+  }
+
+  res.json({ ok: true });
 });
 
 // --- Billing (Stripe) ------------------------------------------------------
@@ -310,6 +428,15 @@ app.post("/billing/checkout", requireAuth, async (req, res) => {
     const url = await billing.createCheckoutSession(user, plan);
     res.json({ url });
   } catch (err) {
+    // billing.js throws with err.code === "email_unverified" specifically
+    // when this is the trial-abuse gate rejecting an unverified account
+    // (see createCheckoutSession) -- a 403 with that exact error string is
+    // what SettingsPanel.tsx matches on to show the "verify your email"
+    // inline form instead of a plain error message. Anything else is a
+    // real billing/Stripe failure, logged and surfaced generically.
+    if (err.code === "email_unverified") {
+      return res.status(403).json({ error: err.message });
+    }
     console.error("[clip-server] /billing/checkout failed:", err);
     res.status(502).json({ error: err.message || "couldn't start checkout" });
   }

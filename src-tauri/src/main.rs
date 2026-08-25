@@ -1705,6 +1705,113 @@ async fn open_billing_portal(state: tauri::State<'_, AppState>) -> Result<(), St
     open::that(url).map_err(|e| format!("couldn't open browser: {e}"))
 }
 
+// --- Email verification -----------------------------------------------------
+//
+// Trial-abuse fix (2026-08-25, see docs/billing-flow.md): start_checkout now
+// fails with a specific "verify your email before starting a trial" message
+// (server/billing.js's email_unverified error, surfaced as a 403 by
+// server/index.js) when the signed-in account hasn't verified its email yet.
+// SettingsPanel.tsx matches on that exact string and shows a code-entry form
+// calling verify_email below instead of just displaying the error, then
+// retries start_checkout once verification succeeds.
+
+#[derive(serde::Serialize)]
+struct VerifyEmailBody<'a> {
+    code: &'a str,
+}
+
+#[derive(serde::Deserialize)]
+struct SimpleResponse {
+    #[serde(default)]
+    ok: bool,
+    error: Option<String>,
+}
+
+/// Submits the 6-digit code from the verification email (see
+/// server/index.js POST /auth/verify-email).
+#[tauri::command]
+async fn verify_email(code: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let (server_url, app_secret, auth_token) = {
+        let settings = state.settings.lock().unwrap();
+        (
+            settings.server_url.clone(),
+            settings.app_secret.clone(),
+            settings.auth_token.clone(),
+        )
+    };
+
+    if auth_token.is_empty() {
+        return Err("please log in first".into());
+    }
+
+    let client = reqwest::Client::new();
+    let mut req = client
+        .post(format!("{}/auth/verify-email", server_url.trim_end_matches('/')))
+        .json(&VerifyEmailBody { code: &code })
+        .header("Authorization", format!("Bearer {auth_token}"));
+    if !app_secret.is_empty() {
+        req = req.header("x-app-secret", app_secret);
+    }
+
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("couldn't reach server: {e}"))?;
+
+    let ok = resp.status().is_success();
+    let body: SimpleResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("bad response from server: {e}"))?;
+
+    if !ok {
+        return Err(body.error.unwrap_or_else(|| "that code is invalid or has expired".into()));
+    }
+    Ok(())
+}
+
+/// Sends a fresh verification code, invalidating whatever was issued before
+/// (see server/index.js POST /auth/resend-verification).
+#[tauri::command]
+async fn resend_verification(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let (server_url, app_secret, auth_token) = {
+        let settings = state.settings.lock().unwrap();
+        (
+            settings.server_url.clone(),
+            settings.app_secret.clone(),
+            settings.auth_token.clone(),
+        )
+    };
+
+    if auth_token.is_empty() {
+        return Err("please log in first".into());
+    }
+
+    let client = reqwest::Client::new();
+    let mut req = client
+        .post(format!("{}/auth/resend-verification", server_url.trim_end_matches('/')))
+        .header("Authorization", format!("Bearer {auth_token}"));
+    if !app_secret.is_empty() {
+        req = req.header("x-app-secret", app_secret);
+    }
+
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("couldn't reach server: {e}"))?;
+
+    let ok = resp.status().is_success();
+    let body: SimpleResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("bad response from server: {e}"))?;
+
+    if !ok {
+        return Err(body.error.unwrap_or_else(|| "couldn't send that -- try again in a moment".into()));
+    }
+    Ok(())
+}
+
 #[derive(serde::Serialize)]
 struct UpdateProfileBody<'a> {
     #[serde(rename = "firstName")]
@@ -2193,6 +2300,8 @@ fn main() {
             reset_password,
             start_checkout,
             open_billing_portal,
+            verify_email,
+            resend_verification,
             refresh_account_status,
             update_first_name,
             transform_clip,

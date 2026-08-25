@@ -95,6 +95,19 @@ async function createCheckoutSession(user, plan) {
   if (!priceId) throw new Error("plan must be 'monthly' or 'annual'");
   if (!WEBSITE_URL) throw new Error("server is not configured for billing yet");
 
+  // Trial-abuse gate, half one of two (see docs/billing-flow.md and the
+  // migration comment in db.js): a fresh 7-day Pro trial is only handed out
+  // to an account that's proven it owns its email address. This never
+  // blocks the free tier, only starting a *trial* -- see index.js's
+  // /billing/checkout, which turns this specific error into a 403 the app
+  // recognizes and responds to with an inline "verify your email" prompt
+  // rather than a dead-end error message.
+  if (!user.email_verified) {
+    const err = new Error("verify your email before starting a trial");
+    err.code = "email_unverified";
+    throw err;
+  }
+
   const customerId = await getOrCreateStripeCustomer(user);
 
   const session = await stripe.checkout.sessions.create({
@@ -152,6 +165,64 @@ async function cancelSubscriptionImmediately(user) {
   }
 }
 
+// Trial-abuse gate, half two of two (see the email_verified check in
+// createCheckoutSession, and the migration comment in db.js). Email
+// verification alone doesn't stop a determined attacker -- Gmail's "+"
+// aliases are infinite and every one verifies fine -- but a real card costs
+// something, so this tracks which card *fingerprints* (Stripe's stable,
+// non-reversible id for "this physical card", never the PAN itself) have
+// already funded a trial. Only called from checkout.session.completed (the
+// one event where a *new* trial actually begins) -- customer.subscription.
+// updated re-fires the same status repeatedly as an existing subscription
+// progresses, and re-running this there would do nothing new.
+async function enforceTrialFingerprint(customerId, subscription) {
+  if (subscription.status !== "trialing") return; // paid immediately, no trial to abuse
+
+  const paymentMethod = subscription.default_payment_method;
+  const fingerprint = paymentMethod && paymentMethod.card && paymentMethod.card.fingerprint;
+  if (!fingerprint) {
+    // No card on file, or an unexpected payment method type (e.g. a wallet
+    // with no card sub-object) -- fail open rather than punishing a real
+    // customer's trial over this.
+    console.warn(
+      `[clip-server] no card fingerprint on trialing subscription ${subscription.id}, skipping trial-abuse check`
+    );
+    return;
+  }
+
+  const { rows: userRows } = await pool.query("SELECT id FROM users WHERE stripe_customer_id = $1", [
+    customerId,
+  ]);
+  const userId = userRows[0] && userRows[0].id;
+  if (!userId) return; // applySubscriptionStatus's own "no matching account" warning already covers this
+
+  const { rows: existing } = await pool.query(
+    "SELECT user_id FROM trial_card_fingerprints WHERE fingerprint = $1",
+    [fingerprint]
+  );
+
+  if (existing[0] && existing[0].user_id !== userId) {
+    // This card already funded a trial on a different account -- end the
+    // trial right now (Stripe charges the first invoice immediately)
+    // instead of blocking the subscription outright, which would also
+    // wrongly catch two real people sharing one household card. They still
+    // get Pro, just without a second free week.
+    console.warn(
+      `[clip-server] card fingerprint reused across accounts (user ${userId}, subscription ${subscription.id}) -- ending trial immediately`
+    );
+    await stripe.subscriptions.update(subscription.id, { trial_end: "now" });
+    return;
+  }
+
+  if (!existing[0]) {
+    await pool.query(
+      `INSERT INTO trial_card_fingerprints (fingerprint, user_id, subscription_id)
+       VALUES ($1, $2, $3) ON CONFLICT (fingerprint) DO NOTHING`,
+      [fingerprint, userId, subscription.id]
+    );
+  }
+}
+
 // Applies a subscription's current Stripe status to the account it belongs
 // to. Looked up by stripe_customer_id (present on every subscription event
 // Stripe sends) rather than app_user_id metadata, since customer id is the
@@ -191,8 +262,14 @@ async function handleWebhookEvent(rawBody, signatureHeader) {
       // The subscription's own status (almost always "trialing" at this
       // point) is the source of truth, not an assumption baked in here --
       // fetch it rather than hardcoding tier="pro" for this event.
-      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      // Expanded to pull the card fingerprint for enforceTrialFingerprint
+      // below -- this is the one event where a *new* trial actually
+      // begins, so it's the only place that check needs to run.
+      const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+        expand: ["default_payment_method"],
+      });
       await applySubscriptionStatus(session.customer, subscription.id, subscription.status);
+      await enforceTrialFingerprint(session.customer, subscription);
       break;
     }
 

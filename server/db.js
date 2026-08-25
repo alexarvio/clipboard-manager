@@ -105,6 +105,51 @@ async function initDb() {
   // fallback (see Dashboard.tsx) rather than needing a backfill.
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;`);
 
+  // Email verification + trial-abuse prevention (2026-08-25). Accounts
+  // already require an email/password to use the app at all (see
+  // AuthGate.tsx), but nothing stopped someone from typing a fake or
+  // disposable address, never proving they own it, and burning a fresh
+  // 7-day Pro trial on it -- see docs/billing-flow.md's trial-abuse note.
+  // email_verified gates the *trial*, not the free tier itself (see
+  // billing.js::createCheckoutSession) -- verifying isn't required to use
+  // Clip for free, only to start a Pro trial, so this adds zero friction
+  // to the signups that were never going to abuse anything.
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_verification_codes (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_email_verification_user ON email_verification_codes(user_id);
+  `);
+
+  // The second half of the trial-abuse fix: verified email alone doesn't
+  // stop someone determined enough (Gmail "+" aliases are infinite and each
+  // one verifies fine). What actually costs an attacker something is a
+  // real card, so this tracks which card *fingerprints* (Stripe's stable,
+  // non-reversible id for "this physical card", not the PAN itself) have
+  // already been used to start a trial. See billing.js's webhook handler --
+  // a second account trying to trial on a fingerprint that's already been
+  // used gets its trial ended immediately (charged now, same as a returning
+  // customer) rather than the signup being blocked outright, since blocking
+  // would also catch the legitimate case of two real people sharing a
+  // household card.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS trial_card_fingerprints (
+      fingerprint TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      subscription_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
   // Voyage usage log (2026-08-09) -- Voyage has no usage/cost API of its
   // own (checked their full API reference: just embeddings/files/batch,
   // nothing for billing), so this is the only way to show a real cost
