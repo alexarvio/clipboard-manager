@@ -45,6 +45,12 @@ interface Settings {
   custom_filters: CustomFilter[];
   user_email: string;
   first_name: string;
+  // Whether detected API keys/secrets render blurred-until-clicked in
+  // history (see classify::looks_like_secret and ClampedText's `secret`
+  // prop). Detection itself, and keeping flagged content out of Transform/
+  // AI-filter/embeddings, always runs regardless of this setting -- it only
+  // controls the on-screen blur.
+  blur_secrets: boolean;
 }
 
 // Small shared wrapper so every settings section reads as its own card --
@@ -729,6 +735,23 @@ export default function SettingsPanel({
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
               Restart the app after changing this for now (live re-registration is a v1.1 TODO).
             </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span>Blur detected API keys & secrets</span>
+              <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70 max-w-[280px]">
+                Copied text that looks like an API key or secret shows blurred in history until
+                you click to reveal it. This never affects what gets sent for AI transform or
+                semantic search — that content is always kept out, whether this is on or off.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.blur_secrets}
+              onChange={(e) => update({ blur_secrets: e.target.checked })}
+              className="w-4 h-4 accent-accent dark:accent-accentDark shrink-0 ml-3"
+            />
           </div>
 
           <div>

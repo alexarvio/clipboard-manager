@@ -207,7 +207,14 @@ fn check_clipboard(app_handle: tauri::AppHandle) {
         // Semantic search (Pro-only) -- embed the new clip in the
         // background so it's searchable by meaning the moment it lands in
         // history. Skipped on Free, same cost reasoning as transform_clip.
-        if let (Some(id), true) = (new_id, tier == "pro") {
+        // Also skipped for anything that looks like an API key/secret (see
+        // classify::looks_like_secret) -- embedding sends the raw content to
+        // Voyage AI, which is exactly what flagging it as a secret is meant
+        // to prevent. Checked again here (not just relying on the DB flag)
+        // since this is the only place that decides whether to embed at
+        // all.
+        let is_secret = crate::classify::looks_like_secret(&text);
+        if let (Some(id), true, false) = (new_id, tier == "pro", is_secret) {
             let (server_url, app_secret, auth_token) = {
                 let settings = state.settings.lock().unwrap();
                 (

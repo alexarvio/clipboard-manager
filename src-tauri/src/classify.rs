@@ -48,6 +48,90 @@ static DATE_RE: Lazy<Regex> = Lazy::new(|| {
     .unwrap()
 });
 
+// --- Secret / API key detection -----------------------------------------
+//
+// Used to flag entries for the blur-until-revealed treatment in history
+// (see db.rs's `is_secret` column) and, more importantly, to keep flagged
+// content out of every path that leaves the device (AI transform's "send
+// selected item" affordance, the AI filter's item list, and the semantic
+// search embedding pipeline -- see clipboard_listener.rs and main.rs).
+// Known-prefix formats first (cheap, precise, near-zero false-positive
+// rate), then a generic high-entropy fallback for anything that looks like
+// a random token but doesn't match a known vendor's format.
+static KNOWN_SECRET_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?x)
+        sk-ant-[A-Za-z0-9_-]{20,}          # Anthropic
+        | sk-[A-Za-z0-9]{20,}              # OpenAI
+        | (sk|pk|rk)_(test|live)_[A-Za-z0-9]{10,}  # Stripe
+        | gh[pousr]_[A-Za-z0-9]{30,}       # GitHub tokens
+        | AKIA[0-9A-Z]{16}                 # AWS access key id
+        | xox[baprs]-[A-Za-z0-9-]{10,}     # Slack tokens
+        | AIza[0-9A-Za-z_-]{35}            # Google API key
+        | pa-[A-Za-z0-9_-]{20,}            # Voyage AI
+        | eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+  # JWT
+        | -----BEGIN\s(RSA\s|EC\s|OPENSSH\s)?PRIVATE\sKEY-----  # PEM private key
+        ",
+    )
+    .unwrap()
+});
+
+/// Shannon entropy in bits/char -- used only as the generic fallback below,
+/// to catch unlabeled random-looking tokens that don't match any known
+/// vendor prefix. Ordinary words and sentences score low (a handful of
+/// distinct, unevenly-used characters); random tokens score high (many
+/// distinct characters, close to uniformly used).
+fn shannon_entropy(s: &str) -> f64 {
+    let len = s.chars().count() as f64;
+    if len == 0.0 {
+        return 0.0;
+    }
+    let mut counts = std::collections::HashMap::new();
+    for c in s.chars() {
+        *counts.entry(c).or_insert(0u32) += 1;
+    }
+    counts
+        .values()
+        .map(|&n| {
+            let p = n as f64 / len;
+            -p * p.log2()
+        })
+        .sum()
+}
+
+/// Best-effort secret/API-key detection. Deliberately conservative on the
+/// generic fallback (single whitespace-free token, length-gated, entropy-
+/// gated, and mixed letters+digits required) -- it will still misfire
+/// occasionally on things like long commit hashes or license keys, same
+/// caveat classify() above already carries for its own patterns. Known
+/// vendor prefixes are checked first and are effectively exact.
+pub fn looks_like_secret(content: &str) -> bool {
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    if KNOWN_SECRET_RE.is_match(trimmed) {
+        return true;
+    }
+    // Generic fallback: a single token (no whitespace), long enough to be a
+    // real secret rather than a word, with both letters and digits, and
+    // entropy high enough that it doesn't read as a normal identifier/word.
+    if trimmed.split_whitespace().count() != 1 {
+        return false;
+    }
+    let token = trimmed;
+    let len = token.chars().count();
+    if !(24..=512).contains(&len) {
+        return false;
+    }
+    let has_letter = token.chars().any(|c| c.is_ascii_alphabetic());
+    let has_digit = token.chars().any(|c| c.is_ascii_digit());
+    if !has_letter || !has_digit {
+        return false;
+    }
+    shannon_entropy(token) >= 3.5
+}
+
 /// Best-effort classification of a clipboard entry into a coarse category,
 /// used to power the Pro-only history filter. This is pattern matching, not
 /// validation -- it will misclassify edge cases (e.g. a 10-digit number that

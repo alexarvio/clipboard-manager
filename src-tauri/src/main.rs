@@ -760,6 +760,17 @@ async fn transform_clip(
         return Err("upgrade to Pro to use AI transform".into());
     }
 
+    // Same rule as the embedding pipeline and filter_by_ai below: content
+    // that looks like an API key/secret never gets sent to the AI backend,
+    // full stop -- this doesn't have a clip_item id to check the stored
+    // is_secret flag against (content can be freshly typed, not just an
+    // existing history item), so it's re-classified here directly.
+    if classify::looks_like_secret(&content) {
+        return Err(
+            "this looks like an API key or secret, so it won't be sent for AI transform".into(),
+        );
+    }
+
     let client = reqwest::Client::new();
     let mut req = client
         .post(format!("{}/transform", server_url.trim_end_matches('/')))
@@ -901,8 +912,12 @@ async fn filter_by_ai(prompt: String, state: tauri::State<'_, AppState>) -> Resu
         db::search(&conn, "", None, None, None, db::AI_FILTER_CANDIDATE_LIMIT)
     };
 
+    // Flagged secrets never leave the device for an AI request -- same rule
+    // as the embedding pipeline (see clipboard_listener.rs) and transform
+    // (see transform_clip's is_secret check above).
     let items: Vec<FilterItem> = candidates
         .iter()
+        .filter(|it| !it.is_secret)
         .map(|it| FilterItem {
             id: it.id,
             content: &it.content,

@@ -40,6 +40,7 @@ interface MockSettings {
   user_email: string;
   first_name: string;
   onboarding_complete: boolean;
+  blur_secrets: boolean;
 }
 
 // Browser preview defaults to already signed in, since most iteration here
@@ -86,27 +87,42 @@ let settings: MockSettings = {
   user_email: startLoggedOut ? "" : "alex@example.com",
   first_name: startLoggedOut ? "" : "Alex",
   onboarding_complete: !startNeedsOnboarding,
+  blur_secrets: true,
 };
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
 
+// Mirrors classify::looks_like_secret in src-tauri/src/classify.rs (known
+// vendor prefixes only -- close enough for the browser-preview mock, which
+// only needs to demo the blur-until-revealed UI and the transform/AI-filter
+// guard, not be byte-for-byte identical to the real Rust detector).
+function looksLikeSecretMock(content: string): boolean {
+  return /sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{20,}|(sk|pk|rk)_(test|live)_[A-Za-z0-9]{10,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}/.test(
+    content
+  );
+}
+
 const history = [
-  { id: 1, content: "https://stripe.com/docs/api", pinned: true, created_at: minutesAgo(1), category: "link" },
-  { id: 2, content: "alex@clipapp.io", pinned: false, created_at: minutesAgo(2), category: "email" },
-  { id: 3, content: "(415) 555-0192", pinned: false, created_at: minutesAgo(3), category: "phone" },
-  { id: 4, content: "Thanks for the quick turnaround — really appreciate you prioritizing this.", pinned: false, created_at: minutesAgo(4), category: "" },
-  { id: 5, content: "1234 Market St, San Francisco, CA 94103", pinned: false, created_at: minutesAgo(5), category: "address" },
-  { id: 6, content: "npm run tauri dev", pinned: false, created_at: minutesAgo(6), category: "" },
-  { id: 7, content: "Routing: 121000358  Account: 0099213456", pinned: false, created_at: minutesAgo(7), category: "bank_account" },
-  { id: 8, content: "Could you send over the updated mockups when you get a chance?", pinned: false, created_at: minutesAgo(9), category: "" },
+  { id: 1, content: "https://stripe.com/docs/api", pinned: true, created_at: minutesAgo(1), category: "link", is_secret: false },
+  { id: 2, content: "alex@clipapp.io", pinned: false, created_at: minutesAgo(2), category: "email", is_secret: false },
+  { id: 3, content: "(415) 555-0192", pinned: false, created_at: minutesAgo(3), category: "phone", is_secret: false },
+  { id: 4, content: "Thanks for the quick turnaround — really appreciate you prioritizing this.", pinned: false, created_at: minutesAgo(4), category: "", is_secret: false },
+  { id: 5, content: "1234 Market St, San Francisco, CA 94103", pinned: false, created_at: minutesAgo(5), category: "address", is_secret: false },
+  { id: 6, content: "npm run tauri dev", pinned: false, created_at: minutesAgo(6), category: "", is_secret: false },
+  { id: 7, content: "Routing: 121000358  Account: 0099213456", pinned: false, created_at: minutesAgo(7), category: "bank_account", is_secret: false },
+  { id: 8, content: "Could you send over the updated mockups when you get a chance?", pinned: false, created_at: minutesAgo(9), category: "", is_secret: false },
   // New rule-based categories (see classify.rs) -- mirrored here so the
   // browser-preview picker/dropdown has something to actually demo.
-  { id: 9, content: "$42.99", pinned: false, created_at: minutesAgo(12), category: "price" },
-  { id: 10, content: "const handleSubmit = () => {", pinned: false, created_at: minutesAgo(14), category: "code" },
-  { id: 11, content: "192.168.1.42", pinned: false, created_at: minutesAgo(16), category: "ip_address" },
-  { id: 12, content: "/Users/alex/Projects/clip/README.md", pinned: false, created_at: minutesAgo(18), category: "file_path" },
-  { id: 13, content: "Jun 30, 2026", pinned: false, created_at: daysAgo(2), category: "date_time" },
+  { id: 9, content: "$42.99", pinned: false, created_at: minutesAgo(12), category: "price", is_secret: false },
+  { id: 10, content: "const handleSubmit = () => {", pinned: false, created_at: minutesAgo(14), category: "code", is_secret: false },
+  { id: 11, content: "192.168.1.42", pinned: false, created_at: minutesAgo(16), category: "ip_address", is_secret: false },
+  { id: 12, content: "/Users/alex/Projects/clip/README.md", pinned: false, created_at: minutesAgo(18), category: "file_path", is_secret: false },
+  { id: 13, content: "Jun 30, 2026", pinned: false, created_at: daysAgo(2), category: "date_time", is_secret: false },
+  // Demo entry for the blur-until-revealed secret detection (see
+  // classify::looks_like_secret) -- fake-looking but shaped like a real
+  // Anthropic key so the mock exercises the same detection path as prod.
+  { id: 14, content: "sk-ant-api03-FAKEKEYFORPREVIEWONLYxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", pinned: false, created_at: minutesAgo(8), category: "text", is_secret: true },
 ];
 
 interface MockFolder {
@@ -622,6 +638,9 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
 
     case "transform_clip": {
       await delay(null, 550);
+      if (looksLikeSecretMock(args.content as string)) {
+        throw "this looks like an API key or secret, so it won't be sent for AI transform";
+      }
       const fn = TRANSFORM_RESPONSES[args.instruction as string];
       if (fn) return fn(args.content) as unknown as T;
       return `[${args.instruction}] ${args.content}` as unknown as T;

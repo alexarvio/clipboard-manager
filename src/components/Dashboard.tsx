@@ -59,6 +59,7 @@ interface ClipEntry {
   pinned: boolean;
   created_at: string;
   category: string;
+  is_secret?: boolean;
 }
 
 function categoryLabel(value: string): string {
@@ -203,6 +204,8 @@ export default function Dashboard() {
   // route. Swap the placeholder support address once a real domain/support
   // inbox exists (see the earlier domain-naming conversation).
   const [showHelp, setShowHelp] = useState(false);
+  // Same fail-safe-blurred default and reasoning as App.tsx's blurSecrets.
+  const [blurSecrets, setBlurSecrets] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -212,12 +215,14 @@ export default function Dashboard() {
         auth_token?: string;
         first_name?: string;
         onboarding_complete?: boolean;
+        blur_secrets?: boolean;
       }>("get_settings");
       setTheme(settings.theme);
       setTier(settings.tier);
       setAuthToken(settings.auth_token ?? "");
       setFirstName(settings.first_name ?? "");
       setOnboardingComplete(settings.onboarding_complete ?? false);
+      setBlurSecrets(settings.blur_secrets ?? true);
 
       if (!settings.auth_token) return;
 
@@ -529,6 +534,7 @@ export default function Dashboard() {
                                 onToggleExpanded={() =>
                                   setExpandedId((cur) => (cur === item.id ? null : item.id))
                                 }
+                                secret={blurSecrets && !!item.is_secret}
                               />
                               <p className="text-[10.5px] text-inkMuted dark:text-inkMutedDark mt-1">
                                 {formatTimestamp(item.created_at)}

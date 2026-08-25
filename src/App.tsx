@@ -23,6 +23,10 @@ export interface ClipItem {
   pinned: boolean;
   created_at: string;
   category: string;
+  // Best-effort API-key/secret detection (see classify::looks_like_secret
+  // in src-tauri/src/classify.rs). Optional/defaulted so older cached
+  // responses or the mock shim don't need every call site touched.
+  is_secret?: boolean;
 }
 
 export interface CustomFilter {
@@ -126,6 +130,11 @@ export default function App() {
   }, []);
   const [pinLimitMsg, setPinLimitMsg] = useState(false);
   const [tier, setTier] = useState<"free" | "pro">("free");
+  // Whether detected API keys/secrets render blurred-until-clicked (see
+  // ClampedText's `secret` prop and Settings.rs's blur_secrets field).
+  // Defaults true so a slow/failed get_settings load fails safe (blurred)
+  // rather than briefly showing a secret in plaintext.
+  const [blurSecrets, setBlurSecrets] = useState(true);
   const [paywallMsg, setPaywallMsg] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -224,6 +233,7 @@ export default function App() {
       auth_token?: string;
       user_email?: string;
       onboarding_complete?: boolean;
+      blur_secrets?: boolean;
     }>("get_settings")
       .then((s) => {
         setTheme(s.theme);
@@ -233,6 +243,7 @@ export default function App() {
         setAuthToken(s.auth_token ?? "");
         setUserEmail(s.user_email ?? "");
         setOnboardingComplete(s.onboarding_complete ?? false);
+        setBlurSecrets(s.blur_secrets ?? true);
       })
       .catch(console.error);
   }, []);
@@ -1877,6 +1888,7 @@ export default function App() {
                           onToggleExpanded={() =>
                             setExpandedId((id) => (id === item.id ? null : item.id))
                           }
+                          secret={blurSecrets && !!item.is_secret}
                         />
                         <div className="mt-1 flex items-center justify-between gap-2">
                         <p className="text-[10.5px] text-inkMuted dark:text-inkMutedDark flex items-center gap-1 min-w-0">

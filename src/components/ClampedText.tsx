@@ -27,6 +27,17 @@ import { useEffect, useRef, useState } from "react";
 //    already track a single `expandedId` so clicking anywhere else on the
 //    row (not just this toggle) also expands/collapses it -- the toggle
 //    here just gives that same action a visible, labeled affordance too.
+//
+// `secret` (2026-08-25) adds a third, independent behavior on top of either
+// mode: when true, the text renders blurred behind a "click to reveal"
+// pill instead of its normal clamped preview, until clicked. Revealing is
+// local state here (not lifted to the caller) -- it's the same idea as
+// uncontrolled `expanded`, just for a different concern, and re-blurs for
+// free whenever the row unmounts (tab switch, list re-filter, etc.) since
+// nothing persists it. This is purely a display guard: the underlying data
+// is unchanged, so copy/paste-back and everything else still works exactly
+// as before, and callers decide whether to pass `secret` at all -- see
+// App.tsx/Dashboard.tsx, which pass `item.is_secret` straight through.
 export default function ClampedText({
   text,
   className,
@@ -34,6 +45,7 @@ export default function ClampedText({
   icon,
   expanded: expandedProp,
   onToggleExpanded,
+  secret = false,
 }: {
   text: string;
   className: string;
@@ -45,8 +57,10 @@ export default function ClampedText({
   icon?: React.ReactNode;
   expanded?: boolean;
   onToggleExpanded?: () => void;
+  secret?: boolean;
 }) {
   const [localExpanded, setLocalExpanded] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const controlled = expandedProp !== undefined;
   const expanded = controlled ? expandedProp : localExpanded;
 
@@ -62,6 +76,39 @@ export default function ClampedText({
   }, [text, expanded]);
 
   const clampClass = lines === 2 ? "line-clamp-2" : lines === 3 ? "line-clamp-3" : "line-clamp-4";
+
+  if (secret && !revealed) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          setRevealed(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.stopPropagation();
+            setRevealed(true);
+          }
+        }}
+        title="Click to reveal"
+        className="relative cursor-pointer rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.06] dark:hover:bg-white/[0.09] transition-colors py-1.5"
+      >
+        <p
+          aria-hidden="true"
+          className={`${className} ${clampClass} blur-[6px] select-none pointer-events-none opacity-70`}
+        >
+          {icon}
+          {text}
+        </p>
+        <div className="absolute inset-0 flex items-center gap-1.5 pl-0.5 text-[12px] font-medium text-inkMuted dark:text-inkMutedDark">
+          <i className="ti ti-lock text-[13px]" />
+          API key detected — click to reveal
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

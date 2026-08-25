@@ -35,6 +35,16 @@ pub struct Settings {
     pub max_history: i64,
     pub launch_at_startup: bool,
     pub theme: String,
+    /// Whether detected API keys/secrets (see classify::looks_like_secret)
+    /// render blurred-until-clicked in history instead of as plain text.
+    /// Defaults on -- `#[serde(default = "default_blur_secrets")]` so
+    /// existing settings.json files on disk (written before this setting
+    /// existed) pick up the safer default rather than deserializing to
+    /// Rust's bare `false`. Detection itself (and keeping flagged content
+    /// out of Transform/AI-filter/embeddings) always runs regardless of
+    /// this setting -- this only controls the on-screen blur.
+    #[serde(default = "default_blur_secrets")]
+    pub blur_secrets: bool,
     /// Where the AI transform feature sends requests. Defaults to the
     /// deployed Railway server (2026-08-06) -- was a local dev server
     /// (localhost:8787) before this was actually deployed anywhere.
@@ -160,6 +170,10 @@ fn default_tier() -> String {
     "free".into()
 }
 
+fn default_blur_secrets() -> bool {
+    true
+}
+
 fn default_server_url() -> String {
     // Custom domain (2026-08-23), CNAME'd to the same Railway service --
     // the old clipboard-manager-production.up.railway.app URL still works
@@ -212,6 +226,7 @@ impl Default for Settings {
     fn default() -> Self {
         Settings {
             hotkey: "Ctrl+Shift+V".into(),
+            blur_secrets: default_blur_secrets(),
             max_history: 200,
             launch_at_startup: false,
             theme: "dark".into(),

@@ -16,6 +16,12 @@ pub struct ClipItem {
     // SELECTs so legacy rows from before this column existed don't come
     // back NULL.
     pub category: String,
+    // Best-effort API-key/secret detection (see classify::looks_like_secret).
+    // Powers the blur-until-revealed treatment in history, and is also used
+    // to keep flagged content out of every path that leaves the device --
+    // see clipboard_listener.rs (skips embedding) and main.rs's
+    // filter_by_ai (skips sending it to the AI filter).
+    pub is_secret: bool,
 }
 
 /// Deterministic FNV-1a 64-bit hash, hex-encoded. Used only to turn an
@@ -177,6 +183,20 @@ pub fn init(conn: &Connection) {
         .is_ok();
     if added_category {
         backfill_categories(conn);
+    }
+
+    // Migration for DBs created before secret/API-key detection existed.
+    // Same backfill-on-first-add pattern as category above, so existing
+    // history gets the blur treatment retroactively instead of only new
+    // clips captured after this shipped.
+    let added_is_secret = conn
+        .execute(
+            "ALTER TABLE clip_items ADD COLUMN is_secret INTEGER NOT NULL DEFAULT 0",
+            [],
+        )
+        .is_ok();
+    if added_is_secret {
+        backfill_is_secret(conn);
     }
 
     conn.execute(
@@ -681,6 +701,37 @@ fn backfill_categories(conn: &Connection) {
     }
 }
 
+fn backfill_is_secret(conn: &Connection) {
+    let mut rows: Vec<(i64, String)> = Vec::new();
+    {
+        let mut stmt = conn.prepare("SELECT id, content FROM clip_items").unwrap();
+        let mapped = stmt
+            .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+            .unwrap();
+        for r in mapped.filter_map(|r| r.ok()) {
+            rows.push(r);
+        }
+    }
+    for (id, content) in rows {
+        if classify::looks_like_secret(&content) {
+            conn.execute(
+                "UPDATE clip_items SET is_secret = 1 WHERE id = ?1",
+                params![id],
+            )
+            .ok();
+        }
+    }
+    // Any clip already flagged as a secret shouldn't have an embedding sent
+    // to Voyage sitting around from before this shipped -- prune it so
+    // secrets already in history stop being semantically searchable too,
+    // not just newly-captured ones.
+    conn.execute(
+        "DELETE FROM embeddings WHERE clip_item_id IN (SELECT id FROM clip_items WHERE is_secret = 1)",
+        [],
+    )
+    .ok();
+}
+
 /// Free tier cap -- callers should check this before create_folder. Kept here
 /// (rather than hardcoded in the UI) since it's a backend invariant.
 pub const FREE_FOLDER_LIMIT: i64 = 3;
@@ -1039,6 +1090,7 @@ pub fn insert_if_new(conn: &Connection, content: &str) -> Option<i64> {
 
     let now = chrono::Local::now().to_rfc3339();
     let category = classify::classify(content);
+    let is_secret = classify::looks_like_secret(content);
     // Bail out if the insert actually failed (e.g. SQLITE_TOOBIG on a huge
     // clip, or a disk error) instead of swallowing it with `.ok()`: every
     // line below assumes a new row exists. `last_insert_rowid()` returns the
@@ -1051,8 +1103,8 @@ pub fn insert_if_new(conn: &Connection, content: &str) -> Option<i64> {
     // clip that was never saved.
     if conn
         .execute(
-            "INSERT INTO clip_items (content, pinned, created_at, category) VALUES (?1, 0, ?2, ?3)",
-            params![content, now, category],
+            "INSERT INTO clip_items (content, pinned, created_at, category, is_secret) VALUES (?1, 0, ?2, ?3, ?4)",
+            params![content, now, category, is_secret],
         )
         .is_err()
     {
@@ -1176,7 +1228,7 @@ pub fn clip_items_missing_embeddings(conn: &Connection, limit: i64) -> Vec<(i64,
         .prepare(
             "SELECT c.id, c.content FROM clip_items c
              LEFT JOIN embeddings e ON e.clip_item_id = c.id
-             WHERE e.clip_item_id IS NULL
+             WHERE e.clip_item_id IS NULL AND c.is_secret = 0
              ORDER BY c.id DESC LIMIT ?1",
         )
         .unwrap();
@@ -1312,7 +1364,7 @@ pub fn search(
     date_to: Option<&str>,
     limit: i64,
 ) -> Vec<ClipItem> {
-    let sql = "SELECT id, content, pinned, created_at, COALESCE(category, 'text') FROM clip_items
+    let sql = "SELECT id, content, pinned, created_at, COALESCE(category, 'text'), is_secret FROM clip_items
                WHERE content LIKE ?1 ESCAPE '\\' AND (?2 IS NULL OR COALESCE(category, 'text') = ?2)
                AND (?3 IS NULL OR created_at >= ?3) AND (?4 IS NULL OR created_at <= ?4)
                ORDER BY pinned DESC, id DESC
@@ -1339,6 +1391,7 @@ pub fn search(
                 pinned: row.get::<_, i64>(2)? != 0,
                 created_at: row.get(3)?,
                 category: row.get(4)?,
+                is_secret: row.get::<_, i64>(5)? != 0,
             })
         })
         .unwrap();
