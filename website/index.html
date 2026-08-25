@@ -458,37 +458,26 @@
       <p>You can, and for occasional use it's fine. Here's exactly where it stops.</p>
     </div>
 
-    <div class="vs-grid">
-      <div class="vs-card them">
-        <div class="vs-head"><i class="ti ti-brand-windows" style="font-size:20px;color:var(--inkMuted);"></i><h3>Windows Win+V</h3></div>
-        <p class="vs-sub">Built into Windows, free</p>
-        <ul class="vs-list">
-          <li><i class="ti ti-check"></i><span>Already there, nothing to install</span></li>
-          <li><i class="ti ti-check"></i><span>Optional sync across your devices with a Microsoft account</span></li>
-          <li><i class="ti ti-x"></i><span>Stops at 25 items</span></li>
-          <li><i class="ti ti-x"></i><span>No search at all &mdash; you scroll a small popup looking for it</span></li>
-          <li><i class="ti ti-x"></i><span>Cleared every time you restart, unless you pinned it first</span></li>
-          <li><i class="ti ti-x"></i><span>No folders, categories or tags</span></li>
-          <li><i class="ti ti-x"></i><span>Stores screenshots, but can't search the text inside them</span></li>
-          <li><i class="ti ti-x"></i><span>Paste it exactly as you copied it, or not at all</span></li>
-        </ul>
-      </div>
-
-      <div class="vs-card us">
-        <div class="vs-head"><img src="./assets/fatclipboard-logo.png" alt="" style="height:18px;width:auto;" /><h3>FatClipboard</h3></div>
-        <p class="vs-sub">Free tier, Pro from $3.99/mo</p>
-        <ul class="vs-list">
-          <li><i class="ti ti-check"></i><span>100 items and 7 days free &mdash; unlimited history on Pro</span></li>
-          <li><i class="ti ti-check"></i><span>Instant search as you type, plus AI search by meaning</span></li>
-          <li><i class="ti ti-check"></i><span>Everything survives restarts, pinned or not</span></li>
-          <li><i class="ti ti-check"></i><span>Folders, pins, and automatic categories for links, addresses and more</span></li>
-          <li><i class="ti ti-check"></i><span>Reads the text inside screenshots so you can search it</span></li>
-          <li><i class="ti ti-check"></i><span>Fix grammar, change tone, summarize or translate before pasting</span></li>
-        </ul>
+    <div class="price-table-wrap">
+      <div class="cmp-table">
+        <div class="cmp-us-band" aria-hidden="true"></div>
+        <div class="cmp-head">
+          <div class="cmp-head-row">
+            <div></div>
+            <div><i class="ti ti-brand-windows"></i> Win+V</div>
+            <div class="cmp-us-label"><img src="./assets/fatclipboard-logo.png" alt="" /> FatClipboard</div>
+          </div>
+        </div>
+        <div class="cmp-row"><div class="feature-name">Setup</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Nothing to install</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Free, ready in a minute</span></div></div>
+        <div class="cmp-row"><div class="feature-name">History limit</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Stops at 25 items</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>100 free, unlimited on Pro</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Search</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No search at all</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Instant + AI search by meaning</span></div></div>
+        <div class="cmp-row"><div class="feature-name">On restart</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Cleared unless pinned</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Everything survives, always</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Organization</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No folders or tags</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Folders, pins, auto-categories</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Screenshots</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Can't search the text inside</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Text inside them is searchable</span></div></div>
+        <div class="cmp-row"><div class="feature-name">AI transform</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Paste exactly as copied</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Fix grammar, tone, translate</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Where it lives</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Optional Microsoft sync</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Local only, nothing leaves your PC</span></div></div>
       </div>
     </div>
-
-    <p class="vs-note">Still not sure? The free tier covers all of the above except the AI features, forever. See a full breakdown of <a href="./windows-clipboard-manager.html">Windows clipboard manager options</a>.</p>
   </div>
 </section>
 
@@ -498,7 +487,7 @@
       <div style="text-align:center;">
         <span class="sticker sticker-inline sticker-lime"><i class="ti ti-lock"></i> YOUR STUFF STAYS YOURS</span>
         <h2 class="serif">Your clipboard never leaves your computer.</h2>
-        <p class="privacy-lead">A clipboard manager sees everything &mdash; passwords, card numbers, private messages. So FatClipboard keeps your history in a database on your own machine, and there is no feature that uploads it.</p>
+        <p class="privacy-lead">A clipboard manager sees everything: passwords, card numbers, private messages. So FatClipboard keeps your history in a database on your own machine, and there is no feature that uploads it.</p>
       </div>
       <div class="privacy-grid">
         <div class="privacy-item">
@@ -519,7 +508,7 @@
       </div>
       <div class="privacy-exception">
         <i class="ti ti-info-circle"></i>
-        <span><strong>The one exception, stated plainly:</strong> AI features (transform and smart search) can't run offline. When you use one, that single snippet is sent to our server, passed to the AI provider, and the result comes back. It isn't logged or saved at either end &mdash; and if you never touch the AI features, nothing you copy ever leaves your machine.</span>
+        <span><strong>The one exception, stated plainly:</strong> AI features (transform and smart search) can't run offline. When you use one, that single snippet is sent to our server, passed to the AI provider, and the result comes back. It isn't logged or saved at either end. If you never touch the AI features, nothing you copy ever leaves your machine.</span>
       </div>
     </div>
   </div>

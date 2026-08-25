@@ -114,36 +114,26 @@
 
 <section class="section" id="why" style="padding-top: 8px;">
   <div class="wrap">
-    <div class="vs-grid">
-      <div class="vs-card them">
-        <div class="vs-head"><i class="ti ti-brand-windows" style="font-size:20px;color:var(--inkMuted);"></i><h3>Windows Win+V</h3></div>
-        <p class="vs-sub">Built into Windows, free</p>
-        <ul class="vs-list">
-          <li><i class="ti ti-check"></i><span>Already there, nothing to install</span></li>
-          <li><i class="ti ti-check"></i><span>Optional sync across your devices with a Microsoft account</span></li>
-          <li><i class="ti ti-x"></i><span>Stops at 25 items</span></li>
-          <li><i class="ti ti-x"></i><span>No search at all &mdash; you scroll a small popup looking for it</span></li>
-          <li><i class="ti ti-x"></i><span>Cleared every time you restart, unless you pinned it first</span></li>
-          <li><i class="ti ti-x"></i><span>No folders, categories or tags</span></li>
-          <li><i class="ti ti-x"></i><span>Stores screenshots, but can't search the text inside them</span></li>
-          <li><i class="ti ti-x"></i><span>Paste it exactly as you copied it, or not at all</span></li>
-        </ul>
-      </div>
-
-      <div class="vs-card us">
-        <div class="vs-head"><img src="./assets/fatclipboard-logo.png" alt="" style="height:18px;width:auto;" /><h3>FatClipboard</h3></div>
-        <p class="vs-sub">Free tier, Pro from $3.99/mo</p>
-        <ul class="vs-list">
-          <li><i class="ti ti-check"></i><span>100 items and 7 days free &mdash; unlimited history on Pro</span></li>
-          <li><i class="ti ti-check"></i><span>Instant search as you type, plus AI search by meaning</span></li>
-          <li><i class="ti ti-check"></i><span>Everything survives restarts, pinned or not</span></li>
-          <li><i class="ti ti-check"></i><span>Folders, pins, and automatic categories for links, addresses and more</span></li>
-          <li><i class="ti ti-check"></i><span>Reads the text inside screenshots so you can search it</span></li>
-          <li><i class="ti ti-check"></i><span>Fix grammar, change tone, summarize or translate before pasting</span></li>
-        </ul>
+    <div class="price-table-wrap">
+      <div class="cmp-table">
+        <div class="cmp-us-band" aria-hidden="true"></div>
+        <div class="cmp-head">
+          <div class="cmp-head-row">
+            <div></div>
+            <div><i class="ti ti-brand-windows"></i> Win+V</div>
+            <div class="cmp-us-label"><img src="./assets/fatclipboard-logo.png" alt="" /> FatClipboard</div>
+          </div>
+        </div>
+        <div class="cmp-row"><div class="feature-name">Setup</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Nothing to install</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Free, ready in a minute</span></div></div>
+        <div class="cmp-row"><div class="feature-name">History limit</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Stops at 25 items</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>100 free, unlimited on Pro</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Search</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No search at all</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Instant + AI search by meaning</span></div></div>
+        <div class="cmp-row"><div class="feature-name">On restart</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Cleared unless pinned</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Everything survives, always</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Organization</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No folders or tags</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Folders, pins, auto-categories</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Screenshots</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Can't search the text inside</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Text inside them is searchable</span></div></div>
+        <div class="cmp-row"><div class="feature-name">AI transform</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Paste exactly as copied</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Fix grammar, tone, translate</span></div></div>
+        <div class="cmp-row"><div class="feature-name">Where it lives</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Optional Microsoft sync</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Local only, nothing leaves your PC</span></div></div>
       </div>
     </div>
-    <p class="vs-note">Still not sure? The free tier covers all of the above except the AI features, forever.</p>
   </div>
 </section>
 
@@ -157,7 +147,7 @@
     <div class="faq-list">
       <details class="faq-item">
         <summary>Does Windows 11 have a built-in clipboard manager?</summary>
-        <p class="faq-answer">Yes &mdash; press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast.</p>
+        <p class="faq-answer">Yes, press Win+V to open Windows' built-in clipboard history. It keeps up to 25 items, has no search, and clears everything on restart unless you've individually pinned each item. For light, occasional use it's fine; for anyone copying text throughout the day it runs out of room fast.</p>
       </details>
       <details class="faq-item">
         <summary>How do I get more than 25 items in Windows clipboard history?</summary>
@@ -165,15 +155,15 @@
       </details>
       <details class="faq-item">
         <summary>Is there a free clipboard manager for Windows?</summary>
-        <p class="faq-answer">Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost &mdash; no account charge, no trial required. Pro adds unlimited history and AI features starting at $3.99/mo.</p>
+        <p class="faq-answer">Yes. FatClipboard's free tier includes 100 items of history (or 7 days, whichever comes first), instant search, folders, and screenshot OCR search at no cost, with no account charge and no trial required. Pro adds unlimited history and AI features starting at $3.99/mo.</p>
       </details>
       <details class="faq-item">
         <summary>Can I search my clipboard history on Windows?</summary>
-        <p class="faq-answer">Not with Windows' built-in Win+V panel &mdash; it's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording.</p>
+        <p class="faq-answer">Not with Windows' built-in Win+V panel. It's the one pane in that flyout without a search box. FatClipboard adds instant text search as you type, plus optional AI-powered semantic search that finds items by meaning, not just exact wording.</p>
       </details>
       <details class="faq-item">
         <summary>Does a clipboard manager slow down my PC?</summary>
-        <p class="faq-answer">A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey &mdash; no background indexing job, no constant disk scanning, no upload.</p>
+        <p class="faq-answer">A well-built one shouldn't. FatClipboard sits idle listening for clipboard changes and does nothing until you copy something or press the hotkey. No background indexing job, no constant disk scanning, no upload.</p>
       </details>
       <details class="faq-item">
         <summary>Is my clipboard data private?</summary>
