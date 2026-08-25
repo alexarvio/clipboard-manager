@@ -11,14 +11,22 @@ interface OnboardingSettings {
   [key: string]: unknown;
 }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
+// The last step is always the practical setup step (hotkey/theme/launch at
+// startup) -- kept as a constant rather than a hardcoded "2"/"3" scattered
+// through this file so adding or removing a feature-highlight step (like
+// the search/organize step below, added 2026-08-25) only ever means
+// touching TOTAL_STEPS and the step===N block itself, not every place that
+// used to assume "setup is step 2".
+const SETUP_STEP = TOTAL_STEPS - 1;
 
 // Shown exactly once per device, right after AuthGate's onAuthenticated
 // fires (see App.tsx/Dashboard.tsx, gated on settings.onboarding_complete).
-// Mixes two quick feature-highlight steps with one practical setup step
-// (hotkey, theme, launch at startup) -- the setup step is the one part of
-// this that's actually useful to revisit, so "Skip tour" jumps straight to
-// it rather than skipping past it too.
+// Mixes a few quick feature-highlight steps -- one per headline feature
+// from the marketing site (auto-save, organize + search, AI transform) --
+// with one practical setup step (hotkey, theme, launch at startup) -- the
+// setup step is the one part of this that's actually useful to revisit, so
+// "Skip tour" jumps straight to it rather than skipping past it too.
 export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light") => void }) {
   const [step, setStep] = useState(0);
   const [settings, setSettings] = useState<OnboardingSettings | null>(null);
@@ -86,9 +94,9 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
             />
           ))}
         </div>
-        {step < 2 && (
+        {step < SETUP_STEP && (
           <button
-            onClick={() => setStep(2)}
+            onClick={() => setStep(SETUP_STEP)}
             className="absolute right-0 text-[12px] text-inkMuted dark:text-inkMutedDark hover:text-ink dark:hover:text-cream transition-colors"
           >
             Skip
@@ -110,6 +118,17 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
 
         {step === 1 && (
           <>
+            <i className="ti ti-search text-[32px] text-accent dark:text-accentDark mb-4" />
+            <h1 className="text-[17px] font-semibold mb-2">Organize it, then find it instantly</h1>
+            <p className="text-[13px] text-inkMuted dark:text-inkMutedDark max-w-[260px]">
+              Pin your most-used snippets and sort recurring text into folders. Search finds anything by keyword or
+              by meaning, even the text inside a screenshot.
+            </p>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
             <i className="ti ti-wand text-[32px] text-accent dark:text-accentDark mb-4" />
             <h1 className="text-[17px] font-semibold mb-2">Rewrite, summarize, or translate</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark max-w-[260px]">
@@ -119,7 +138,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
           </>
         )}
 
-        {step === 2 && (
+        {step === SETUP_STEP && (
           <div className="w-full max-w-[280px] text-left">
             <h1 className="text-[17px] font-semibold mb-1 text-center">Make it yours</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-6 text-center">
@@ -181,7 +200,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
         )}
       </div>
 
-      {step < 2 && (
+      {step < SETUP_STEP && (
         <div className="flex justify-end mt-6">
           <button
             onClick={() => setStep((s) => s + 1)}
