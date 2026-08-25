@@ -1173,6 +1173,71 @@ async fn semantic_search_screenshots(
         .collect())
 }
 
+/// Smart search over the standalone Transform tab's "Recent" log (see
+/// TransformTab.tsx) -- added 2026-08-25 alongside actually wiring the
+/// search bar up on that tab (previously the search-mode toggle only
+/// rendered for tab === "history", so this bar did nothing at all while on
+/// Transform). Same on-demand-embedding-then-cosine-scan shape as
+/// semantic_search_screenshots, and returns bare (id, score) pairs like the
+/// plain-text semantic_search -- TransformTab.tsx already has every row
+/// loaded in its own `log` state (transform_log is capped at 50 rows total),
+/// so there's nothing to resolve server-side.
+#[tauri::command]
+async fn semantic_search_transform_log(
+    query: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<SemanticMatch>, String> {
+    let (server_url, app_secret, auth_token, tier) = {
+        let settings = state.settings.lock().unwrap();
+        (
+            settings.server_url.clone(),
+            settings.app_secret.clone(),
+            settings.auth_token.clone(),
+            settings.tier.clone(),
+        )
+    };
+
+    // UX shortcut, not the real gate -- see transform_clip's comment. The
+    // Smart-mode toggle itself already blocks a non-Pro account from ever
+    // reaching this call (see App.tsx), but this stays as defense in depth,
+    // same as every other AI-backed command here.
+    if tier != "pro" {
+        return Err("upgrade to Pro to use Smart search".into());
+    }
+    if query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let missing = {
+        let conn = state.conn.lock().unwrap();
+        // -1 (unlimited): transform_log is capped at 50 rows total (see
+        // TRANSFORM_LOG_LIMIT), so even a full backfill here is at most a
+        // couple of embedding-batch requests, not the unbounded-history
+        // concern that same limit represents for clip_items/screenshots.
+        db::transform_log_missing_embeddings(&conn, BACKFILL_LIMIT)
+    };
+    for chunk in missing.chunks(BACKFILL_BATCH) {
+        let texts: Vec<String> = chunk.iter().map(|(_, text)| text.clone()).collect();
+        if let Ok(vectors) = embed_texts(&texts, "document", &server_url, &app_secret, &auth_token).await {
+            let conn = state.conn.lock().unwrap();
+            for ((id, _), vector) in chunk.iter().zip(vectors.iter()) {
+                db::save_transform_log_embedding(&conn, *id, vector);
+            }
+        }
+    }
+
+    let query_vector = embed_text(&query, "query", &server_url, &app_secret, &auth_token).await?;
+
+    let conn = state.conn.lock().unwrap();
+    // Same 0.5 threshold as the other Smart-search commands -- see
+    // semantic_search's doc comment for why this is a starting guess.
+    let results = db::semantic_search_transform_log(&conn, &query_vector, 30, 0.5);
+    Ok(results
+        .into_iter()
+        .map(|(id, score)| SemanticMatch { id, score })
+        .collect())
+}
+
 /// Kicked off once, the moment an account's tier flips to Pro (see
 /// save_settings) -- without this, semantic search would come up empty for
 /// anyone who upgrades with existing history, since embed-on-save (the
@@ -2308,6 +2373,7 @@ fn main() {
             filter_by_ai,
             semantic_search,
             semantic_search_screenshots,
+            semantic_search_transform_log,
             list_folders,
             get_folder,
             create_folder,

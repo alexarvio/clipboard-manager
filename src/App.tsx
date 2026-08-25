@@ -800,10 +800,12 @@ export default function App() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
-              tab === "history" && searchMode === "smart"
+              (tab === "history" || tab === "transform") && searchMode === "smart"
                 ? "Describe what you're looking for…"
                 : tab === "history" && historyView === "screenshots"
                 ? "Search screenshot text…"
+                : tab === "transform"
+                ? "Search your transform history…"
                 : "Search clipboard history…"
             }
             // placeholder:text-[13px] (2026-08-13, was inheriting the
@@ -834,7 +836,7 @@ export default function App() {
             never changes across tabs. */}
         <div
           className={`shrink-0 flex items-center rounded-full bg-black/[0.05] dark:bg-white/[0.07] p-0.5 gap-0.5 transition-opacity ${
-            tab === "history" ? "" : "opacity-0 pointer-events-none"
+            (tab === "history" || tab === "transform") ? "" : "opacity-0 pointer-events-none"
           }`}
           title={searchMode === "smart" ? "Smart (semantic) search is on" : "Exact text search is on"}
         >
@@ -864,7 +866,7 @@ export default function App() {
                 ? "Smart (semantic) search is a Pro feature"
                 : "Search by meaning, not just exact words"
             }
-            tabIndex={tab === "history" ? 0 : -1}
+            tabIndex={tab === "history" || tab === "transform" ? 0 : -1}
             className={`relative flex items-center justify-center w-6 h-6 rounded-full transition-colors active:scale-[0.97] ${
               searchMode === "smart"
                 ? "bg-accent/25 dark:bg-accentDark/35 text-accent dark:text-accentDark shadow-sm"
@@ -1341,6 +1343,8 @@ export default function App() {
             <TransformTab
               key="transform"
               tier={tier}
+              query={query}
+              searchMode={searchMode}
               pendingInput={pendingTransformInput}
               onConsumedPendingInput={() => setPendingTransformInput(null)}
               onManagePresets={(context) => {

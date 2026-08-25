@@ -448,6 +448,27 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       })) as unknown as T;
     }
 
+    // Mirrors main.rs's semantic_search_transform_log -- same keyword-overlap
+    // stand-in as semantic_search/semantic_search_screenshots above, matched
+    // against each Recent entry's input+output text.
+    case "semantic_search_transform_log": {
+      await delay(null, 400);
+      if (settings.tier !== "pro") throw "upgrade to Pro to use Smart search";
+      const q = ((args.query as string) ?? "").toLowerCase();
+      const words = q.match(/[a-z0-9]+/g) ?? [];
+      const stop = new Set(["a", "an", "the", "is", "of", "for", "that", "with", "to", "and", "or", "this", "my"]);
+      const keywords = words.filter((w) => w.length > 2 && !stop.has(w));
+      if (keywords.length === 0) return [] as unknown as T;
+      const matches = transformLog.filter((e) => {
+        const text = `${e.input} ${e.output}`.toLowerCase();
+        return !text.includes(q) && keywords.some((k) => text.includes(k));
+      });
+      return matches.map((e, i) => ({
+        id: e.id,
+        score: Math.max(0.5, 0.92 - i * 0.05),
+      })) as unknown as T;
+    }
+
     case "list_folders": {
       const parentId = (args.parentId ?? null) as number | null;
       return delay(

@@ -334,6 +334,25 @@ pub fn init(conn: &Connection) {
     )
     .expect("failed to create screenshot_embeddings table");
 
+    // Same idea again, this time for the standalone Transform tab's own
+    // "Recent" log (transform_log below) -- added 2026-08-25 alongside
+    // wiring the search bar up to actually do something on the Transform
+    // tab, which it never did before (see App.tsx's search-mode toggle,
+    // previously only rendered for tab === "history"). Populated
+    // lazily/on-demand exactly like screenshot_embeddings, not eagerly on
+    // every transform run -- same reasoning: most transform runs are
+    // probably never searched for, and transform_log is capped at
+    // TRANSFORM_LOG_LIMIT (50) anyway, so even a full on-demand backfill is
+    // cheap, a handful of embedding calls at most.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS transform_log_embeddings (
+            transform_log_id INTEGER PRIMARY KEY,
+            vector TEXT NOT NULL
+        )",
+        [],
+    )
+    .expect("failed to create transform_log_embeddings table");
+
     // Recent-runs log for the standalone AI Transform tab (added
     // 2026-07-22, alongside moving Screenshots into a History sub-toggle
     // and giving Transform its own top-level tab) -- this is a lightweight
@@ -1808,6 +1827,15 @@ pub fn log_transform(
         params![TRANSFORM_LOG_LIMIT],
     )
     .ok();
+    // Same orphan cleanup as delete_transform_log_entry -- rows trimmed off
+    // the end here would otherwise leave their embeddings behind forever.
+    conn.execute(
+        "DELETE FROM transform_log_embeddings WHERE transform_log_id NOT IN (
+            SELECT id FROM transform_log
+        )",
+        [],
+    )
+    .ok();
 
     id
 }
@@ -1836,8 +1864,98 @@ pub fn get_transform_log(conn: &Connection) -> Vec<TransformLogEntry> {
 
 pub fn delete_transform_log_entry(conn: &Connection, id: i64) {
     conn.execute("DELETE FROM transform_log WHERE id = ?1", params![id]).ok();
+    // No real FK cascade on this connection (see the embeddings tables'
+    // comments) -- clean up the matching embedding explicitly so it doesn't
+    // sit around as a permanent orphan.
+    conn.execute("DELETE FROM transform_log_embeddings WHERE transform_log_id = ?1", params![id])
+        .ok();
 }
 
 pub fn clear_transform_log(conn: &Connection) {
     conn.execute("DELETE FROM transform_log", []).ok();
+    conn.execute("DELETE FROM transform_log_embeddings", []).ok();
+}
+
+// --- Transform log Smart search ---------------------------------------------
+//
+// Mirrors the screenshot_embeddings section above almost exactly: lazy,
+// on-demand embeddings (computed the first time a Smart search actually
+// runs on the Transform tab -- see main.rs::semantic_search_transform_log),
+// same JSON-array-in-a-TEXT-column storage, same brute-force cosine scan
+// (transform_log is capped at TRANSFORM_LOG_LIMIT rows, so this is trivially
+// fast). Returns (id, score) pairs rather than full entries, unlike the
+// screenshots version -- TransformTab.tsx already has every entry loaded in
+// its own `log` state (the whole table is at most 50 rows), so there's no
+// "found it, but can't show it" gap to avoid resolving server-side for.
+
+/// Stores (or replaces) the embedding vector for one transform_log row. The
+/// embedded text is the run's input + output combined (see
+/// transform_log_missing_embeddings) -- not the instruction/preset_label,
+/// since exact-text search already covers matching a preset's name and
+/// semantic search is for finding runs by what they were *about*.
+pub fn save_transform_log_embedding(conn: &Connection, transform_log_id: i64, vector: &[f32]) {
+    let json = serde_json::to_string(vector).unwrap_or_default();
+    conn.execute(
+        "INSERT INTO transform_log_embeddings (transform_log_id, vector) VALUES (?1, ?2)
+         ON CONFLICT(transform_log_id) DO UPDATE SET vector = excluded.vector",
+        params![transform_log_id, json],
+    )
+    .ok();
+}
+
+/// (id, "input output") pairs for transform_log rows that don't have an
+/// embedding yet, most recent first, capped at `limit`. Called at the top
+/// of every semantic_search_transform_log run, same "catch up first" shape
+/// as screenshots_missing_embeddings.
+pub fn transform_log_missing_embeddings(conn: &Connection, limit: i64) -> Vec<(i64, String)> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT t.id, t.input || ' ' || t.output FROM transform_log t
+             LEFT JOIN transform_log_embeddings e ON e.transform_log_id = t.id
+             WHERE e.transform_log_id IS NULL
+             ORDER BY t.id DESC LIMIT ?1",
+        )
+        .unwrap();
+    let rows = stmt
+        .query_map(params![limit], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+        })
+        .unwrap();
+    rows.filter_map(|r| r.ok()).collect()
+}
+
+/// Cosine-similarity search over every stored transform_log embedding.
+/// Joined back to transform_log only to confirm the row still exists (a
+/// deleted entry's embedding is cleaned up explicitly elsewhere, but this
+/// guards against any gap between the two) -- callers get back ids to match
+/// against their own already-loaded list, not full entries.
+pub fn semantic_search_transform_log(
+    conn: &Connection,
+    query_vector: &[f32],
+    limit: usize,
+    min_score: f32,
+) -> Vec<(i64, f32)> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT e.transform_log_id, e.vector FROM transform_log_embeddings e
+             JOIN transform_log t ON t.id = e.transform_log_id",
+        )
+        .unwrap();
+    let rows = stmt
+        .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+        .unwrap();
+
+    let mut scored: Vec<(i64, f32)> = Vec::new();
+    for (id, json) in rows.filter_map(|r| r.ok()) {
+        let Ok(vector) = serde_json::from_str::<Vec<f32>>(&json) else {
+            continue;
+        };
+        let score = cosine_similarity(query_vector, &vector);
+        if score >= min_score {
+            scored.push((id, score));
+        }
+    }
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    scored.truncate(limit);
+    scored
 }

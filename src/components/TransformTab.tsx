@@ -64,8 +64,23 @@ interface TransformLogEntry {
   preset_label: string | null;
 }
 
+// Mirrors App.tsx's own local SemanticMatch interface (not shared/exported
+// from anywhere -- both files just declare it independently, same as the
+// Rust struct it mirrors on the other side of the invoke() boundary).
+interface SemanticMatch {
+  id: number;
+  score: number;
+}
+
 interface Props {
   tier: "free" | "pro";
+  // Wired up 2026-08-25 -- App.tsx's search bar/mode toggle previously only
+  // applied to tab === "history" and did nothing on this tab at all (see
+  // App.tsx's placeholder/toggle-visibility logic). Filters/ranks the
+  // Recent log below rather than opening any separate results view -- see
+  // filteredLog's own comment for why that's the right shape here.
+  query: string;
+  searchMode: "text" | "smart";
   // 2026-08-10: now takes which preset context ("text" vs "screenshot",
   // see presetContext below) was active when clicked, so App.tsx can jump
   // Settings' Presets section to the tab that actually matches -- clicking
@@ -136,6 +151,8 @@ const MAX_TEXTAREA_PX = 480;
 // to the same persisted "recent transforms" history either way.
 export default function TransformTab({
   tier,
+  query,
+  searchMode,
   onManagePresets,
   onOpenFolder,
   onCreateNewFolder,
@@ -295,6 +312,62 @@ export default function TransformTab({
   function refreshLog() {
     invoke<TransformLogEntry[]>("get_transform_log").then(setLog).catch(console.error);
   }
+
+  // Smart search over Recent, mirroring App.tsx's own smart-search effect
+  // for History almost exactly (same 450ms debounce, same cancelled-flag
+  // guard) but simpler: semantic_search_transform_log already returns bare
+  // (id, score) pairs, and every row it could possibly match is already
+  // sitting in `log` (transform_log is capped at 50 rows total), so there's
+  // no second fetch needed to resolve ids into full entries.
+  const [smartMatches, setSmartMatches] = useState<SemanticMatch[]>([]);
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartError, setSmartError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchMode !== "smart" || tier !== "pro" || !query.trim()) {
+      setSmartMatches([]);
+      setSmartError(null);
+      setSmartLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSmartLoading(true);
+    setSmartError(null);
+    const handle = setTimeout(async () => {
+      try {
+        const matches = await invoke<SemanticMatch[]>("semantic_search_transform_log", { query });
+        if (!cancelled) setSmartMatches(matches);
+      } catch (e) {
+        if (!cancelled) {
+          setSmartMatches([]);
+          setSmartError(typeof e === "string" ? e : "Smart search failed.");
+        }
+      } finally {
+        if (!cancelled) setSmartLoading(false);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [query, searchMode, tier]);
+
+  // What Recent actually renders. Text mode is a plain client-side
+  // substring filter (no round-trip needed -- the whole log is already in
+  // memory) over everything a row shows or was run with: the preset/
+  // instruction label, and the input/output text itself. Smart mode ranks
+  // by smartMatches' score order instead of touching `log`'s own order.
+  const trimmedQuery = query.trim();
+  const filteredLog = !trimmedQuery
+    ? log
+    : searchMode === "smart"
+    ? smartMatches
+        .map((m) => log.find((entry) => entry.id === m.id))
+        .filter((entry): entry is TransformLogEntry => !!entry)
+    : log.filter((entry) => {
+        const haystack = `${entry.preset_label ?? ""} ${entry.instruction} ${entry.input} ${entry.output}`.toLowerCase();
+        return haystack.includes(trimmedQuery.toLowerCase());
+      });
 
   // Text vs. screenshot preset context (2026-08-10) -- same split
   // TransformBar.tsx already had (via its own `context` prop), ported here
@@ -1035,9 +1108,17 @@ export default function TransformTab({
             <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
               Nothing yet — run a transform above and it'll show up here.
             </p>
+          ) : smartLoading ? (
+            <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">Searching…</p>
+          ) : smartError ? (
+            <p className="text-[12px] text-red-500 dark:text-red-400">{smartError}</p>
+          ) : filteredLog.length === 0 ? (
+            <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+              No transforms match "{trimmedQuery}".
+            </p>
           ) : (
             <div className="rounded-xl bg-creamSurface/70 dark:bg-charcoalSurface/70 ring-1 ring-black/[0.15] dark:ring-white/[0.15] shadow-card dark:shadow-cardDark overflow-hidden">
-              {log.map((entry, idx) => (
+              {filteredLog.map((entry, idx) => (
                 <div key={entry.id}>
                   {/* A wrapping div (not a button) here, with the action
                       buttons as siblings rather than nested inside --
@@ -1103,7 +1184,7 @@ export default function TransformTab({
                       </button>
                     </div>
                   </div>
-                  {idx !== log.length - 1 && (
+                  {idx !== filteredLog.length - 1 && (
                     <div className="mx-3 border-b border-black/[0.05] dark:border-white/[0.07]" />
                   )}
                 </div>
