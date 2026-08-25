@@ -471,7 +471,7 @@ export default function Dashboard() {
               {firstName ? `, ${firstName}` : ""}.
             </h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-7">
-              Here's how you've been using Clip.
+              Here's how you've been using FatClipboard.
             </p>
 
             <div className="grid grid-cols-[2fr_1fr] gap-6 items-start">
@@ -482,7 +482,7 @@ export default function Dashboard() {
                 </h2>
                 {feedGroups.length === 0 && (
                   <p className="text-[13px] text-inkMuted dark:text-inkMutedDark">
-                    Nothing copied yet -- start using Clip and it'll show up here.
+                    Nothing copied yet -- start using FatClipboard and it'll show up here.
                   </p>
                 )}
                 {/* One boxed card per date, rows divided by hairlines inside
@@ -659,7 +659,7 @@ export default function Dashboard() {
           <div className="flex-1 overflow-y-auto p-8">
             <h1 className="text-[22px] font-semibold mb-1">Insights</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-7">
-              How you're using Clip, in more detail.
+              How you're using FatClipboard, in more detail.
             </p>
 
             <div className={`grid gap-4 mb-4 ${tier === "pro" ? "grid-cols-5" : "grid-cols-4"}`}>

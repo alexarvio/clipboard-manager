@@ -110,7 +110,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
             <i className="ti ti-history text-[32px] text-accent dark:text-accentDark mb-4" />
             <h1 className="text-[17px] font-semibold mb-2">Everything you copy, remembered</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark max-w-[260px]">
-              Clip saves what you copy automatically -- sorted by date and category -- so nothing gets lost the
+              FatClipboard saves what you copy automatically -- sorted by date and category -- so nothing gets lost the
               moment you copy something else.
             </p>
           </>
