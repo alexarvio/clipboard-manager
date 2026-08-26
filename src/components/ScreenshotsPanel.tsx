@@ -512,11 +512,11 @@ export default function ScreenshotsPanel({
                 savedIn={savedIn}
                 position={folderPickerPos}
                 onClose={() => setFolderPickerFor(null)}
-                onAdd={async (folderId) => {
+                onAdd={async (folderId, title) => {
                   await invoke("add_screenshot_to_folder", {
                     folderId,
                     screenshotId: item.id,
-                    title: null,
+                    title: title ?? null,
                   });
                   setFolderPickerFor(null);
                   refreshMemberships();

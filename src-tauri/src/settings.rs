@@ -35,6 +35,16 @@ pub struct Settings {
     pub max_history: i64,
     pub launch_at_startup: bool,
     pub theme: String,
+    /// The app version this machine last actually launched, used purely to
+    /// detect "the installed build just changed" so main.rs's setup() can
+    /// surface a one-time "what's new" notice (see AppState::just_updated).
+    /// `#[serde(default)]` (empty string) so an existing settings.json from
+    /// before this field existed doesn't false-fire a notice on its first
+    /// launch after upgrading to a build that has this field at all --
+    /// setup() treats an empty value as "nothing to compare against yet",
+    /// same as a genuinely fresh install.
+    #[serde(default)]
+    pub last_seen_version: String,
     /// Whether detected API keys/secrets (see classify::looks_like_secret)
     /// render blurred-until-clicked in history instead of as plain text.
     /// Defaults on -- `#[serde(default = "default_blur_secrets")]` so
@@ -227,6 +237,7 @@ impl Default for Settings {
         Settings {
             hotkey: "Ctrl+Shift+V".into(),
             blur_secrets: default_blur_secrets(),
+            last_seen_version: String::new(),
             max_history: 200,
             launch_at_startup: false,
             theme: "dark".into(),

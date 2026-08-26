@@ -206,6 +206,10 @@ export default function Dashboard() {
   const [showHelp, setShowHelp] = useState(false);
   // Same fail-safe-blurred default and reasoning as App.tsx's blurSecrets.
   const [blurSecrets, setBlurSecrets] = useState(true);
+  // One-shot "what's new" banner -- see App.tsx's updateNotice for the full
+  // explanation. Whichever window (this one or the quick panel) asks first
+  // each launch is the one that shows it.
+  const [updateNotice, setUpdateNotice] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -223,6 +227,10 @@ export default function Dashboard() {
       setFirstName(settings.first_name ?? "");
       setOnboardingComplete(settings.onboarding_complete ?? false);
       setBlurSecrets(settings.blur_secrets ?? true);
+
+      invoke<string | null>("take_update_notice")
+        .then((v) => v && setUpdateNotice(v))
+        .catch(console.error);
 
       if (!settings.auth_token) return;
 
@@ -367,6 +375,29 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen w-screen flex bg-cream dark:bg-charcoal text-ink dark:text-cream overflow-hidden">
+      {/* One-shot "what's new" toast -- fixed/overlaid rather than inline
+          so it shows above whichever nav section (Home, Insights, etc.) is
+          active, instead of needing to be duplicated into each one. */}
+      <AnimatePresence>
+        {updateNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3.5 py-2 text-[12.5px] text-accent dark:text-accentDark font-medium shadow-card dark:shadow-cardDark"
+          >
+            <i className="ti ti-sparkles text-[13px]" />
+            <span>Updated to v{updateNotice}</span>
+            <button
+              onClick={() => setUpdateNotice(null)}
+              className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+              title="Dismiss"
+            >
+              <i className="ti ti-x text-[12px]" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* --- Sidebar ------------------------------------------------- */}
       <aside className="w-56 shrink-0 border-r border-borderLight dark:border-borderDark flex flex-col p-4">
         <div className="flex items-center gap-2 px-1 mb-6">

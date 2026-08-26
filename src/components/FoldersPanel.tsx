@@ -1557,6 +1557,11 @@ function FolderItemRow({
               onClosePicker();
             }}
             onCreateNewFolder={onCreateNewFolderFromPicker}
+            // This item already has whatever title it had (see
+            // addItemToOtherFolder, which carries item.title over as-is) --
+            // re-prompting for a new one here would just be asking a
+            // question that's already answered.
+            promptForTitle={false}
           />,
           document.body
         )}

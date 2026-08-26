@@ -596,9 +596,9 @@ export default function TransformTab({
     setPendingSave({ content, target });
   }
 
-  async function confirmSaveToFolder(folderId: number) {
+  async function confirmSaveToFolder(folderId: number, title?: string | null) {
     if (!pendingSave) return;
-    await invoke("add_to_folder", { folderId, content: pendingSave.content, title: null });
+    await invoke("add_to_folder", { folderId, content: pendingSave.content, title: title ?? null });
     setFolderPickerPos(null);
     setSavedTarget(pendingSave.target);
     setTimeout(() => setSavedTarget((cur) => (cur === pendingSave.target ? null : cur)), 1600);

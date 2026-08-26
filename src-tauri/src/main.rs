@@ -82,6 +82,13 @@ pub struct AppState {
     // suppress it -- the file-dialog path at least has a clear start/end to
     // guard).
     pub dialog_open: AtomicBool,
+    // One-shot "what's new" notice, set at most once per launch in setup()
+    // when the installed version differs from settings.last_seen_version
+    // (see that comparison for the full reasoning). take_update_notice
+    // consumes this the first time either window asks, so it's naturally
+    // idempotent -- no persisted "seen" flag needed, and no risk of showing
+    // it twice across the quick panel and Dashboard both loading it.
+    pub just_updated: Mutex<Option<String>>,
 }
 
 const SELF_SET_WINDOW: Duration = Duration::from_secs(3);
@@ -1323,6 +1330,15 @@ fn get_settings(state: tauri::State<AppState>) -> Settings {
     state.settings.lock().unwrap().clone()
 }
 
+/// One-shot "what's new" notice -- see AppState::just_updated's doc comment.
+/// Returns Some(version) at most once per launch, to whichever window (quick
+/// panel or Dashboard) calls this first; every other call this run gets
+/// None, same as a launch where nothing changed.
+#[tauri::command]
+fn take_update_notice(state: tauri::State<AppState>) -> Option<String> {
+    state.just_updated.lock().unwrap().take()
+}
+
 #[tauri::command]
 fn save_settings(settings: Settings, app: tauri::AppHandle, state: tauri::State<AppState>) {
     let was_pro = state.settings.lock().unwrap().tier == "pro";
@@ -2111,6 +2127,43 @@ fn toggle_panel(app: &tauri::AppHandle) {
     }
 }
 
+/// Polls until neither the quick panel ("main") nor the Dashboard window is
+/// visible, then relaunches into a just-downloaded update -- see the
+/// updater's setup() block above. Restarting the moment a background
+/// download finishes (the old behavior) could close the app out from under
+/// someone mid-paste or mid-Transform with no warning at all; waiting for
+/// both windows to be hidden means the relaunch only ever happens at a
+/// moment that already looks like "not actively using it" from the user's
+/// side. Capped at MAX_UPDATE_RESTART_WAIT so a window left open for a long
+/// stretch (Dashboard parked on a second monitor, say) doesn't defer the
+/// update indefinitely -- 30 minutes is long enough to not interrupt a
+/// normal active session, short enough that the update still lands the same
+/// day. A plain blocking loop on its own OS thread (see the thread::spawn
+/// call site) rather than an async task -- this crate's tokio dependency
+/// doesn't enable the "time" feature, so there's no async sleep available,
+/// and a simple poll loop doesn't need one.
+fn wait_for_idle_then_restart(app: tauri::AppHandle) {
+    const MAX_WAIT: Duration = Duration::from_secs(30 * 60);
+    const POLL_INTERVAL: Duration = Duration::from_secs(5);
+    let start = Instant::now();
+    loop {
+        let main_hidden = app
+            .get_webview_window("main")
+            .map(|w| !w.is_visible().unwrap_or(false))
+            .unwrap_or(true);
+        let dashboard_hidden = app
+            .get_webview_window("dashboard")
+            .map(|w| !w.is_visible().unwrap_or(false))
+            .unwrap_or(true);
+        if (main_hidden && dashboard_hidden) || start.elapsed() >= MAX_WAIT {
+            break;
+        }
+        thread::sleep(POLL_INTERVAL);
+    }
+    println!("[updater] idle (or wait capped), relaunching now");
+    app.request_restart();
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -2155,14 +2208,22 @@ fn main() {
                             .await
                         {
                             Ok(()) => {
-                                println!("[updater] installed, relaunching");
-                                // request_restart() (not the older restart())
-                                // is the one that reliably fires our own
-                                // WindowEvent/RunEvent handlers on the way
-                                // out -- see tauri-apps/tauri#11392, a bug
-                                // report where using the older call left the
-                                // app closed instead of relaunching.
-                                updater_handle.request_restart();
+                                println!(
+                                    "[updater] installed, waiting for an idle moment to relaunch"
+                                );
+                                // Restarting the instant the download finishes
+                                // (the old behavior) could yank the app out
+                                // from under someone mid-paste or mid-Transform
+                                // with zero warning -- see
+                                // wait_for_idle_then_restart's own doc comment
+                                // for why this waits instead. A plain OS
+                                // thread (not another async task) since this
+                                // is a simple blocking poll loop, same pattern
+                                // as the clipboard watcher thread below.
+                                let restart_handle = updater_handle.clone();
+                                thread::spawn(move || {
+                                    wait_for_idle_then_restart(restart_handle);
+                                });
                             }
                             Err(e) => eprintln!("[updater] download/install failed: {e}"),
                         }
@@ -2180,7 +2241,33 @@ fn main() {
             // db::open_for_account for what "right" means here, including
             // the one-time legacy-file migration for whichever account
             // turns out to be first.
-            let settings = settings::load();
+            let mut settings = settings::load();
+
+            // "What's new" one-shot notice (see AppState::just_updated and
+            // take_update_notice): whenever the installed version differs
+            // from the last one this machine actually launched, whichever
+            // window asks first this run gets to show a banner. This fires
+            // for *any* version change -- a fresh manual install (like
+            // testing a build before cutting a real release) as much as a
+            // relaunch from the silent auto-updater above -- since both are
+            // "the app you're looking at just changed" from the user's
+            // point of view. Skipped on a brand-new install (last_seen_version
+            // starts empty): there's nothing to compare against yet, so
+            // showing "Updated to vX" on someone's very first launch would
+            // be nonsense.
+            let current_version = app.package_info().version.to_string();
+            let just_updated = if !settings.last_seen_version.is_empty()
+                && settings.last_seen_version != current_version
+            {
+                Some(current_version.clone())
+            } else {
+                None
+            };
+            if settings.last_seen_version != current_version {
+                settings.last_seen_version = current_version;
+                settings::save(&settings);
+            }
+
             let hotkey = settings.hotkey.clone();
             let account_key = db::account_key(&settings.user_email);
             let conn = db::open_for_account(&account_key);
@@ -2194,6 +2281,7 @@ fn main() {
                 last_self_set_screenshot: Mutex::new(None),
                 clipboard_busy: AtomicBool::new(false),
                 dialog_open: AtomicBool::new(false),
+                just_updated: Mutex::new(just_updated),
             });
 
             // --- background clipboard watcher -------------------------------
@@ -2372,6 +2460,7 @@ fn main() {
             delete_history_item,
             get_settings,
             save_settings,
+            take_update_notice,
             auth_signup,
             auth_login,
             auth_logout,

@@ -135,6 +135,10 @@ export default function App() {
   // Defaults true so a slow/failed get_settings load fails safe (blurred)
   // rather than briefly showing a secret in plaintext.
   const [blurSecrets, setBlurSecrets] = useState(true);
+  // One-shot "what's new" banner -- see take_update_notice in main.rs.
+  // Whichever window (this quick panel or Dashboard) asks first each launch
+  // is the one that shows it; the other gets null back from the same call.
+  const [updateNotice, setUpdateNotice] = useState<string | null>(null);
   const [paywallMsg, setPaywallMsg] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -245,6 +249,10 @@ export default function App() {
         setOnboardingComplete(s.onboarding_complete ?? false);
         setBlurSecrets(s.blur_secrets ?? true);
       })
+      .catch(console.error);
+
+    invoke<string | null>("take_update_notice")
+      .then((v) => v && setUpdateNotice(v))
       .catch(console.error);
   }, []);
 
@@ -1994,11 +2002,11 @@ export default function App() {
                             savedIn={savedInFolders}
                             position={folderPickerPos}
                             onClose={() => setFolderPickerFor(null)}
-                            onAdd={async (folderId) => {
+                            onAdd={async (folderId, title) => {
                               await invoke("add_to_folder", {
                                 folderId,
                                 content: item.content,
-                                title: null,
+                                title: title ?? null,
                               });
                               setFolderPickerFor(null);
                               refreshFolderMemberships();
@@ -2138,6 +2146,24 @@ export default function App() {
             className="mx-3 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium"
           >
             That's a Pro feature — upgrade to use it.
+          </motion.div>
+        )}
+        {updateNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mx-3 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium flex items-center justify-center gap-1.5"
+          >
+            <i className="ti ti-sparkles text-[12px]" />
+            <span>Updated to v{updateNotice}</span>
+            <button
+              onClick={() => setUpdateNotice(null)}
+              className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+              title="Dismiss"
+            >
+              <i className="ti ti-x text-[11px]" />
+            </button>
           </motion.div>
         )}
         {customFilterError && (

@@ -69,6 +69,15 @@ const startAsPro =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).get("tier") === "pro";
 
+// Browser preview for the one-shot "what's new" banner -- visit
+// `/?updated=0.2.0` to preview it (App.tsx and Dashboard.tsx both call
+// take_update_notice on load; whichever renders first "wins" it, same as
+// in the real app -- see take_update_notice's doc comment in main.rs).
+let pendingUpdateNotice: string | null =
+  (typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("updated")) ||
+  null;
+
 let settings: MockSettings = {
   hotkey: "Ctrl+Shift+V",
   max_history: 200,
@@ -254,6 +263,15 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
     case "save_settings":
       settings = { ...settings, ...args.settings };
       return delay(undefined as T);
+
+    // Mirrors take_update_notice's one-shot semantics: fires once (if the
+    // `?updated=` query param is set, for previewing the banner design),
+    // then null forever after -- same as the real command once consumed.
+    case "take_update_notice": {
+      const v = pendingUpdateNotice;
+      pendingUpdateNotice = null;
+      return delay(v as T);
+    }
 
     // Mirrors main.rs's auth_signup/auth_login: no real server round-trip in
     // browser preview, just enough validation to exercise AuthGate's error
