@@ -12,34 +12,21 @@ body,
   user-select: none;
 }
 
-/* Thin custom scrollbar so it doesn't break the glass aesthetic. Colored to
-   match the FatClipboard accent violet (2026-08-12 cream/green -> white/
-   violet rebrand; was the neon-green accent from the 2026-07-27 rebrand
-   before that) -- separate light/dark rules since this is plain CSS, not a
-   Tailwind class, so it can't just reference accent/dark:accentDark the way
-   everything else does -- keep these rgba() values in sync by hand if
-   accent/accentDark change again. Opacity bumped 2026-08-10 (0.45 -> 0.65,
-   plus a brighter :hover state) -- 0.45 still read as too faint against the
-   surface backgrounds. If it still looks like the old color after this
-   change ships, the installed build predates it -- this CSS only takes
-   effect on the next `npm run tauri build` (or a `tauri dev` restart), not
-   in an already-running installed binary. */
+/* Scrollbars hidden everywhere (2026-08-26) -- was a thin custom violet
+   scrollbar before this, but it still showed up as a visible track/thumb
+   over the glass background, which read as a stray UI element rather than
+   a deliberate one. Scrolling itself is completely unaffected: this only
+   hides the visual scrollbar, mouse wheel / trackpad / drag-to-scroll all
+   still work exactly as before on every scrollable element in the app.
+   Three rules for the three engines this could ever run in (this app only
+   ships on the Chromium/WebView2 rule, but the other two are free and keep
+   this correct if that ever changes): -webkit-scrollbar for Chromium/
+   WebView2 (what this app actually uses), scrollbar-width for Firefox,
+   -ms-overflow-style for old Edge/IE. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 ::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(124, 111, 227, 0.65);
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 111, 227, 0.85);
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(183, 169, 255, 0.65);
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(183, 169, 255, 0.85);
-}
-::-webkit-scrollbar-track {
-  background: transparent;
+  display: none;
 }
