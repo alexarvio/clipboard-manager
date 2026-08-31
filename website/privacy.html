@@ -60,20 +60,20 @@
   <p>Your clipboard history stays on your own device. We only collect the minimum needed to run accounts and billing, and to power the optional AI features you choose to use.</p>
 
   <h2>What stays on your device</h2>
-  <p>Your clipboard history (everything you've copied, including text extracted from screenshots) is stored locally in a database on your computer. It is never uploaded to our servers and we never see it, with one exception: if you use an optional Pro AI feature (below), the specific item you act on is sent to a third-party API to process that one request.</p>
+  <p>Your clipboard history (everything you've copied, including text extracted from screenshots) is stored locally in a database on your computer. It is never uploaded to our servers and we never see it. The exception is the optional Pro AI features (below), which send text to a third-party API to process a request: an AI Transform sends the item you run it on, a custom AI filter sends your 500 most recent items so it can pick the matches, and turning on Smart (semantic) search sends the text of your existing history so it can be indexed. None of it is stored on our side.</p>
 
   <h2>What we collect</h2>
   <ul>
     <li><strong>Account info:</strong> your email address and a securely hashed password (we never store your password itself) when you create an account.</li>
     <li><strong>Billing info:</strong> if you subscribe to Pro, payment is handled entirely by Stripe; we never see or store your card details. We keep a record of your subscription status (active, trialing, canceled) so the app knows which features to unlock.</li>
-    <li><strong>AI feature usage:</strong> if you use AI Transform or semantic search (Pro features), the specific clipboard text you're acting on is sent to our AI providers (Anthropic and Voyage AI) to generate the result. We log how many tokens these requests use for our own cost tracking, not the content itself.</li>
+    <li><strong>AI feature usage:</strong> if you use AI Transform, custom AI filters or Smart (semantic) search — all Pro features — clipboard text is sent to our AI providers (Anthropic and Voyage AI) to generate the result. How much text depends on the feature; see "What stays on your device" above. We log how many tokens these requests use for our own cost tracking, never the content itself.</li>
   </ul>
 
   <h2>Third parties we use</h2>
   <ul>
     <li><strong>Stripe:</strong> payment processing. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's privacy policy</a>.</li>
-    <li><strong>Anthropic (Claude):</strong> powers AI Transform. Only the clipboard text you explicitly transform is sent, only when you trigger it.</li>
-    <li><strong>Voyage AI:</strong> powers semantic search for Pro users. Clipboard text is sent to generate a search index.</li>
+    <li><strong>Anthropic (Claude):</strong> powers AI Transform and custom AI filters, only when you trigger them. A transform sends the item you run it on; a custom AI filter sends your 500 most recent items, each truncated, so it can pick the matches.</li>
+    <li><strong>Voyage AI:</strong> powers Smart (semantic) search for Pro users. When the feature is first switched on, the text of your existing history is sent to build the search index; after that, new clips are indexed as you copy them.</li>
     <li><strong>Resend:</strong> sends transactional email (e.g. a welcome email on signup). We don't use it for marketing.</li>
     <li><strong>Our own server:</strong> a Postgres database that stores account records (email, hashed password, subscription status) needed to run the service.</li>
   </ul>
