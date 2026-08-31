@@ -579,30 +579,32 @@ img { max-width:100%; }
 .fold-more { display:inline-block; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--appAccent); }
 .fold-tmpl { color:var(--appAccent); font-size:12px; margin-right:5px; vertical-align:-1px; }
 
-.transform-panel { background:var(--deepPanel); border-radius:14px; padding:16px; }
-.transform-in { font-size:13px; color:var(--deepMuted); }
-.transform-step { display:flex; align-items:center; gap:8px; margin:14px 0; }
-.transform-tag {
-  font-family:var(--mono);
-  font-size:10.5px;
-  letter-spacing:0.06em;
-  color:#FFFFFF;
-  background:var(--accent);
-  padding:5px 10px;
-  border-radius:999px;
+/* ---- Transform mock (mirrors the Transform tab) ---------------------- */
+.tf-label {
+  display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--deepMuted); margin:0 2px 8px;
 }
-.transform-step i { font-size:14px; color:var(--deepMuted); }
-.transform-out { font-size:13px; line-height:1.5; }
-
-/* The six built-in presets, plus the custom-instruction affordance. */
-.tf-presets { display:flex; flex-wrap:wrap; gap:7px; margin-top:16px; }
-.tf-presets span {
-  font-size:12px; padding:6px 11px; border-radius:999px;
-  background:var(--deepPanel); color:var(--deepMuted);
+.tf-label + * + .tf-label, .tf-label ~ .tf-label { margin-top:16px; }
+.tf-label .aux { font-family:var(--ui); font-size:11.5px; letter-spacing:0; text-transform:none; }
+.tf-input {
+  background:var(--deepPanel); border-radius:12px; padding:13px 14px;
+  font-size:13px; line-height:1.5; color:var(--deepInk); min-height:58px;
 }
-.tf-presets .on { background:var(--accent); color:#FFFFFF; font-weight:600; }
-.tf-presets .add { border:1px dashed rgba(255,255,255,0.22); background:transparent; display:inline-flex; align-items:center; gap:5px; }
-.tf-presets .add i { font-size:11px; }
+.tf-block { background:var(--deepPanel); border-radius:12px; padding:10px; }
+.tf-seg { display:inline-flex; gap:3px; background:rgba(0,0,0,0.22); border-radius:999px; padding:3px; margin-bottom:10px; }
+.tf-seg span { font-size:11.5px; padding:5px 13px; border-radius:999px; color:var(--deepMuted); }
+.tf-seg .on { background:rgba(255,255,255,0.14); color:#FFFFFF; font-weight:600; }
+.tf-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.tf-grid span {
+  text-align:center; font-size:11.5px; padding:10px 6px; border-radius:9px;
+  background:rgba(255,255,255,0.06); color:var(--deepMuted);
+}
+.tf-grid .on { background:var(--accent); color:#FFFFFF; font-weight:600; }
+.tf-out {
+  border:1px dashed rgba(255,255,255,0.22); border-radius:12px;
+  padding:13px 14px; font-size:13px; line-height:1.5; color:var(--deepInk);
+}
 
 /* 5. Privacy -------------------------------------------------------- */
 
