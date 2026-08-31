@@ -252,6 +252,15 @@ img { max-width:100%; }
    charcoalSurface in dark, and the active pill on a segmented control sits a
    step lighter again.
    -------------------------------------------------------------------- */
+/* The app's own accent, which unlike this site's is navy in light mode and
+   pink only in dark (see tailwind.config.js accent / accentDark). Scoped to
+   the mockups so they render the product honestly while the page around them
+   keeps its single pink brand colour. */
+.panel.app, .fold, .mock { --appAccent:#313851; --appAccentFill:#E1E6EB; }
+[data-theme="dark"] .panel.app,
+[data-theme="dark"] .fold,
+[data-theme="dark"] .mock { --appAccent:#FD105E; --appAccentFill:#4A2233; }
+
 .panel.app {
   background:var(--bg);
   padding:14px;
@@ -312,7 +321,7 @@ img { max-width:100%; }
    here so the page actually shows what a row can do. The pink ones are the
    states this particular clip is in — pinned, and filed into a folder. */
 .ap-actions { display:flex; gap:11px; flex:none; font-size:12.5px; color:var(--muted); }
-.ap-actions .on { color:var(--accent); }
+.ap-actions .on { color:var(--appAccent); }
 
 /* ---- Screenshots card (mirrors the Screenshots tab) ------------------ */
 .shot-card { background:var(--surface); border-radius:14px; padding:12px; margin-top:12px; }
@@ -329,14 +338,14 @@ img { max-width:100%; }
 .thumb-doc span:nth-child(1) { width:42%; opacity:.85; height:7px; }
 .thumb-doc span:nth-child(3) { width:78%; }
 .thumb-doc span:nth-child(4) { width:60%; }
-.thumb-doc span:nth-child(5) { width:35%; background:var(--accent); opacity:.7; }
+.thumb-doc span:nth-child(5) { width:35%; background:var(--appAccent); opacity:.7; }
 .shot-ocr { font-size:13px; line-height:1.55; font-style:italic; color:var(--muted); margin:12px 2px 0; }
-.shot-ocr mark { background:var(--accentFill); color:var(--accent); font-style:normal; padding:0 3px; border-radius:3px; }
-.shot-more { display:inline-block; margin:7px 2px 0; font-size:13px; font-weight:600; color:var(--accent); font-style:normal; }
+.shot-ocr mark { background:var(--appAccentFill); color:var(--appAccent); font-style:normal; padding:0 3px; border-radius:3px; }
+.shot-more { display:inline-block; margin:7px 2px 0; font-size:13px; font-weight:600; color:var(--appAccent); font-style:normal; }
 .shot-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin:12px 2px 2px; }
 .shot-dims { font-size:12px; line-height:1.6; color:var(--muted); }
 .shot-icons { display:flex; gap:13px; font-size:15px; color:var(--muted); flex:none; }
-.shot-icons .on { color:var(--accent); }
+.shot-icons .on { color:var(--appAccent); }
 
 /* ---- Screenshots section -------------------------------------------- */
 .section-lead { font-size:17px; line-height:1.6; color:var(--muted); margin:0 0 44px; max-width:640px; text-wrap:pretty; }
@@ -536,12 +545,12 @@ img { max-width:100%; }
 .fold { background:var(--inset); border-radius:14px; padding:12px; display:grid; gap:10px; }
 .fold-open {
   display:flex; align-items:center; gap:10px;
-  background:var(--accentFill); border:1px solid var(--accent);
+  background:var(--appAccentFill); border:1px solid var(--appAccent);
   border-radius:10px; padding:11px 13px;
 }
-.fold-open .f, .fold-open .pin { color:var(--accent); }
+.fold-open .f, .fold-open .pin { color:var(--appAccent); }
 .fold-row { display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:10px; padding:10px 13px; }
-.fold-row .f { color:var(--accent); }
+.fold-row .f { color:var(--appAccent); }
 .fold .nm { flex:1; font-size:13px; font-weight:600; min-width:0; }
 .fold-row .nm { font-weight:400; }
 .fold .ct { font-size:11.5px; color:var(--muted); }
@@ -562,13 +571,13 @@ img { max-width:100%; }
 
 /* The open folder's items, ringed in the accent the same way the app rings
    whichever folder you're inside. */
-.fold-items { background:var(--surface); border:1px solid var(--accent); border-radius:12px; padding:0 13px; }
+.fold-items { background:var(--surface); border:1px solid var(--appAccent); border-radius:12px; padding:0 13px; }
 .fold-item { padding:11px 0; }
 .fold-item + .fold-item { border-top:1px solid var(--hair); }
 .fold-item .t { font-size:12.5px; font-weight:600; margin-bottom:3px; }
 .fold-item p { font-size:12.5px; line-height:1.45; color:var(--ink); margin:0; }
-.fold-more { display:inline-block; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--accent); }
-.fold-tmpl { color:var(--accent); font-size:12px; margin-right:5px; vertical-align:-1px; }
+.fold-more { display:inline-block; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--appAccent); }
+.fold-tmpl { color:var(--appAccent); font-size:12px; margin-right:5px; vertical-align:-1px; }
 
 .transform-panel { background:var(--deepPanel); border-radius:14px; padding:16px; }
 .transform-in { font-size:13px; color:var(--deepMuted); }
