@@ -240,6 +240,14 @@ img { max-width:100%; }
   box-shadow:var(--shadow);
   overflow:hidden;
 }
+/* Hero: real app captures, one per theme. The pre-paint script in <head>
+   always stamps data-theme on <html>, so a single attribute switch is enough
+   and there is no un-stamped state to cover. */
+.app-shot { display:block; width:100%; height:auto; }
+.shot-dark { display:none; }
+[data-theme="dark"] .shot-light { display:none; }
+[data-theme="dark"] .shot-dark { display:block; }
+
 .panel-search {
   display:flex;
   align-items:center;

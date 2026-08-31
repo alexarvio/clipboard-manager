@@ -68,40 +68,18 @@
     </div>
 
     <div class="hero-panel-slot">
+      <!-- Real captures of the app's quick panel rather than an HTML
+           imitation: one per theme, swapped by the same data-theme attribute
+           everything else on the page keys off. The sample clips in them are
+           the app's own browser-preview fixtures, not anyone's real
+           clipboard. Re-shoot these whenever the panel UI changes. -->
       <div class="panel">
-        <div class="panel-search">
-          <i class="ti ti-search" aria-hidden="true"></i>
-          <span>Search clipboard history…</span>
-          <span class="kbd">CTRL+SHIFT+V</span>
-        </div>
-        <div class="panel-body">
-          <div class="panel-label">Pinned</div>
-          <div class="clip">
-            <div class="clip-text">https://stripe.com/docs/api</div>
-            <div class="clip-meta">
-              <span>Jun 28, 5:27 PM</span>
-              <span class="clip-actions"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
-            </div>
-          </div>
-          <div class="panel-label spaced">Today</div>
-          <div class="clips">
-            <div class="clip">
-              <div class="clip-text">Thanks for the quick turnaround — really appreciate you prioritizing this.</div>
-              <div class="clip-meta">
-                <span>Jun 28, 5:24 PM</span>
-                <span class="clip-actions"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pin" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
-              </div>
-            </div>
-            <div class="clip">
-              <div class="clip-text">1234 Market St, San Francisco, CA 94103</div>
-              <div class="clip-meta"><span>Jun 28, 5:23 PM</span></div>
-            </div>
-            <div class="clip">
-              <div class="clip-text">#FD105E — brand pink</div>
-              <div class="clip-meta"><span>Jun 28, 5:19 PM</span></div>
-            </div>
-          </div>
-        </div>
+        <img class="app-shot shot-light" src="./assets/app-panel-light.webp"
+             alt="The FatClipboard panel docked at the left of the screen, showing a pinned link above today's clips — an email address, a note, a street address, a hex colour, a phone number and a price."
+             width="384" height="700" />
+        <img class="app-shot shot-dark" src="./assets/app-panel-dark.webp"
+             alt="The same FatClipboard panel in dark mode."
+             width="384" height="700" />
       </div>
     </div>
   </div>
