@@ -816,8 +816,8 @@ export default function Dashboard() {
                           backgroundColor:
                             idx === 0
                               ? theme === "dark"
-                                ? "#B7A9FF"
-                                : "#7C6FE3"
+                                ? "#FD105E"
+                                : "#313851"
                               : idx <= 2
                               ? theme === "dark"
                                 ? "rgba(183,169,255,0.55)"

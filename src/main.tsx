@@ -27,11 +27,11 @@ function Root() {
     <div className="fixed inset-0 overflow-hidden">
       <div
         className="absolute inset-0 dark:hidden"
-        style={{ background: "linear-gradient(145deg,#dce8f8 0%,#c8d8ec 55%,#e2dcf5 100%)" }}
+        style={{ background: "linear-gradient(145deg,#dfe4e9 0%,#c2cbd3 55%,#d8d3ca 100%)" }}
       />
       <div
         className="absolute inset-0 hidden dark:block"
-        style={{ background: "linear-gradient(145deg,#0f0c18 0%,#1b1530 50%,#0c1828 100%)" }}
+        style={{ background: "linear-gradient(145deg,#1f1f1f 0%,#2a2a2a 50%,#242424 100%)" }}
       />
       <div className="absolute inset-y-0 left-0" style={{ width: "clamp(320px, 20vw, 480px)" }}>
         <App />

@@ -5,43 +5,41 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ---------------------------------------------------------------
+        // Palette swap (2026-08-31). Six brand colors were given:
+        //   light  #F6F3ED (warm paper) / #C2CBD3 (cool grey-blue) / #313851 (navy ink)
+        //   dark   #333333 (base) / #474747 (surface) / #FD105E (accent)
+        // Everything else below is a derived step (recessed surfaces, muted
+        // text, hairline borders, accent wash) mixed from those six so the
+        // existing token names keep meaning the same thing they did before.
+        // ---------------------------------------------------------------
+
         // Light mode
-        cream: "#FFFFFF",
-        creamSurface: "#F6F4FB",
-        // Light lavender (2026-08-12) specifically for item-list/pill
-        // containers (folder item lists, the PasteQueue pill, preset toggle
-        // chips, standalone text inputs) and their clickable rows' hover
-        // state. Deliberately a lighter, less saturated tint than accentFill
-        // (#EDEAFB) -- accentFill stays reserved for actual accent-highlight
-        // boxes (Dashboard stat tile, Transform preset-preview boxes, the
-        // "Paste now" CTA) where more saturation is the point; these
-        // containers just need to read as a distinct inset surface, not as
-        // an accent callout.
-        pillTint: "#F6F4FB",
-        ink: "#1A1816",
-        inkMuted: "#6E6859",
-        borderLight: "rgba(0, 0, 0, 0.08)",
-        // Accent recolored 2026-08-12 back to violet/lavender (#7C6FE3),
-        // moving off the neon lime-green ("CLIPBOARD" wordmark, #C1FF72) that
-        // had been in place since the 2026-07-27 pass. accentDark is a
-        // lighter, less saturated lavender (#B7A9FF) than the light-mode
-        // accent -- same reasoning as before: the light-mode shade needs more
-        // contrast to read as text/icons against the (now white) cream
-        // background, while the dark-mode shade can be brighter against
-        // charcoal without blowing out.
-        accent: "#7C6FE3",
-        accentFill: "#EDEAFB",
-        // Dark mode (warm charcoal — not pure black, to match the original
-        // cream brand). Reverted back to the original warm tone (2026-08-13)
-        // -- only the accent (icons, links, "Show more", active states)
-        // stays lavender; the charcoal background/surface itself goes back
-        // to how it looked before the violet dark-mode pass.
-        charcoal: "#1C1A17",
-        charcoalSurface: "#262320",
-        inkMutedDark: "#A8A39B",
-        borderDark: "rgba(255, 255, 255, 0.08)",
-        accentDark: "#B7A9FF",
-        accentFillDark: "#332B4D",
+        cream: "#F6F3ED",
+        creamSurface: "#EFEBE3",
+        // Cool inset tint derived from #C2CBD3 -- item-list/pill containers
+        // (folder item lists, PasteQueue pill, preset chips, text inputs)
+        // and their hover states. Reads as a recessed surface against the
+        // warm paper background without competing with accentFill.
+        pillTint: "#EAECEF",
+        ink: "#313851",
+        inkMuted: "#666E85",
+        borderLight: "rgba(49, 56, 81, 0.14)",
+        // Light-mode accent. The three light colors given have no vivid
+        // accent in them, so this is the navy doing double duty (icons,
+        // links, "Show more", active states). For a single brand accent
+        // shared across both themes instead, swap this line for the pink:
+        //   accent: "#FD105E",  accentFill: "#FDE3EC",
+        accent: "#313851",
+        accentFill: "#E1E6EB",
+
+        // Dark mode
+        charcoal: "#333333",
+        charcoalSurface: "#474747",
+        inkMutedDark: "#A6A6A6",
+        borderDark: "rgba(255, 255, 255, 0.10)",
+        accentDark: "#FD105E",
+        accentFillDark: "#4A2233",
       },
       borderRadius: {
         panel: "18px",

@@ -1111,7 +1111,7 @@ export default function App() {
                   position: "fixed",
                   top: textOptionsPos.top,
                   left: textOptionsPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  backgroundColor: theme === "dark" ? "#474747" : "#F6F3ED",
                   opacity: 1,
                 }}
                 className="z-[9999] w-40 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream space-y-0.5"
@@ -1200,7 +1200,7 @@ export default function App() {
                   position: "fixed",
                   top: screenshotsOptionsPos.top,
                   left: screenshotsOptionsPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  backgroundColor: theme === "dark" ? "#474747" : "#F6F3ED",
                   opacity: 1,
                 }}
                 className="z-[9999] w-40 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
@@ -1254,7 +1254,7 @@ export default function App() {
                   position: "fixed",
                   top: screenshotsDateMenuPos.top,
                   left: screenshotsDateMenuPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  backgroundColor: theme === "dark" ? "#474747" : "#F6F3ED",
                   opacity: 1,
                 }}
                 className="z-[9999] w-60 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
@@ -1444,7 +1444,7 @@ export default function App() {
                   position: "fixed",
                   top: dateMenuPos.top,
                   left: dateMenuPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  backgroundColor: theme === "dark" ? "#474747" : "#F6F3ED",
                   opacity: 1,
                 }}
                 className="z-[9999] w-60 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] p-1.5 text-ink dark:text-cream"
@@ -1549,7 +1549,7 @@ export default function App() {
                   position: "fixed",
                   top: categoryMenuPos.top,
                   left: categoryMenuPos.left,
-                  backgroundColor: theme === "dark" ? "#262320" : "#FFFFFF",
+                  backgroundColor: theme === "dark" ? "#474747" : "#F6F3ED",
                   opacity: 1,
                 }}
                 className="z-[9999] w-64 rounded-xl shadow-float dark:shadow-floatDark ring-1 ring-black/[0.06] dark:ring-white/[0.08] py-1.5 text-ink dark:text-cream"
