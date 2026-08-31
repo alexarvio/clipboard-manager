@@ -349,18 +349,30 @@ img { max-width:100%; }
 
 /* ---- Screenshots section -------------------------------------------- */
 .section-lead { font-size:17px; line-height:1.6; color:var(--muted); margin:0 0 44px; max-width:640px; text-wrap:pretty; }
-.shots-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
-.shots-points { display:grid; gap:18px; align-content:start; }
-.shot-point { display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; }
+.shots-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
+/* Stretches to the mock's height and spreads the gaps, so the two columns
+   finish level instead of the right one stopping short. */
+.shots-points { display:grid; gap:14px; align-content:space-between; }
+
+/* Each point is its own container so the three read as a set beside the
+   mock, rather than as loose text floating next to a card. */
+.shot-point {
+  display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:20px 22px;
+}
 .shot-point .ico {
   width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
   background:var(--accentFill); color:var(--accent); font-size:17px;
 }
-.shot-point h3 { font-size:17px; font-weight:600; margin:2px 0 5px; letter-spacing:-0.01em; }
+.shot-point h3 { font-size:17px; font-weight:600; margin:1px 0 5px; letter-spacing:-0.01em; }
 .shot-point p { font-size:15px; line-height:1.55; color:var(--muted); margin:0; text-wrap:pretty; }
+
+/* The Pro line closes the set as a tinted callout rather than a rule. */
 .shots-pro {
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-  border-top:1px solid var(--border); padding-top:18px; font-size:14.5px; color:var(--muted);
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  background:var(--accentFill); border-radius:16px; padding:17px 22px;
+  font-size:14.5px; line-height:1.5; color:var(--ink);
 }
 
 @media (max-width:860px) {
