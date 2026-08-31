@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { invoke } from "../lib/tauriShim";
-import fatClipboardLogo from "../assets/fatclipboard-logo.png";
+import fatClipboardLogo from "../assets/fatclipboard-wordmark.png";
 
 // Mirrors src-tauri/src/settings.rs::Settings closely enough for what this
 // screen needs back -- auth_signup/auth_login return the *whole* updated
@@ -128,7 +128,7 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (settin
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-ink dark:text-cream">
-      <img src={fatClipboardLogo} alt="FatClipboard" className="h-10 w-auto mb-4" />
+      <img src={fatClipboardLogo} alt="FatClipboard" className="h-7 w-auto mb-4" />
       <h1 className="text-[17px] font-semibold mb-1">
         {mode === "forgot" ? "Reset your password" : mode === "reset" ? "Check your email" : "Welcome to FatClipboard"}
       </h1>

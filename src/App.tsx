@@ -15,7 +15,7 @@ import DateRangeCalendar from "./components/DateRangeCalendar";
 import { ALL_CATEGORIES } from "./lib/categories";
 import { formatTimestamp, dateGroupLabel } from "./lib/dateFormat";
 import { clampMenuPosition } from "./lib/menuPosition";
-import fatClipboardLogo from "./assets/fatclipboard-logo.png";
+import fatClipboardLogo from "./assets/fatclipboard-wordmark.png";
 
 export interface ClipItem {
   id: number;
@@ -788,7 +788,7 @@ export default function App() {
             instead, so the logo just starts at the row's left padding and
             the gear stays pinned to the right without needing that spacer. */}
         <div className="flex items-center gap-2">
-          <img src={fatClipboardLogo} alt="FatClipboard" className="h-12 w-auto" />
+          <img src={fatClipboardLogo} alt="FatClipboard" className="h-6 w-auto" />
           {/* Mirrors Dashboard's own sidebar tier badge (same accent-tinted
               pill, same "Pro" label) -- but only shown for Pro, not Free,
               since this docked panel has no room to spare for a badge that's

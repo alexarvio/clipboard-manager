@@ -8,7 +8,7 @@ import SettingsPanel from "./SettingsPanel";
 import AuthGate from "./AuthGate";
 import Onboarding from "./Onboarding";
 import TransformBar from "./TransformBar";
-import fatClipboardLogo from "../assets/fatclipboard-logo.png";
+import fatClipboardLogo from "../assets/fatclipboard-wordmark.png";
 import ClampedText from "./ClampedText";
 
 // The Dashboard window (src-tauri/tauri.conf.json label "dashboard", opened
@@ -401,7 +401,7 @@ export default function Dashboard() {
       {/* --- Sidebar ------------------------------------------------- */}
       <aside className="w-56 shrink-0 border-r border-borderLight dark:border-borderDark flex flex-col p-4">
         <div className="flex items-center gap-2 px-1 mb-6">
-          <img src={fatClipboardLogo} alt="FatClipboard" className="h-5 w-auto" />
+          <img src={fatClipboardLogo} alt="FatClipboard" className="h-4 w-auto" />
           <span
             className={`ml-auto text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
               tier === "pro"
@@ -480,7 +480,7 @@ export default function Dashboard() {
           {showHelp && (
             <div className="absolute bottom-full left-1 mb-2 w-64 rounded-xl bg-creamSurface dark:bg-charcoalSurface ring-1 ring-black/[0.06] dark:ring-white/[0.08] shadow-float dark:shadow-floatDark p-4 z-10">
               <div className="flex items-center gap-2 mb-2">
-                <img src={fatClipboardLogo} alt="FatClipboard" className="h-4 w-auto" />
+                <img src={fatClipboardLogo} alt="FatClipboard" className="h-3.5 w-auto" />
                 <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">v0.1.0</span>
               </div>
               <p className="text-[12px] text-inkMuted dark:text-inkMutedDark mb-3">

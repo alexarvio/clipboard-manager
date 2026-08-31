@@ -126,7 +126,7 @@ const history = [
   { id: 9, content: "$42.99", pinned: false, created_at: minutesAgo(12), category: "price", is_secret: false },
   { id: 10, content: "const handleSubmit = () => {", pinned: false, created_at: minutesAgo(14), category: "code", is_secret: false },
   { id: 11, content: "192.168.1.42", pinned: false, created_at: minutesAgo(16), category: "ip_address", is_secret: false },
-  { id: 12, content: "/Users/alex/Projects/clip/README.md", pinned: false, created_at: minutesAgo(18), category: "file_path", is_secret: false },
+  { id: 12, content: "C:\\Users\\alex\\Projects\\clip\\README.md", pinned: false, created_at: minutesAgo(18), category: "file_path", is_secret: false },
   { id: 13, content: "Jun 30, 2026", pinned: false, created_at: daysAgo(2), category: "date_time", is_secret: false },
   // Demo entry for the blur-until-revealed secret detection (see
   // classify::looks_like_secret) -- fake-looking but shaped like a real
@@ -213,9 +213,9 @@ let screenshots: {
   // needs real text to match against.
   ocr_text: string | null;
 }[] = [
-  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#6B46C1", "Screenshot 1"), ocr_text: "Invoice #4471 — Total due: $1,240.00 — Due Jun 30, 2026" },
-  { id: 2, width: 1440, height: 900, pinned: false, created_at: minutesAgo(20), thumb_data_uri: fakeThumb("#B9A6F0", "Screenshot 2"), ocr_text: "Flight confirmation: SFO → JFK, Jun 14, 7:45 AM, Seat 14C" },
-  { id: 3, width: 1920, height: 1080, pinned: false, created_at: daysAgo(1), thumb_data_uri: fakeThumb("#1A1816", "Screenshot 3"), ocr_text: null },
+  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#313851", "Screenshot 1"), ocr_text: "Invoice #4471 — Total due: $1,240.00 — Due Jun 30, 2026" },
+  { id: 2, width: 1440, height: 900, pinned: false, created_at: minutesAgo(20), thumb_data_uri: fakeThumb("#666E85", "Screenshot 2"), ocr_text: "Flight confirmation: SFO → JFK, Jun 14, 7:45 AM, Seat 14C" },
+  { id: 3, width: 1920, height: 1080, pinned: false, created_at: daysAgo(1), thumb_data_uri: fakeThumb("#222222", "Screenshot 3"), ocr_text: null },
 ];
 let pinnedScreenshotCount = 1;
 
@@ -756,7 +756,7 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       // Real full-res images are just bigger PNGs -- for the mock, a bigger
       // version of the same placeholder SVG is enough to exercise the
       // preview modal's loading/rendering path.
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${item.width}" height="${item.height}"><rect width="100%" height="100%" fill="#6B46C1"/><text x="50%" y="50%" font-family="sans-serif" font-size="28" fill="white" text-anchor="middle" dominant-baseline="middle">Screenshot ${item.id} (full res)</text></svg>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${item.width}" height="${item.height}"><rect width="100%" height="100%" fill="#313851"/><text x="50%" y="50%" font-family="sans-serif" font-size="28" fill="white" text-anchor="middle" dominant-baseline="middle">Screenshot ${item.id} (full res)</text></svg>`;
       return `data:image/svg+xml,${encodeURIComponent(svg)}` as unknown as T;
     }
 
