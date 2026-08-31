@@ -4,19 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FatClipboard: Your clipboard, elevated.</title>
-<meta name="description" content="FatClipboard is a Windows clipboard manager with unlimited searchable history, folders, screenshot OCR search, and AI transforms. Free to download, your data never leaves your PC." />
+<meta name="description" content="FatClipboard is a Windows clipboard manager with searchable history, folders, screenshot OCR search, and AI transforms. Free to download, your data never leaves your PC." />
 <link rel="canonical" href="https://fatclipboard.com/" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="FatClipboard: Your clipboard, elevated." />
-<meta property="og:description" content="A Windows clipboard manager with unlimited searchable history, folders, screenshot OCR search, and AI transforms. Free to download." />
+<meta property="og:description" content="A Windows clipboard manager with searchable history, folders, screenshot OCR search, and AI transforms. Free to download." />
 <meta property="og:url" content="https://fatclipboard.com/" />
-<meta property="og:image" content="https://fatclipboard.com/assets/fatclipboard-logo.png" />
+<meta property="og:image" content="https://fatclipboard.com/assets/fatclipboard-wordmark.png" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="FatClipboard: Your clipboard, elevated." />
-<meta name="twitter:description" content="A Windows clipboard manager with unlimited searchable history, folders, screenshot OCR search, and AI transforms. Free to download." />
+<meta name="twitter:description" content="A Windows clipboard manager with searchable history, folders, screenshot OCR search, and AI transforms. Free to download." />
+<meta name="theme-color" content="#313851" />
+
 <!-- Sets html[data-theme] before first paint so a saved/system dark
-     preference doesn't flash light for a frame. The actual toggle button
-     wiring lives in a second script near the end of <body>. -->
+     preference doesn't flash light for a frame. The toggle button wiring
+     lives in the small script at the end of <body>. Same localStorage key
+     ("fc-theme") the other pages on the site use, so the choice carries. -->
 <script>
   (function () {
     try {
@@ -28,837 +31,297 @@
     } catch (e) {}
   })();
 </script>
+
 <link rel="stylesheet" href="./tabler-icons.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Luckiest Guy (2026-08-16, new): the chunky rounded bubble-letter face
-     used for the "sticker" accents (.sticker class below). Deliberately not
-     used anywhere else on the page: the logo is the one place this site
-     already breaks its own clean/minimal rules with a graffiti-style
-     wordmark, and the stickers are meant to feel like a bit of that same
-     energy escaped onto the page, not a full type-system change. -->
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&family=Luckiest+Guy&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./assets/site.css" />
-<link rel="stylesheet" href="./assets/refine.css" />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/site-2026.css" />
 </head>
 <body>
 
-<header>
-  <nav>
-    <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
+<!-- 1. Hero ------------------------------------------------------------ -->
+<div class="hero-block on-deep">
+  <nav class="nav">
+    <a class="logo" href="/" aria-label="FatClipboard home"><img src="./assets/fatclipboard-wordmark.png" alt="FatClipboard" width="1000" height="150" /></a>
     <div class="navlinks">
-      <a href="#how-it-works">How it works</a>
       <a href="#features">Features</a>
-      <a href="#why">vs Win+V</a>
+      <a href="#privacy">Privacy</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
     <div class="nav-right">
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"><i class="ti ti-moon"></i> Try dark mode</button>
-      <a class="navcta" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download free</a>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch between light and dark"><i class="ti ti-contrast" aria-hidden="true"></i></button>
+      <a class="navcta" href="#download">Download free</a>
     </div>
   </nav>
-</header>
 
-<section class="hero wrap">
-  <div class="hero-grid">
-    <div class="hero-glow" aria-hidden="true"></div>
-    <div>
-      <span class="eyebrow">Now with AI-powered transforms</span>
-      <h1 class="serif">Your clipboard,<br><em>elevated.</em></h1>
-      <p class="sub">FatClipboard remembers everything you copy, including the words inside your screenshots, and makes all of it searchable.</p>
-      <p class="sub">Organize it into folders, rewrite or summarize any snippet with AI, and get back to it all instantly with one hotkey. Runs quietly, stays entirely on your machine.</p>
-      <div class="ctaRow">
-        <a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download for Windows</a>
-        <a class="btn btn-secondary" href="#how-it-works"><i class="ti ti-player-play"></i> See how it works</a>
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow-pill">Windows · free to download</span>
+      <h1>Your<br />clipboard,<br /><span class="alt">elevated.</span></h1>
+      <p class="hero-lead">One keystroke brings back anything you've copied this month — including the words inside your screenshots.</p>
+      <div class="hero-actions">
+        <a class="btn btn-pink" href="#download"><i class="ti ti-download" aria-hidden="true"></i> Download for Windows</a>
+        <a class="btn btn-ghost-deep" href="#features">See what it does</a>
       </div>
-      <div class="free-badge"><i class="ti ti-rosette-discount-check"></i> Free forever for core features</div>
     </div>
 
-    <div class="panel-mock">
-      <div class="float-tag hotkey-tag">Summon it anywhere · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></div>
+    <div class="hero-panel-slot">
       <div class="panel">
-        <div class="panel-brand-row">
-          <img src="./assets/fatclipboard-logo.png" alt="FatClipboard" />
-          <i class="ti ti-settings"></i>
-        </div>
         <div class="panel-search">
-          <i class="ti ti-search"></i>
-          <span class="ph">Search clipboard history…</span>
-          <div class="search-toggle"><span class="active"><i class="ti ti-search"></i></span><span><i class="ti ti-sparkles"></i></span></div>
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <span>Search clipboard history…</span>
+          <span class="kbd">CTRL+SHIFT+V</span>
         </div>
-        <div class="panel-tabs">
-          <span class="panel-tab active">History</span>
-          <span class="panel-tab">Transform</span>
-          <span class="panel-tab">Folders</span>
-        </div>
-        <div class="text-ss-row">
-          <span class="text-ss-pill on">Text <i class="ti ti-chevron-down"></i></span>
-          <span class="text-ss-pill">Screenshots <i class="ti ti-chevron-down"></i></span>
-        </div>
-        <div class="panel-label">Pinned</div>
-        <div class="panel-group">
-          <div class="panel-item">
-            <div class="item-text">https://stripe.com/docs/api</div>
-            <div class="item-row">
-              <span class="item-date"><span class="show-more">Show more</span> · Jun 28, 5:27 PM</span>
-              <span class="item-icons"><i class="ti ti-copy"></i><i class="ti ti-pinned-filled"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-check"></i><i class="ti ti-trash"></i></span>
+        <div class="panel-body">
+          <div class="panel-label">Pinned</div>
+          <div class="clip">
+            <div class="clip-text">https://stripe.com/docs/api</div>
+            <div class="clip-meta">
+              <span>Jun 28, 5:27 PM</span>
+              <span class="clip-actions"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
             </div>
           </div>
-        </div>
-        <div class="panel-label">Today</div>
-        <div class="panel-group">
-          <div class="panel-item">
-            <div class="item-text">Thanks for the quick turnaround, really appreciate you prioritizing this.</div>
-            <div class="item-row">
-              <span class="item-date">Jun 28, 5:24 PM</span>
-              <span class="item-icons"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-plus"></i><i class="ti ti-trash"></i></span>
-            </div>
-          </div>
-          <div class="panel-item">
-            <div class="item-text">1234 Market St, San Francisco, CA 94103</div>
-            <div class="item-row"><span class="item-date">Jun 28, 5:23 PM</span></div>
-          </div>
-          <div class="panel-item">
-            <div class="item-text">#7C6FE3: brand lavender</div>
-            <div class="item-row"><span class="item-date">Jun 28, 5:19 PM</span></div>
-          </div>
-          <div class="panel-item">
-            <div class="item-text">Q3 handover doc: needs the revised timeline before Friday</div>
-            <div class="item-row"><span class="item-date">Jun 28, 5:11 PM</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="float-tag bottom"><i class="ti ti-folder"></i> Saved to "Email templates"</div>
-    </div>
-  </div>
-</section>
-
-<section class="strip wrap">
-  <p class="strip-label">FatClipboard auto-detects what you copy, so it's already organized before you need it</p>
-  <div class="marquee">
-    <span><i class="ti ti-link"></i>Links</span>
-    <span><i class="ti ti-mail"></i>Emails</span>
-    <span><i class="ti ti-phone"></i>Phone numbers</span>
-    <span><i class="ti ti-map-pin"></i>Addresses</span>
-    <span><i class="ti ti-code"></i>Code</span>
-    <span><i class="ti ti-currency-dollar"></i>Prices</span>
-    <span><i class="ti ti-calendar"></i>Dates</span>
-    <span><i class="ti ti-building-bank"></i>Bank details</span>
-  </div>
-</section>
-
-<!-- Moved above Features (2026-08-09): a quick three-step overview of the
-     whole flow reads better as an orientation right after the hero, before
-     diving into the numbered feature-by-feature detail below, rather than
-     as a recap sandwiched between Features and Pricing. -->
-<!-- creamSurface background removed (2026-08-16): this was the last tan
-     band left on the page. It made sense when the site was cream/green and
-     needed a tonal break between white sections, but post-rebrand every
-     other section is plain white and the colored step discs now give this
-     one its own identity, so the band just read as a stray leftover. -->
-<section class="section" id="how-it-works">
-  <div class="wrap">
-    <div class="dark-band how-band">
-    <div class="section-head center" style="max-width: 660px; margin-bottom: 48px;">
-      <span class="sticker sticker-inline sticker-lime"><i class="ti ti-bolt"></i> HOW IT WORKS</span>
-      <h2 class="serif">Three steps to a clipboard that <span class="mark mark-violet">works for you</span></h2>
-    </div>
-    <div class="timeline">
-      <div class="tl-item">
-        <div class="tl-dot">1</div>
-        <div class="tl-text">
-          <h3>Copy like normal</h3>
-          <p>FatClipboard runs quietly in the background and captures everything you copy. No setup, no extra clicks.</p>
-          <div class="tl-chips">
-            <span class="tl-chip"><i class="ti ti-clipboard"></i> Text</span>
-            <span class="tl-chip"><i class="ti ti-camera"></i> Screenshots</span>
-          </div>
-        </div>
-      </div>
-      <div class="tl-item">
-        <div class="tl-dot">2</div>
-        <div class="tl-text">
-          <h3>Find it instantly</h3>
-          <p>Hit <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>, search or filter by category and date, and your snippet is right there.</p>
-          <div class="tl-chips">
-            <span class="tl-chip"><i class="ti ti-search"></i> Text search</span>
-            <span class="tl-chip"><i class="ti ti-sparkles"></i> Smart search</span>
-            <span class="tl-chip"><i class="ti ti-filter"></i> Category filters</span>
-          </div>
-        </div>
-      </div>
-      <div class="tl-item">
-        <div class="tl-dot">3</div>
-        <div class="tl-text">
-          <h3>Paste, organize, or transform</h3>
-          <p>Drop it straight into your work, save it to a folder, or run it through AI first, then keep going.</p>
-          <div class="tl-chips">
-            <span class="tl-chip"><i class="ti ti-folder"></i> Folders</span>
-            <span class="tl-chip"><i class="ti ti-sparkles"></i> AI transform</span>
-            <span class="tl-chip"><i class="ti ti-pinned"></i> Pin</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="features">
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="sticker sticker-inline sticker-violet"><i class="ti ti-stack-2"></i> FEATURES</span>
-      <h2 class="serif">Your clipboard, from <span class="mark mark-lime">junk drawer</span> to searchable library</h2>
-      <p>One hotkey, everything you've copied, organized before you even ask.</p>
-    </div>
-
-    <div id="screenshots" class="shot-showcase" style="margin-top: 32px;">
-      <div class="shot-glow" aria-hidden="true"></div>
-      <div class="shot-mock-card">
-        <!-- Search bar first, then the tab row, then the sub-toggle (2026-08-09):
-             matches the real app's actual top-to-bottom order (search input
-             directly under the logo row, tabs below that), which had gotten
-             reversed here with the search bar sitting last. -->
-        <div class="shot-search-lg">
-          <span class="shot-search-text"><i class="ti ti-search"></i> Search screenshot text…</span>
-          <span class="shot-search-toggle"><span class="on"><i class="ti ti-search"></i></span><span><i class="ti ti-sparkles"></i></span></span>
-        </div>
-        <div class="shot-tabs">
-          <div class="shot-tab on">History</div>
-          <div class="shot-tab">Transform</div>
-          <div class="shot-tab">Folders</div>
-        </div>
-        <div class="shot-subtabs">
-          <div class="shot-subtab">Text <i class="ti ti-chevron-down"></i></div>
-          <div class="shot-subtab on">Screenshots <i class="ti ti-chevron-down"></i></div>
-        </div>
-        <div class="shot-row on">
-          <div class="shot-img"><img src="assets/screenshots/fake-invoice.svg" alt="" loading="lazy"></div>
-          <div class="shot-ocr">"INVOICE #4471 · BILL TO Nova Studio LLC · Product design retainer 1 $900.00 · Brand asset delivery 2 $260.00 · Rush delivery fee 1 $80.00 · Total due $1,240.00, Net 30"</div>
-          <span class="shot-more">Show more</span>
-          <div class="shot-bottom-row">
-            <div class="shot-dims">2560×1440<br>Jun 28, 4:02 PM</div>
-            <div class="shot-icons"><i class="ti ti-copy"></i><i class="ti ti-pinned-filled"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-check"></i><i class="ti ti-trash"></i></div>
-          </div>
-        </div>
-        <div class="shot-row">
-          <div class="shot-img"><img src="assets/screenshots/fake-wiki.svg" alt="" loading="lazy"></div>
-          <div class="shot-ocr">"Photosynthesis is the process used by plants, algae, and some bacteria to convert light energy into chemical energy stored in glucose…"</div>
-          <span class="shot-more">Show more</span>
-          <div class="shot-bottom-row">
-            <div class="shot-dims">1920×1080<br>Jun 28, 5:14 PM</div>
-            <div class="shot-icons"><i class="ti ti-copy"></i><i class="ti ti-pin"></i><i class="ti ti-sparkles"></i><i class="ti ti-folder-plus"></i><i class="ti ti-trash"></i></div>
-          </div>
-        </div>
-      </div>
-      <div class="shot-points">
-        <div class="shot-points-head">
-          <span class="tag">Screenshots</span>
-          <h2 class="serif">Every screenshot, captured and searchable</h2>
-          <p>FatClipboard doesn't just remember what you type and copy. It remembers what you capture, too. Every screenshot is saved automatically and read with OCR the instant it lands, so the text inside it is searchable, can be copied out on its own, cleaned up or rewritten with AI, and stored entirely on your own device.</p>
-        </div>
-        <div class="shot-point">
-          <i class="ti ti-camera"></i>
-          <div><h4>Captured automatically</h4><p>Every screenshot you take is saved the instant you take it. No manual step, nothing to remember.</p></div>
-        </div>
-        <div class="shot-point">
-          <i class="ti ti-abc"></i>
-          <div><h4>Searchable by the text inside</h4><p>OCR reads every screenshot the instant it's captured, so you can search "invoice #4471" and find the image, or just copy the extracted text straight out, without the picture.</p></div>
-        </div>
-        <div class="shot-point">
-          <i class="ti ti-sparkles"></i>
-          <div><h4>Transform it with AI</h4><p>Clean up the OCR'd text, summarize it, or rewrite it entirely in one click, with your own AI presets tuned for screenshots instead of plain text.</p></div>
-        </div>
-        <div class="shot-point">
-          <i class="ti ti-folder"></i>
-          <div><h4>Foldered right alongside your clips</h4><p>Mix screenshots and text in the same folder. No separate app, no separate workflow.</p></div>
-        </div>
-        <div class="shot-point">
-          <i class="ti ti-device-floppy"></i>
-          <div><h4>Stored entirely on your device</h4><p>Nothing is ever uploaded anywhere. Free on both plans, though running one through AI transform is Pro.</p></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="feature-row">
-      <div class="f-text">
-        <div class="f-num num-lime">01</div>
-        <h3>Folders that keep you organized</h3>
-        <p>Save important snippets into folders like "Email templates" or "Brand colors" so they're easy to find instead of buried in an endless feed. Mix text and screenshots in the same folder.</p>
-      </div>
-      <div class="f-visual">
-        <div class="folder-viz">
-          <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Brand colors</span><span class="fcount">3</span><i class="ti ti-chevron-right"></i></div>
-          <div class="folder-row on"><i class="ti ti-folder"></i><span class="fname">Email templates</span><span class="fcount">1</span><i class="ti ti-pinned-filled"></i><i class="ti ti-chevron-down"></i></div>
-          <div class="folder-open">
-            <div class="folder-open-actions">
-              <span class="folder-open-action"><i class="ti ti-list-numbers"></i> Stack</span>
-              <span class="folder-open-action"><i class="ti ti-folder-plus"></i> New folder</span>
-              <span class="folder-open-action"><i class="ti ti-plus"></i> New item</span>
-            </div>
-            <div class="folder-open-card">
-              <div class="folder-open-item">
-                <i class="ti ti-grip-vertical foi-grip"></i>
-                <div class="foi-body">
-                  <div class="foi-text">"Hi {{name}}, thanks for reaching out: here's the pricing sheet you asked about…"</div>
-                  <span class="show-more">Show more</span>
-                  <div class="foi-meta">
-                    <span class="foi-date">Jun 28, 5:27 PM</span>
-                    <span class="foi-icons"><i class="ti ti-copy"></i><i class="ti ti-copy-plus"></i><i class="ti ti-folder-plus"></i><i class="ti ti-sparkles"></i><i class="ti ti-trash"></i></span>
-                  </div>
-                </div>
+          <div class="panel-label spaced">Today</div>
+          <div class="clips">
+            <div class="clip">
+              <div class="clip-text">Thanks for the quick turnaround — really appreciate you prioritizing this.</div>
+              <div class="clip-meta">
+                <span>Jun 28, 5:24 PM</span>
+                <span class="clip-actions"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pin" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
               </div>
             </div>
-          </div>
-          <div class="folder-row"><i class="ti ti-folder"></i><span class="fname">Snippets</span><span class="fcount">1</span><i class="ti ti-chevron-right"></i></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="feature-row rev">
-      <div class="f-text">
-        <div class="f-num num-pink">02</div>
-        <h3>Pin what matters</h3>
-        <p>Keep your most-used snippets, like API keys, signatures, and addresses, pinned to the top, always one click away, no matter how much you've copied since.</p>
-      </div>
-      <div class="f-visual">
-        <div class="pin-viz">
-          <div class="pin-label">Pinned</div>
-          <div class="pin-card">
-            <div class="pin-item">
-              <div class="item-text">Standard onboarding reply: thanks for signing up, here's your API key, the docs link, and how to reach support if anyth…</div>
-              <span class="show-more">Show more</span>
-              <div class="item-row"><span>Jun 28, 5:27 PM</span><span class="item-icons"><i class="ti ti-folder-check"></i><i class="ti ti-pinned-filled"></i></span></div>
+            <div class="clip">
+              <div class="clip-text">1234 Market St, San Francisco, CA 94103</div>
+              <div class="clip-meta"><span>Jun 28, 5:23 PM</span></div>
             </div>
-            <div class="pin-item">
-              <div class="item-text">Best, Alex</div>
-              <div class="item-row"><span>Jun 28, 5:24 PM</span><span class="item-icons"><i class="ti ti-pinned-filled"></i></span></div>
-            </div>
-            <div class="pin-item">
-              <div class="item-text">1234 Market St, San Francisco, CA 94103</div>
-              <div class="item-row"><span>Jun 28, 5:23 PM</span><span class="item-icons"><i class="ti ti-pinned-filled"></i></span></div>
+            <div class="clip">
+              <div class="clip-text">#FD105E — brand pink</div>
+              <div class="clip-meta"><span>Jun 28, 5:19 PM</span></div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <div class="feature-row ai-row">
-      <div class="f-text">
-        <div class="f-num num-violet">03</div>
-        <h3>AI transform<span class="pro-badge">PRO</span></h3>
-        <p>Select any copied text and instantly fix grammar, change tone, summarize, or translate, then paste the result straight back where you need it, without leaving your app. Pro also unlocks custom AI filters, so you can search your history with plain-English rules like "things related to the Johnson project."</p>
-      </div>
-      <div class="ai-glow" aria-hidden="true"></div>
-      <div class="f-visual">
-        <div class="transform-viz">
-          <div class="tv-label-row">
-            <span class="tv-label">Input</span>
-            <span class="tv-addimg"><i class="ti ti-photo-up"></i> Add image <i class="ti ti-chevron-down" style="font-size:8px;"></i></span>
-          </div>
-          <div class="tv-box"><div class="tv-input-text">Our team will follow up with next steps by end of week.</div></div>
-
-          <div class="tv-label-row">
-            <span class="tv-label">Instruction</span>
-            <span class="tv-presetcount">5/6 custom <i class="ti ti-settings"></i></span>
-          </div>
-          <div class="tv-box">
-            <!-- Instruction is now a Presets/Custom tab switcher (2026-08-13,
-                 was one flex-wrap row mixing builtins and custom presets
-                 together): only one group shows at a time. None of these
-                 five are BUILTIN_PRESETS (see lib/presets.ts); they're saved
-                 *custom* presets (what "Save as preset" produces), so
-                 Custom is the tab shown active/selected here. Five chips
-                 (2026-08-16, grew from an initial three) deliberately span
-                 different use cases (translation, math, finance, real
-                 estate, legal) to show this is a general-purpose tool,
-                 not just a copy-editing one. Spanish stays selected, its
-                 instruction fills the box below; the rest sit unselected
-                 next to it. -->
-            <div class="tv-instr-tabs">
-              <span class="tv-instr-tab">Presets</span>
-              <span class="tv-instr-tab on">Custom</span>
-            </div>
-            <div class="tv-presets">
-              <span class="tv-preset on">Spanish</span>
-              <span class="tv-preset">Add all numbers</span>
-              <span class="tv-preset">Expense line</span>
-              <span class="tv-preset">Listing description</span>
-              <span class="tv-preset">Flag clauses</span>
-            </div>
-            <div class="tv-freeform">Translate into Spanish</div>
-            <div class="tv-run-row"><span class="tv-run">Run</span><span class="tv-save"><i class="ti ti-device-floppy"></i></span></div>
-          </div>
-
-          <div class="tv-label">Output</div>
-          <div class="tv-out-box" style="margin-top:5px;">Nuestro equipo dará seguimiento con los próximos pasos antes de que termine la semana.</div>
-          <div class="tv-out-actions">
-            <span class="tv-copy"><i class="ti ti-copy"></i> Copy</span>
-            <span class="tv-save2"><i class="ti ti-folder-plus"></i> Save</span>
-            <span class="tv-retry"><i class="ti ti-refresh"></i></span>
-          </div>
-        </div>
-      </div>
+<!-- 2. Value row ------------------------------------------------------- -->
+<section class="section">
+  <div class="value-row">
+    <div class="value-card pink">
+      <div class="value-figure">One key</div>
+      <p>Ctrl+Shift+V opens the panel over whatever you're working in. Arrow keys, enter, done.</p>
     </div>
-
-    <div class="feature-row rev">
-      <div class="f-text">
-        <div class="f-num num-orange">04</div>
-        <h3>Set it up the way you actually work</h3>
-        <p>Pick your global hotkey, choose which AI presets and category filters show up, switch between light and dark, and keep an eye on your plan, all in one settings screen, organized into clear sections instead of one long list.</p>
-      </div>
-      <div class="f-visual">
-        <div class="settings-viz">
-          <div class="settings-card">
-            <div class="settings-card-head"><i class="ti ti-adjustments"></i><span>General</span></div>
-            <div class="settings-field-label">Global hotkey</div>
-            <div class="settings-input">Ctrl+Shift+V</div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-card-head"><i class="ti ti-palette"></i><span>Appearance & Startup</span></div>
-            <div class="settings-toggle-row">Launch at startup <span class="settings-check"><i class="ti ti-check"></i></span></div>
-            <div class="settings-toggle-row">Theme <span class="settings-select">Light <i class="ti ti-chevron-down"></i></span></div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-card-head"><i class="ti ti-filter"></i><span>Filters</span></div>
-            <div class="settings-tabs"><span class="settings-tab on">Categories</span><span class="settings-tab">AI filters (3)</span></div>
-            <div class="settings-cats">
-              <span class="settings-cat on"><i class="ti ti-link"></i>Link</span>
-              <span class="settings-cat on"><i class="ti ti-mail"></i>Email</span>
-              <span class="settings-cat on"><i class="ti ti-phone"></i>Phone</span>
-              <span class="settings-cat on"><i class="ti ti-map-pin"></i>Address</span>
-              <span class="settings-cat on"><i class="ti ti-building-bank"></i>Bank account</span>
-              <span class="settings-cat off"><i class="ti ti-calendar"></i>Date & time</span>
-              <span class="settings-cat off"><i class="ti ti-currency-dollar"></i>Price</span>
-              <span class="settings-cat off"><i class="ti ti-code"></i>Code</span>
-              <span class="settings-cat off"><i class="ti ti-network"></i>IP address</span>
-              <span class="settings-cat off"><i class="ti ti-route"></i>File path</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="value-card paper">
+      <div class="value-figure">Every capture</div>
+      <p>Screenshots are saved and read on-device, so the text inside them is searchable too.</p>
     </div>
-
+    <div class="value-card deep">
+      <div class="value-figure">Zero uploads</div>
+      <p>Your history lives in a database on your own machine. Nothing syncs anywhere.</p>
+    </div>
   </div>
 </section>
 
-<!-- Facts about Win+V below are as of Aug 2026 and deliberately
-     conservative: the 25-item cap and the "cleared on restart unless
-     pinned" behaviour are long-standing documented behaviour, and the
-     absence of search in clipboard history is confirmed by Microsoft's own
-     support answers (it's the one pane in that flyout without a search
-     box, unlike Recent/Emoji/GIF). Worth re-checking before any future
-     Windows release makes a claim here stale. -->
-<section class="section" id="why">
-  <div class="wrap">
-    <div class="section-head center" style="max-width: 660px;">
-      <span class="sticker sticker-inline sticker-violet"><i class="ti ti-help-circle"></i> BUT WINDOWS HAS ONE</span>
-      <h2 class="serif">"Can't I just use <span class="mark">Win+V</span>?"</h2>
-      <p>You can, and for occasional use it's fine. Here's exactly where it stops.</p>
+<!-- 3. Category ticker ------------------------------------------------- -->
+<section class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <div class="ticker-run">
+      <span>Links</span><span class="dot">◆</span>
+      <span>Emails</span><span class="dot">◆</span>
+      <span>Phone numbers</span><span class="dot">◆</span>
+      <span>Addresses</span><span class="dot">◆</span>
+      <span>Code</span><span class="dot">◆</span>
+      <span>Prices</span><span class="dot">◆</span>
+      <span>Dates</span><span class="dot">◆</span>
+      <span>Bank details</span><span class="dot">◆</span>
+    </div>
+    <div class="ticker-run">
+      <span>Links</span><span class="dot">◆</span>
+      <span>Emails</span><span class="dot">◆</span>
+      <span>Phone numbers</span><span class="dot">◆</span>
+      <span>Addresses</span><span class="dot">◆</span>
+      <span>Code</span><span class="dot">◆</span>
+      <span>Prices</span><span class="dot">◆</span>
+      <span>Dates</span><span class="dot">◆</span>
+      <span>Bank details</span><span class="dot">◆</span>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Features -------------------------------------------------------- -->
+<section class="section" id="features">
+  <h2 class="h2">Everything you copied, <span class="alt">where you left it.</span></h2>
+
+  <div class="feature-grid">
+    <div class="card wide">
+      <div>
+        <div class="eyebrow">Screenshot search</div>
+        <h3>Search the words inside a picture</h3>
+        <p>Every screenshot is captured and read the instant it lands. Type “invoice 4471” and the image comes back — or lift the text straight out of it and paste it as words.</p>
+      </div>
+      <div class="mock">
+        <div class="mock-search"><i class="ti ti-search" aria-hidden="true"></i> invoice 4471</div>
+        <div class="mock-result">
+          <div class="mock-thumb"><i class="ti ti-file-invoice" aria-hidden="true"></i></div>
+          <div class="mock-ocr">“INVOICE <mark>#4471</mark> · Nova Studio LLC · Total due $1,240.00, Net 30”</div>
+        </div>
+        <div class="mock-meta">
+          <span>2560×1440 · Jun 28, 4:02 PM</span>
+          <span class="icons"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
+        </div>
+      </div>
     </div>
 
-    <div class="price-table-wrap">
-      <div class="cmp-table">
-        <div class="cmp-us-band" aria-hidden="true"></div>
-        <div class="cmp-head">
-          <div class="cmp-head-row">
-            <div></div>
-            <div><i class="ti ti-brand-windows"></i> Win+V</div>
-            <div class="cmp-us-label"><img src="./assets/fatclipboard-logo.png" alt="" /> FatClipboard</div>
-          </div>
+    <div class="card">
+      <div class="eyebrow">Folders &amp; pins</div>
+      <h3>The lines you send every week, on top</h3>
+      <p>Templates, signatures, addresses, brand values — filed in folders, pinned where you can grab them, and never trimmed away.</p>
+      <div class="folder-list">
+        <div class="folder-row"><i class="ti ti-folder" aria-hidden="true"></i><span class="name">Email templates</span><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i></div>
+        <div class="folder-row"><i class="ti ti-folder" aria-hidden="true"></i><span class="name">Brand colors</span><span class="count">3</span></div>
+        <div class="folder-row"><i class="ti ti-folder" aria-hidden="true"></i><span class="name">Snippets</span><span class="count">12</span></div>
+      </div>
+    </div>
+
+    <div class="card deep on-deep">
+      <div class="eyebrow-row">
+        <span class="eyebrow">AI transform</span>
+        <span class="chip-pro">PRO</span>
+      </div>
+      <h3>Paste it better than you copied it</h3>
+      <p>Fix grammar, shift the tone, summarize, translate — then paste the result where it was going. Save the instructions you reuse as your own presets.</p>
+      <div class="transform-panel">
+        <div class="transform-in">Our team will follow up with next steps by end of week.</div>
+        <div class="transform-step">
+          <span class="transform-tag">TRANSLATE → ES</span>
+          <i class="ti ti-arrow-down" aria-hidden="true"></i>
         </div>
-        <div class="cmp-row"><div class="feature-name">Setup</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Nothing to install</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Free, ready in a minute</span></div></div>
-        <div class="cmp-row"><div class="feature-name">History limit</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Stops at 25 items</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>100 free, unlimited on Pro</span></div></div>
-        <div class="cmp-row"><div class="feature-name">Search</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No search at all</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Instant + AI search by meaning</span></div></div>
-        <div class="cmp-row"><div class="feature-name">On restart</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Cleared unless pinned</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Everything survives, always</span></div></div>
-        <div class="cmp-row"><div class="feature-name">Organization</div><div class="cmp-cell"><i class="ti ti-x"></i><span>No folders or tags</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Folders, pins, auto-categories</span></div></div>
-        <div class="cmp-row"><div class="feature-name">Screenshots</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Can't search the text inside</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Text inside them is searchable</span></div></div>
-        <div class="cmp-row"><div class="feature-name">AI transform</div><div class="cmp-cell"><i class="ti ti-x"></i><span>Paste exactly as copied</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Fix grammar, tone, translate</span></div></div>
-        <div class="cmp-row"><div class="feature-name">Where it lives</div><div class="cmp-cell"><i class="ti ti-check"></i><span>Optional Microsoft sync</span></div><div class="cmp-cell"><i class="ti ti-check"></i><span>Local only, nothing leaves your PC</span></div></div>
+        <div class="transform-out">Nuestro equipo dará seguimiento con los próximos pasos antes de que termine la semana.</div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="privacy" style="padding-top: 24px;">
-  <div class="wrap">
-    <div class="dark-band privacy-band">
-      <div style="text-align:center;">
-        <span class="sticker sticker-inline sticker-lime"><i class="ti ti-lock"></i> YOUR STUFF STAYS YOURS</span>
-        <h2 class="serif">Your clipboard never leaves your computer.</h2>
-        <p class="privacy-lead">A clipboard manager sees everything: passwords, card numbers, private messages. So FatClipboard keeps your history in a database on your own machine, and there is no feature that uploads it.</p>
-      </div>
-      <div class="privacy-grid">
-        <div class="privacy-item">
-          <i class="ti ti-device-desktop"></i>
-          <h4>Stored locally, always</h4>
-          <p>Your history lives in a local database on your PC. There's no cloud copy, no backup on our side, and no sync.</p>
-        </div>
-        <div class="privacy-item">
-          <i class="ti ti-eye-off"></i>
-          <h4>We can't read it</h4>
-          <p>Your account holds an email address and which plan you're on. It has never held clipboard content, and there's nowhere for it to go.</p>
-        </div>
-        <div class="privacy-item">
-          <i class="ti ti-photo"></i>
-          <h4>Screenshot text stays offline</h4>
-          <p>Reading text out of your screenshots runs on your own machine using Windows' built-in OCR. No image is ever uploaded.</p>
-        </div>
-      </div>
-      <div class="privacy-exception">
-        <i class="ti ti-info-circle"></i>
-        <span><strong>The one exception, stated plainly:</strong> AI features (transform and smart search) can't run offline. When you use one, that single snippet is sent to our server, passed to the AI provider, and the result comes back. It isn't logged or saved at either end. If you never touch the AI features, nothing you copy ever leaves your machine.</span>
+<!-- 5. Privacy --------------------------------------------------------- -->
+<section class="section" id="privacy">
+  <div class="privacy-slab">
+    <div>
+      <div class="eyebrow">Privacy</div>
+      <h2>It never leaves your computer.</h2>
+    </div>
+    <div class="privacy-body">
+      <p>A clipboard manager sees everything you copy. So your history lives in a local database on your own PC — no cloud copy, no backup on our side, no sync.</p>
+      <div class="privacy-points">
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Your account holds an email and a plan — never clipboard content</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Screenshot OCR runs on your machine; no image is uploaded</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Works fully offline unless you deliberately run an AI transform</div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- 6. Pricing --------------------------------------------------------- -->
 <section class="section" id="pricing">
-  <div class="wrap">
-    <div class="section-head center" style="max-width: 640px;">
-      <span class="sticker sticker-inline sticker-pink"><i class="ti ti-tag"></i> PRICING</span>
-      <h2 class="serif">Start free. Upgrade when AI <span class="mark">earns its keep.</span></h2>
+  <h2 class="h2 tight">Free to keep.<br /><span class="alt">Pro when you want the AI.</span></h2>
+  <p class="pricing-sub">Every Pro plan starts with a 7-day free trial — no card charged until it ends.</p>
+  <div class="plans">
+    <div class="card plan">
+      <div class="plan-label">Free</div>
+      <div class="amount">$0</div>
+      <p class="plan-note">Everything local, forever.</p>
+      <div class="plan-points">
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> 100 items of searchable history</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Up to 3 folders, unlimited pins</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Screenshot capture, OCR &amp; search</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Snippet templates &amp; sequential paste</div>
+      </div>
+      <a class="plan-cta outline" href="#download">Download free</a>
     </div>
-
-    <div class="price-table-wrap">
-      <div class="sticker price-sticker sticker-lime">7-DAY TRIAL</div>
-      <div class="price-table">
-      <div class="price-pro-band" aria-hidden="true"></div>
-      <div class="price-head">
-        <div class="price-head-row">
-          <div></div>
-          <div class="plan-name">Free</div>
-          <div class="plan-name pro">Pro</div>
-        </div>
-        <div class="price-head-row">
-          <div></div>
-          <div class="amount">$0</div>
-          <div class="amount">$3.99<span>/mo</span></div>
-        </div>
-        <div class="price-head-row">
-          <div></div>
-          <div></div>
-          <div class="subtext">or $29.99/yr ($2.50/mo)</div>
-        </div>
+    <div class="card plan deep">
+      <div class="eyebrow-row">
+        <span class="plan-label">Pro</span>
+        <span class="chip-trial">7-DAY TRIAL</span>
       </div>
-      <div class="price-row"><div class="feature-name">Clipboard history</div><div style="font-size:12px;color:var(--inkMuted);">100 items / 7 days</div><div>Unlimited</div></div>
-      <div class="price-row"><div class="feature-name">Folders</div><div style="font-size:12px;color:var(--inkMuted);">Up to 3</div><div>Unlimited</div></div>
-      <div class="price-row"><div class="feature-name">Screenshot capture, OCR &amp; search</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">Snippet templates ({{variable}} placeholders)</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">Multi-item sequential paste (Stack)</div><div><i class="ti ti-check"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">AI transform (presets &amp; custom instructions)</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">AI transform on screenshots</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">Smart (semantic) search</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-row"><div class="feature-name">Custom AI search filters</div><div><i class="ti ti-minus"></i></div><div><i class="ti ti-check"></i></div></div>
-      <div class="price-cta-row">
-        <div></div>
-        <div><a class="btn btn-secondary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe">Download free</a></div>
-        <div><a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe">Start 7-day free trial</a></div>
+      <div class="amount">$3.99<span class="per">/mo</span></div>
+      <p class="plan-note">or $29.99 a year — $2.50/mo.</p>
+      <div class="plan-points">
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Unlimited history and folders</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> AI transform, presets &amp; custom instructions</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> AI transform on screenshots</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Smart search &amp; custom AI filters</div>
       </div>
-      <div class="price-fineprint" style="padding: 0 20px 20px; text-align: center; font-size: 12.5px; color: var(--inkMuted);">
-        Pro starts with a 7-day free trial, no card charged until it ends.
-      </div>
-      </div>
+      <a class="plan-cta pink" href="#download">Start 7-day free trial</a>
     </div>
   </div>
 </section>
 
-<section class="section" id="faq" style="padding-top: 24px;">
-  <div class="wrap">
-    <div class="section-head center" style="max-width: 620px;">
-      <span class="sticker sticker-inline sticker-pink"><i class="ti ti-message-question"></i> QUESTIONS</span>
-      <h2 class="serif">Before you <span class="mark mark-violet">download</span></h2>
-    </div>
-
-    <div class="faq-list">
-      <details class="faq-item">
-        <summary>Will it slow my PC down?</summary>
-        <p class="faq-answer">No. It sits idle in the background listening for clipboard changes and does nothing until you copy something or press the hotkey. There's no indexing job, no background upload, and no scanning of your files.</p>
+<!-- 7. FAQ ------------------------------------------------------------- -->
+<section class="section" id="faq">
+  <div class="faq-grid">
+    <h2>Before you download</h2>
+    <div class="faq">
+      <details>
+        <summary>Will it slow my PC down?<i class="ti ti-plus" aria-hidden="true"></i></summary>
+        <p>No. It idles in the background listening for clipboard changes and does nothing until you copy something or press the hotkey.</p>
       </details>
-      <details class="faq-item">
-        <summary>Is my clipboard data sent anywhere?</summary>
-        <p class="faq-answer">Your history is stored only on your own machine and is never uploaded. The single exception is the AI features: when you run a transform or a smart search, that one snippet is sent to be processed and the result returned. It isn't stored. If you never use the AI features, nothing you copy leaves your PC. See <a href="#privacy">the privacy section</a> for the full detail.</p>
+      <details>
+        <summary>Where is my clipboard data stored?<i class="ti ti-plus" aria-hidden="true"></i></summary>
+        <p>In a local database on your own machine. The only thing that ever leaves is a snippet you deliberately run through an AI transform or smart search — and it isn't logged at either end.</p>
       </details>
-      <details class="faq-item">
-        <summary>Windows says "unknown publisher" when I install it. Is that normal?</summary>
-        <p class="faq-answer">Yes, and it's expected right now. Windows shows that warning for any app that hasn't been through paid code signing yet, regardless of what the app does. Code signing is on the way, which will remove the warning. Until then you can click "More info" then "Run anyway".</p>
+      <details>
+        <summary>What happens when the trial ends?<i class="ti ti-plus" aria-hidden="true"></i></summary>
+        <p>If you don't cancel, your plan starts. Cancel during the trial and you're charged nothing and drop back to free — nothing in your history is deleted.</p>
       </details>
-      <details class="faq-item">
-        <summary>What happens when the 7-day trial ends?</summary>
-        <p class="faq-answer">If you don't cancel, the subscription starts and you're billed the plan you picked. If you do cancel during the trial, you're charged nothing and simply drop back to the free tier when it ends. Nothing in your history is deleted when you move back to free, though the free item limits start applying again.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Can I cancel any time?</summary>
-        <p class="faq-answer">Yes, from a self-serve billing page inside your account, in a couple of clicks. There's no phone call, no email to send, and no cancellation fee.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Do I need an account to use the free version?</summary>
-        <p class="faq-answer">Yes, a free account with an email and password. It's what carries your plan across devices later, and what lets you upgrade without re-entering anything. Your clipboard history itself stays local either way.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Is there a Mac version?</summary>
-        <p class="faq-answer">Not yet, it's Windows only for now. You can leave your email below and you'll hear from us if and when a Mac build happens.</p>
+      <details>
+        <summary>Do I need an account for the free version?<i class="ti ti-plus" aria-hidden="true"></i></summary>
+        <p>Yes — a free account with an email and password. It carries your plan across devices. Your history stays local either way.</p>
       </details>
     </div>
   </div>
 </section>
 
+<!-- 8. Download -------------------------------------------------------- -->
 <section class="section" id="download">
-  <div class="wrap">
-    <div class="cta-band">
-      <h2 class="serif">Stop losing what you copy.</h2>
-      <p>FatClipboard is free to download and takes less than a minute to set up.</p>
-      <div class="ctaRow" style="justify-content:center;">
-        <a class="btn btn-primary" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.1.0/FatClipboard_0.1.0_x64-setup.exe"><i class="ti ti-download"></i> Download for Windows</a>
-      </div>
-      <p style="font-size:12.5px;color:rgba(var(--cream-rgb),0.55);margin-top:14px;">Windows only for now. Mac support is on the roadmap.</p>
-
-      <!-- Posts to POST /waitlist on the same server the app already talks
-           to. Progressive enhancement: it's a real <form>, so the markup is
-           meaningful without JS, and the submit handler below intercepts to
-           keep people on the page. -->
-      <div class="waitlist">
-        <p class="waitlist-label">On a Mac? Leave your email and we'll tell you when there's a build.</p>
-        <form class="waitlist-form" id="waitlistForm" novalidate>
-          <label for="waitlistEmail" class="sr-only">Email address</label>
-          <input type="email" id="waitlistEmail" name="email" placeholder="you@example.com" autocomplete="email" required />
-          <button class="btn btn-primary" type="submit">Notify me</button>
-        </form>
-        <p class="waitlist-msg" id="waitlistMsg" role="status" aria-live="polite"></p>
-      </div>
+  <div class="download-slab on-deep">
+    <h2>Stop losing<br />what you copy.</h2>
+    <p>Free to download. Under a minute to set up.</p>
+    <a class="btn btn-pink" href="https://github.com/alexarvio/clipboard-manager/releases/download/app-v0.2.0/FatClipboard_0.2.0_x64-setup.exe"><i class="ti ti-download" aria-hidden="true"></i> Download for Windows</a>
+    <div class="specs">
+      <span>WINDOWS 10 &amp; 11 · 64-BIT</span>
+      <span>~5.4 MB · v0.2.0</span>
+      <span>NO ADMIN RIGHTS NEEDED</span>
     </div>
   </div>
 </section>
 
-<footer class="wrap">
-  <div class="foot-row">
-    <div class="brand"><img src="./assets/fatclipboard-logo.png" alt="FatClipboard" /></div>
-    <div class="foot-links">
-      <a href="#screenshots">Screenshots</a>
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="./windows-clipboard-manager.html">Alternatives</a>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-      <a href="mailto:contact@fatclipboard.com">Contact</a>
-    </div>
-    <div class="foot-copy">© 2026 FatClipboard. All rights reserved.</div>
+<!-- 9. Footer ---------------------------------------------------------- -->
+<footer class="site-footer">
+  <a class="logo" href="/" aria-label="FatClipboard home"><img src="./assets/fatclipboard-wordmark.png" alt="FatClipboard" width="1000" height="150" /></a>
+  <div class="footer-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="./windows-clipboard-manager.html">Alternatives</a>
+    <a href="./privacy.html">Privacy</a>
+    <a href="./terms.html">Terms</a>
+    <a href="mailto:contact@fatclipboard.com">Contact</a>
   </div>
+  <div class="copyright">© 2026 FatClipboard. All rights reserved.</div>
 </footer>
 
 <script>
   (function () {
     var btn = document.getElementById("themeToggle");
     if (!btn) return;
-
-    function iconFor(theme) {
-      return theme === "dark" ? "ti-sun" : "ti-moon";
-    }
-
-    function labelFor(theme) {
-      return theme === "dark" ? "Light mode" : "Try dark mode";
-    }
-
-    function syncButton() {
-      var theme = document.documentElement.getAttribute("data-theme") || "light";
-      btn.innerHTML = '<i class="ti ' + iconFor(theme) + '"></i> ' + labelFor(theme);
-      btn.setAttribute(
-        "aria-label",
-        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-      );
-    }
-
-    syncButton();
-
     btn.addEventListener("click", function () {
-      var current = document.documentElement.getAttribute("data-theme") || "light";
-      var next = current === "dark" ? "light" : "dark";
+      var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
-      try {
-        localStorage.setItem("fc-theme", next);
-      } catch (e) {}
-      syncButton();
+      try { localStorage.setItem("fc-theme", next); } catch (e) {}
     });
   })();
 </script>
-
-<script>
-  // Active-section nav pill (2026-08-09): highlights whichever nav link
-  // matches the section currently scrolled into view, using the same green
-  // pill styling as the "Try dark mode" toggle (see .navlinks a.active).
-  (function () {
-    var links = Array.prototype.slice.call(document.querySelectorAll('.navlinks a'));
-    if (!links.length) return;
-
-    var sections = links
-      .map(function (a) {
-        var id = a.getAttribute('href').replace('#', '');
-        var el = document.getElementById(id);
-        return el ? { link: a, el: el } : null;
-      })
-      .filter(Boolean);
-    if (!sections.length) return;
-
-    function setActive(link) {
-      links.forEach(function (a) { a.classList.toggle('active', a === link); });
-    }
-
-    var observer = new IntersectionObserver(
-      function (entries) {
-        // Pick whichever tracked section has the most of itself inside the
-        // viewport's middle band right now, so the pill only ever names one
-        // section at a time even while scrolling past a boundary.
-        var best = null;
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting && (!best || entry.intersectionRatio > best.intersectionRatio)) {
-            best = entry;
-          }
-        });
-        if (best) {
-          var match = sections.find(function (s) { return s.el === best.target; });
-          if (match) setActive(match.link);
-        }
-      },
-      { rootMargin: '-45% 0px -45% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
-    );
-
-    sections.forEach(function (s) { observer.observe(s.el); });
-  })();
-</script>
-
-<script>
-  // Mac waitlist (2026-08-16). Posts to POST /waitlist on the same server
-  // the desktop app already uses. SERVER_URL is the one thing to change if
-  // the backend ever moves.
-  (function () {
-    var SERVER_URL = "https://api.fatclipboard.com";
-
-    var form = document.getElementById("waitlistForm");
-    if (!form) return;
-    var input = document.getElementById("waitlistEmail");
-    var msg = document.getElementById("waitlistMsg");
-    var button = form.querySelector("button");
-    var sending = false;
-
-    function say(text, kind) {
-      msg.textContent = text;
-      msg.className = "waitlist-msg" + (kind ? " " + kind : "");
-    }
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (sending) return;
-
-      var email = (input.value || "").trim();
-      // Intentionally loose: the server validates properly, and an
-      // over-strict front-end pattern rejecting a valid address is a worse
-      // failure here than letting one bad string reach an endpoint that
-      // already has to handle bad input anyway.
-      if (!email || email.indexOf("@") < 1 || email.indexOf(".", email.indexOf("@")) < 0) {
-        say("That doesn't look like an email address.", "err");
-        input.focus();
-        return;
-      }
-
-      sending = true;
-      button.disabled = true;
-      say("Adding you…");
-
-      fetch(SERVER_URL + "/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, platform: "mac" })
-      })
-        .then(function (res) {
-          // The endpoint answers 200 whether or not the address was already
-          // on the list, so the response can't be used to probe who signed
-          // up, the same reasoning as /auth/forgot-password.
-          if (!res.ok) throw new Error("http " + res.status);
-          say("You're on the list. We'll email you when there's a Mac build.", "ok");
-          form.reset();
-        })
-        .catch(function () {
-          say("Couldn't reach the server just now. Try again in a moment.", "err");
-        })
-        .then(function () {
-          sending = false;
-          button.disabled = false;
-        });
-    });
-  })();
-</script>
-
-<script>
-  // Lightweight first-party analytics (2026-08-17). No cookies, no
-  // third-party script tag, no PII. The only thing kept client-side is a
-  // random anonymous id in localStorage, purely so the admin dashboard can
-  // count distinct visitors instead of raw pageviews (it isn't tied to an
-  // account or any personal data). Posts to the same server SERVER_URL
-  // above, at POST /api/event (see server/analytics.js). Mac waitlist
-  // conversions are already counted from the waitlist table itself in the
-  // admin dashboard, so they're not duplicated here.
-  (function () {
-    var SERVER_URL = "https://api.fatclipboard.com";
-
-    function sessionId() {
-      try {
-        var key = "fc_sid";
-        var existing = localStorage.getItem(key);
-        if (existing) return existing;
-        var id =
-          (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
-          Date.now().toString(36) + Math.random().toString(36).slice(2);
-        localStorage.setItem(key, id);
-        return id;
-      } catch (e) {
-        return ""; // private browsing / storage disabled; still send the event, just without a session id
-      }
-    }
-
-    function send(event) {
-      var payload = JSON.stringify({
-        event: event,
-        path: location.pathname + location.hash,
-        referrer: document.referrer || "",
-        sid: sessionId(),
-      });
-      try {
-        if (navigator.sendBeacon) {
-          var ok = navigator.sendBeacon(
-            SERVER_URL + "/api/event",
-            new Blob([payload], { type: "application/json" })
-          );
-          if (ok) return;
-        }
-      } catch (e) {}
-      // Fallback when sendBeacon is unavailable or refuses the payload.
-      // Keepalive lets the request outlive a page unload much like
-      // sendBeacon does.
-      try {
-        fetch(SERVER_URL + "/api/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: payload,
-          keepalive: true,
-        }).catch(function () {});
-      } catch (e) {}
-    }
-
-    send("pageview");
-
-    // Every real download link on the page (nav, hero, pricing, CTA band)
-    // now points straight at the installer instead of just scrolling to
-    // #download, so track clicks on all of them, not just the one in the
-    // CTA band, otherwise most download clicks would go uncounted.
-    document.querySelectorAll('a[href*="releases/download/"]').forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        send("download_click");
-      });
-    });
-  })();
-</script>
-<script src="./assets/reveal.js" defer></script>
 
 </body>
 </html>
