@@ -316,16 +316,32 @@ img { max-width:100%; }
   border-radius:10px; background:var(--inset); aspect-ratio:16/9;
   display:grid; place-items:center; padding:18px; overflow:hidden;
 }
+/* A small, readable document standing in for the captured screenshot, so the
+   extracted text underneath visibly comes from something. Its colours are
+   fixed rather than themed: a screenshot is a screenshot, and a captured
+   invoice doesn't turn dark because the app is in dark mode. */
 .thumb-doc {
-  width:100%; max-width:230px; background:var(--surface); border-radius:6px;
-  padding:14px 15px; display:grid; gap:7px;
-  box-shadow:0 1px 2px rgba(0,0,0,.06);
+  width:88%; max-width:340px;
+  background:#FFFFFF; color:#313851;
+  border-radius:6px; padding:16px 18px;
+  box-shadow:0 1px 2px rgba(49,56,81,.10), 0 8px 20px -12px rgba(49,56,81,.35);
+  font-family:var(--ui); font-variant-numeric:tabular-nums;
+  --docLine:rgba(49,56,81,0.14);
+  --docMuted:#8A90A2;
 }
-.thumb-doc span { height:5px; border-radius:3px; background:var(--steel); opacity:.5; }
-.thumb-doc span:nth-child(1) { width:42%; opacity:.85; height:7px; }
-.thumb-doc span:nth-child(3) { width:78%; }
-.thumb-doc span:nth-child(4) { width:60%; }
-.thumb-doc span:nth-child(5) { width:35%; background:var(--appAccent); opacity:.7; }
+.td-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.td-title { font-size:11px; font-weight:700; letter-spacing:0.16em; }
+.td-num { font-size:11px; font-weight:600; color:var(--docMuted); }
+.td-org { font-size:12.5px; font-weight:600; margin-top:9px; }
+.td-meta { font-size:9.5px; color:var(--docMuted); margin-top:2px; }
+.td-rows { margin-top:11px; padding-top:8px; border-top:1px solid var(--docLine); display:grid; gap:5px; }
+.td-rows div { display:flex; justify-content:space-between; gap:10px; font-size:9.5px; color:var(--docMuted); }
+.td-total {
+  display:flex; justify-content:space-between; gap:10px;
+  margin-top:8px; padding-top:7px; border-top:1px solid var(--docLine);
+  font-size:11px; font-weight:700;
+}
+
 .shot-ocr { font-size:13px; line-height:1.55; font-style:italic; color:var(--muted); margin:12px 2px 0; }
 .shot-ocr mark { background:var(--appAccentFill); color:var(--appAccent); font-style:normal; padding:0 3px; border-radius:3px; }
 .shot-more { display:inline-block; margin:7px 2px 0; font-size:13px; font-weight:600; color:var(--appAccent); font-style:normal; }
