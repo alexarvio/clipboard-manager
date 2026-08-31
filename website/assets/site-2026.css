@@ -667,6 +667,9 @@ img { max-width:100%; }
 .plan-note { font-size:14px; color:var(--muted); margin:0 0 26px; }
 .plan.deep .plan-note { color:var(--deepMuted); }
 .plan-points { display:grid; gap:11px; font-size:15px; }
+/* Pro is additive -- say so once, above the list, rather than restating every
+   free feature inside it. */
+.plan-plus { font-size:13.5px; color:var(--deepMuted); margin:0 0 14px; }
 .plan-cta {
   display:flex;
   justify-content:center;
