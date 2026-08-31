@@ -199,19 +199,6 @@ img { max-width:100%; }
 }
 .hero-copy { padding-bottom:80px; }
 
-.eyebrow-pill {
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  color:#FFFFFF;
-  background:var(--accent);
-  padding:7px 13px;
-  border-radius:999px;
-}
 
 .hero h1 {
   font-family:var(--display);
@@ -219,7 +206,7 @@ img { max-width:100%; }
   font-size:clamp(52px, 8.4vw, 104px);
   line-height:0.9;
   letter-spacing:-0.04em;
-  margin:28px 0 0;
+  margin:0;
 }
 .hero h1 .alt { color:var(--accent); }
 .hero-lead {
