@@ -439,9 +439,19 @@ img { max-width:100%; }
   overflow:hidden;
 }
 .ticker-track { display:flex; width:max-content; animation:fcticker 38s linear infinite; }
+/* Each run is forced to at least a full viewport wide, so the two of them
+   always span 200vw and the -50% shift can never expose the end of the
+   track. Without this the run is only as wide as its eight words, and on a
+   monitor wider than that the loop ran out and left blank space (2026-08-31).
+   When the content is naturally wider than the viewport the min-width does
+   nothing and the runs stay their natural, equal widths, so the seam still
+   lands exactly. */
 .ticker-run {
   display:flex;
   align-items:center;
+  justify-content:space-around;
+  min-width:100vw;
+  flex:none;
   font-family:var(--mono);
   font-size:13px;
   letter-spacing:0.1em;
