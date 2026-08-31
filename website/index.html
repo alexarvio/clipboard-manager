@@ -46,6 +46,7 @@
     <a class="logo" href="/" aria-label="FatClipboard home"><img src="./assets/fatclipboard-wordmark.png" alt="FatClipboard" width="1000" height="150" /></a>
     <div class="navlinks">
       <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
       <a href="#privacy">Privacy</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
@@ -68,18 +69,59 @@
     </div>
 
     <div class="hero-panel-slot">
-      <!-- Real captures of the app's quick panel rather than an HTML
-           imitation: one per theme, swapped by the same data-theme attribute
-           everything else on the page keys off. The sample clips in them are
-           the app's own browser-preview fixtures, not anyone's real
-           clipboard. Re-shoot these whenever the panel UI changes. -->
-      <div class="panel">
-        <img class="app-shot shot-light" src="./assets/app-panel-light.webp"
-             alt="The FatClipboard panel docked at the left of the screen, showing a pinned link above today's clips — an email address, a note, a street address, a hex colour, a phone number and a price."
-             width="384" height="700" />
-        <img class="app-shot shot-dark" src="./assets/app-panel-dark.webp"
-             alt="The same FatClipboard panel in dark mode."
-             width="384" height="700" />
+      <!-- A rebuild of the app's quick panel, not a screenshot. Same font
+           stack as the app, so on Windows this renders in the same Segoe UI
+           Variable the product does. Keep it in step with App.tsx when the
+           panel chrome changes. -->
+      <div class="panel app">
+        <div class="ap-top">
+          <img class="ap-logo" src="./assets/fatclipboard-wordmark.png" alt="FatClipboard" width="1000" height="150" />
+          <span class="ap-pro">PRO</span>
+          <i class="ti ti-settings ap-gear" aria-hidden="true"></i>
+        </div>
+        <div class="ap-searchrow">
+          <div class="ap-search"><i class="ti ti-search" aria-hidden="true"></i> Search clipboard history…</div>
+          <div class="ap-seg2">
+            <span class="on"><i class="ti ti-search" aria-hidden="true"></i></span>
+            <span><i class="ti ti-sparkles" aria-hidden="true"></i></span>
+          </div>
+        </div>
+        <div class="ap-rule"></div>
+        <div class="ap-tabs">
+          <span class="on">History</span><span>Transform</span><span>Folders</span>
+        </div>
+        <div class="ap-subtabs">
+          <span class="on">Text <i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+          <span>Screenshots <i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+        </div>
+
+        <div class="ap-label">Pinned</div>
+        <div class="ap-card">
+          <div class="ap-row">
+            <div class="ap-text">https://stripe.com/docs/api</div>
+            <div class="ap-time" data-mins="4">Today, 5:23 PM</div>
+          </div>
+        </div>
+
+        <div class="ap-label">Today</div>
+        <div class="ap-card">
+          <div class="ap-row">
+            <div class="ap-text">hello@northwind.co</div>
+            <div class="ap-time" data-mins="9">Today, 5:18 PM</div>
+          </div>
+          <div class="ap-row">
+            <div class="ap-text">Thanks for the quick turnaround — really appreciate you prioritizing this.</div>
+            <div class="ap-time" data-mins="17">Today, 5:10 PM</div>
+          </div>
+          <div class="ap-row">
+            <div class="ap-text">1234 Market St, San Francisco, CA 94103</div>
+            <div class="ap-time" data-mins="26">Today, 5:01 PM</div>
+          </div>
+          <div class="ap-row">
+            <div class="ap-text">#FD105E — brand pink</div>
+            <div class="ap-time" data-mins="41">Today, 4:46 PM</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -134,25 +176,6 @@
   <h2 class="h2">Everything you copied, <span class="alt">where you left it.</span></h2>
 
   <div class="feature-grid">
-    <div class="card wide">
-      <div>
-        <div class="eyebrow">Screenshot search</div>
-        <h3>Search the words inside a picture</h3>
-        <p>Every screenshot is captured and read the instant it lands. Type “invoice 4471” and the image comes back — or lift the text straight out of it and paste it as words.</p>
-      </div>
-      <div class="mock">
-        <div class="mock-search"><i class="ti ti-search" aria-hidden="true"></i> invoice 4471</div>
-        <div class="mock-result">
-          <div class="mock-thumb"><i class="ti ti-file-invoice" aria-hidden="true"></i></div>
-          <div class="mock-ocr">“INVOICE <mark>#4471</mark> · Nova Studio LLC · Total due $1,240.00, Net 30”</div>
-        </div>
-        <div class="mock-meta">
-          <span>2560×1440 · Jun 28, 4:02 PM</span>
-          <span class="icons"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
-        </div>
-      </div>
-    </div>
-
     <div class="card">
       <div class="eyebrow">Folders &amp; pins</div>
       <h3>The lines you send every week, on top</h3>
@@ -183,7 +206,57 @@
   </div>
 </section>
 
-<!-- 5. Privacy --------------------------------------------------------- -->
+<!-- 5. Screenshots ---------------------------------------------------- -->
+<section class="section" id="screenshots">
+  <h2 class="h2 tight">Your screenshots, <span class="alt">searchable by what they say.</span></h2>
+  <p class="section-lead">Win+Shift+S, PrintScreen, the Snipping Tool — however you grab it, the image lands in a history of its own beside your clips. Windows reads the text inside it on your machine, so a picture becomes findable by what it says.</p>
+
+  <div class="shots-grid">
+    <div class="card">
+      <div class="mock">
+        <div class="mock-search"><i class="ti ti-search" aria-hidden="true"></i> invoice 4471</div>
+        <div class="mock-result">
+          <div class="mock-thumb"><i class="ti ti-file-invoice" aria-hidden="true"></i></div>
+          <div class="mock-ocr">“INVOICE <mark>#4471</mark> · Nova Studio LLC · Total due $1,240.00, Net 30”</div>
+        </div>
+        <div class="mock-meta">
+          <span>2560×1440 · 4:02 PM</span>
+          <span class="icons"><i class="ti ti-copy" aria-hidden="true"></i><i class="ti ti-pinned-filled pinned" aria-hidden="true"></i><i class="ti ti-sparkles" aria-hidden="true"></i></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="shots-points">
+      <div class="shot-point">
+        <div class="ico"><i class="ti ti-layout-grid" aria-hidden="true"></i></div>
+        <div>
+          <h3>A history of its own</h3>
+          <p>Captures group by day with pinned ones on top. Click one to paste it straight back out, or open it full size.</p>
+        </div>
+      </div>
+      <div class="shot-point">
+        <div class="ico"><i class="ti ti-device-desktop" aria-hidden="true"></i></div>
+        <div>
+          <h3>Read on your machine</h3>
+          <p>Text extraction runs through Windows' own OCR engine. No image is uploaded and nothing costs us anything to run — which is why it's on the free plan, not behind Pro.</p>
+        </div>
+      </div>
+      <div class="shot-point">
+        <div class="ico"><i class="ti ti-search" aria-hidden="true"></i></div>
+        <div>
+          <h3>Search the words inside</h3>
+          <p>Type “invoice 4471” and the capture comes back. Or lift the text out of the image and paste it as words.</p>
+        </div>
+      </div>
+      <div class="shots-pro">
+        <span class="chip-pro">PRO</span>
+        <span>Adds AI transform and meaning-based search over that extracted text.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Privacy --------------------------------------------------------- -->
 <section class="section" id="privacy">
   <div class="privacy-slab">
     <div>
@@ -202,7 +275,7 @@
   </div>
 </section>
 
-<!-- 6. Pricing --------------------------------------------------------- -->
+<!-- 7. Pricing --------------------------------------------------------- -->
 <section class="section" id="pricing">
   <h2 class="h2 tight">Free to keep.<br /><span class="alt">Pro when you want the AI.</span></h2>
   <p class="pricing-sub">Every Pro plan starts with a 7-day free trial. A card is required to start it, and nothing is charged until it ends.</p>
@@ -237,7 +310,7 @@
   </div>
 </section>
 
-<!-- 7. FAQ ------------------------------------------------------------- -->
+<!-- 8. FAQ ------------------------------------------------------------- -->
 <section class="section" id="faq">
   <div class="faq-grid">
     <h2>Before you download</h2>
@@ -262,7 +335,7 @@
   </div>
 </section>
 
-<!-- 8. Download -------------------------------------------------------- -->
+<!-- 9. Download -------------------------------------------------------- -->
 <section class="section" id="download">
   <div class="download-slab on-deep">
     <h2>Stop losing<br />what you copy.</h2>
@@ -276,11 +349,12 @@
   </div>
 </section>
 
-<!-- 9. Footer ---------------------------------------------------------- -->
+<!-- 10. Footer ---------------------------------------------------------- -->
 <footer class="site-footer">
   <a class="logo" href="/" aria-label="FatClipboard home"><img src="./assets/fatclipboard-wordmark.png" alt="FatClipboard" width="1000" height="150" /></a>
   <div class="footer-links">
     <a href="#features">Features</a>
+    <a href="#screenshots">Screenshots</a>
     <a href="#pricing">Pricing</a>
     <a href="./windows-clipboard-manager.html">Alternatives</a>
     <a href="./privacy.html">Privacy</a>
@@ -291,6 +365,21 @@
 </footer>
 
 <script>
+  // The panel mockup's timestamps are stamped relative to now, so the hero
+  // never shows a date from whenever the page was last edited. The markup
+  // carries a readable fallback for anyone with scripting off.
+  (function () {
+    var fmt;
+    try {
+      fmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch (e) { return; }
+    document.querySelectorAll(".ap-time[data-mins]").forEach(function (el) {
+      var mins = parseInt(el.getAttribute("data-mins"), 10);
+      if (isNaN(mins)) return;
+      el.textContent = fmt.format(new Date(Date.now() - mins * 60000));
+    });
+  })();
+
   (function () {
     var btn = document.getElementById("themeToggle");
     if (!btn) return;
