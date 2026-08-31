@@ -199,6 +199,16 @@ pub fn init(conn: &Connection) {
         backfill_is_secret(conn);
     }
 
+    // is_secret is stamped once, at insert. So when the detector gets less
+    // trigger-happy, everything it wrongly flagged before stays blurred
+    // forever -- which is exactly what happened to ordinary links under the
+    // old entropy fallback (see classify::looks_like_secret). This pass
+    // re-checks only the rows currently flagged and clears the ones that no
+    // longer qualify, so a detector fix heals existing history instead of
+    // only applying to new clips. Clear-only and scoped to flagged rows, so
+    // it can never newly blur anything and stays cheap on every open.
+    unflag_stale_secrets(conn);
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS folders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -730,6 +740,35 @@ fn backfill_is_secret(conn: &Connection) {
         [],
     )
     .ok();
+}
+
+/// Clears is_secret on rows the current detector no longer considers a
+/// secret. See the call site in init() for why this runs every open rather
+/// than once behind a migration.
+fn unflag_stale_secrets(conn: &Connection) {
+    let mut rows: Vec<(i64, String)> = Vec::new();
+    {
+        let Ok(mut stmt) = conn.prepare("SELECT id, content FROM clip_items WHERE is_secret = 1")
+        else {
+            return;
+        };
+        let Ok(mapped) = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+        else {
+            return;
+        };
+        for r in mapped.filter_map(|r| r.ok()) {
+            rows.push(r);
+        }
+    }
+    for (id, content) in rows {
+        if !classify::looks_like_secret(&content) {
+            conn.execute(
+                "UPDATE clip_items SET is_secret = 0 WHERE id = ?1",
+                params![id],
+            )
+            .ok();
+        }
+    }
 }
 
 /// Free tier cap -- callers should check this before create_folder. Kept here

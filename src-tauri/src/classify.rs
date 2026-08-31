@@ -113,6 +113,25 @@ pub fn looks_like_secret(content: &str) -> bool {
     if KNOWN_SECRET_RE.is_match(trimmed) {
         return true;
     }
+    // Anything that already has a benign identity of its own is not a
+    // secret, and must be excluded BEFORE the entropy fallback below --
+    // otherwise that fallback swallows them, because "one token, 24+ chars,
+    // letters and digits, high entropy" is also a plain description of a
+    // URL, a file path, an email address or an IP. A link like
+    // https://github.com/alexarvio/clipboard-manager/releases/tag/app-v0.2.1
+    // scores well over the entropy threshold and was being blurred as an API
+    // key (2026-08-31). Known vendor prefixes are still checked above this,
+    // so a real key sitting in a URL's query string is caught regardless.
+    match classify(trimmed) {
+        "link" | "email" | "file_path" | "ip_address" => return false,
+        _ => {}
+    }
+    // Belt and braces for URL shapes classify() doesn't label "link"
+    // (scheme-relative, or a bare host with a path).
+    if trimmed.contains("://") {
+        return false;
+    }
+
     // Generic fallback: a single token (no whitespace), long enough to be a
     // real secret rather than a word, with both letters and digits, and
     // entropy high enough that it doesn't read as a normal identifier/word.
