@@ -308,8 +308,35 @@ img { max-width:100%; }
 .ap-text { font-size:12.5px; line-height:1.45; color:var(--ink); }
 .ap-timerow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:5px; }
 .ap-time { font-size:10.5px; color:var(--muted); }
-/* The saved-to-a-folder indicator the app shows on a row that's been filed. */
-.ap-mark { font-size:12px; color:var(--muted); flex:none; }
+/* The row's action set. In the app these fade in on hover; laid out at rest
+   here so the page actually shows what a row can do. The pink ones are the
+   states this particular clip is in — pinned, and filed into a folder. */
+.ap-actions { display:flex; gap:11px; flex:none; font-size:12.5px; color:var(--muted); }
+.ap-actions .on { color:var(--accent); }
+
+/* ---- Screenshots card (mirrors the Screenshots tab) ------------------ */
+.shot-card { background:var(--surface); border-radius:14px; padding:12px; margin-top:12px; }
+.shot-thumb {
+  border-radius:10px; background:var(--inset); aspect-ratio:16/9;
+  display:grid; place-items:center; padding:18px; overflow:hidden;
+}
+.thumb-doc {
+  width:100%; max-width:230px; background:var(--surface); border-radius:6px;
+  padding:14px 15px; display:grid; gap:7px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+.thumb-doc span { height:5px; border-radius:3px; background:var(--steel); opacity:.5; }
+.thumb-doc span:nth-child(1) { width:42%; opacity:.85; height:7px; }
+.thumb-doc span:nth-child(3) { width:78%; }
+.thumb-doc span:nth-child(4) { width:60%; }
+.thumb-doc span:nth-child(5) { width:35%; background:var(--accent); opacity:.7; }
+.shot-ocr { font-size:13px; line-height:1.55; font-style:italic; color:var(--muted); margin:12px 2px 0; }
+.shot-ocr mark { background:var(--accentFill); color:var(--accent); font-style:normal; padding:0 3px; border-radius:3px; }
+.shot-more { display:inline-block; margin:7px 2px 0; font-size:13px; font-weight:600; color:var(--accent); font-style:normal; }
+.shot-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin:12px 2px 2px; }
+.shot-dims { font-size:12px; line-height:1.6; color:var(--muted); }
+.shot-icons { display:flex; gap:13px; font-size:15px; color:var(--muted); flex:none; }
+.shot-icons .on { color:var(--accent); }
 
 /* ---- Screenshots section -------------------------------------------- */
 .section-lead { font-size:17px; line-height:1.6; color:var(--muted); margin:0 0 44px; max-width:640px; text-wrap:pretty; }
