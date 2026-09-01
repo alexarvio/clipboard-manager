@@ -24,6 +24,10 @@ export default {
         pillTint: "#EAECEF",
         ink: "#313851",
         inkMuted: "#666E85",
+        // A third text step below inkMuted, for timestamps and idle row
+        // icons -- the Dashboard redesign's `--faint`. Muted was carrying
+        // both jobs and the two never separated visually.
+        inkFaint: "#939BAD",
         borderLight: "rgba(49, 56, 81, 0.14)",
         // Light-mode accent. The three light colors given have no vivid
         // accent in them, so this is the navy doing double duty (icons,
@@ -37,6 +41,11 @@ export default {
         charcoal: "#333333",
         charcoalSurface: "#474747",
         inkMutedDark: "#A6A6A6",
+        inkFaintDark: "#8A8A8A",
+        // Dark counterpart to pillTint. Inset rows previously fell back to
+        // bare white/black alpha in dark mode, which reads flatter than the
+        // charcoal surfaces around them.
+        pillTintDark: "#414141",
         borderDark: "rgba(255, 255, 255, 0.10)",
         accentDark: "#FD105E",
         accentFillDark: "#4A2233",

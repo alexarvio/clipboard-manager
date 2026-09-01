@@ -91,9 +91,21 @@ export default function FoldersPanel({
   onStartedCreating,
   onStartPasteQueue,
   onTransformItem,
+  contentsOnly = false,
 }: {
   onPasted: () => void;
   tier: "free" | "pro";
+  // Dashboard.tsx's two-pane Folders browser only (2026-09-01). There the
+  // folder list lives in its own left pane, so this panel is asked to be
+  // just the contents side. Without it, opening a *root* folder takes the
+  // merged list/inline-expanded branch below -- the whole root list with one
+  // folder expanded in place -- which is exactly a second copy of the left
+  // pane. With it, a root folder gets the same standalone detail render a
+  // drilled-into subfolder already gets, and Back out of a one-deep path is
+  // suppressed since there is no list to go back to in that layout.
+  // Defaults false, so the quick panel's inline-expand behaviour is
+  // untouched.
+  contentsOnly?: boolean;
   // Hands a text item's content to App.tsx's goToTransform, which jumps to
   // the standalone Transform tab with it pre-loaded (2026-08-03) --
   // replaces the in-place Transform overlay this panel used to render over
@@ -320,6 +332,11 @@ export default function FoldersPanel({
   function goBack() {
     if (view.kind !== "detail" && view.kind !== "edit" && view.kind !== "fillTemplate") return;
     const path = view.path;
+    // contentsOnly: leaving a one-deep path would drop this pane back to the
+    // root folder list, which the Dashboard already renders beside it. Deeper
+    // paths still pop normally, and edit/fillTemplate still return to their
+    // folder, so only the "close the folder" case is suppressed.
+    if (contentsOnly && path.length === 1 && view.kind === "detail") return;
     setStackBuilderIds(null);
     if (path.length > 1) {
       setView({ kind: "detail", path: path.slice(0, -1) });
@@ -578,7 +595,10 @@ export default function FoldersPanel({
   // doesn't necessarily mean "a root folder" there) -- those still need the
   // full-screen treatment below since they have no row in rootFolders to
   // nest under.
+  // contentsOnly (Dashboard's two-pane browser) opts out of the inline
+  // expansion entirely -- see the prop's comment up top.
   const expandedRootFolder =
+    !contentsOnly &&
     view.kind === "detail" && view.path.length === 1 && view.path[0].parent_id === null
       ? view.path[0]
       : null;
