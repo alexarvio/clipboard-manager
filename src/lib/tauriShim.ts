@@ -808,6 +808,10 @@ function createMockWindow() {
   return {
     label: mockWindowLabel,
     hide: () => console.log("[mock] appWindow.hide()"),
+    // App.tsx checks this on mount to recover from a dropped "panel-open"
+    // (see its comment there). In a browser preview the panel is always on
+    // screen, so this is always true.
+    isVisible: async () => true,
     listen: async (event: string, cb: Listener) => {
       // Simulate the panel already being open on page load, since there's no
       // real hotkey/Rust side here to emit "panel-open" in a plain browser.

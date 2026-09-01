@@ -77,6 +77,9 @@ export default function App() {
   } | null>(null);
   const [open, setOpen] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  // Tracks the one call the panel cannot render without -- see loadSettings.
+  const [settingsState, setSettingsState] =
+    useState<"loading" | "ready" | "failed">("loading");
   const [userEmail, setUserEmail] = useState("");
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -228,8 +231,17 @@ export default function App() {
     setTab("transform");
   }
 
-  useEffect(() => {
-    invoke<{
+  // get_settings is the one call the panel cannot render without: until it
+  // comes back, authToken stays null and the panel's body is empty, which is
+  // a plain cream rectangle with rounded corners. This used to be a single
+  // fire-and-forget invoke ending in `.catch(console.error)` -- so one call
+  // that hung or was dropped (an IPC that dies mid-restart will do it) left
+  // the panel blank for the rest of the process's life, with restarting the
+  // app the only way out and nothing on screen to say so. It now races a
+  // timeout, retries, and finally shows something the user can act on.
+  const loadSettings = useCallback((attempt = 0) => {
+    setSettingsState("loading");
+    const call = invoke<{
       theme: "dark" | "light";
       tier: "free" | "pro";
       custom_filters?: CustomFilter[];
@@ -238,7 +250,13 @@ export default function App() {
       user_email?: string;
       onboarding_complete?: boolean;
       blur_secrets?: boolean;
-    }>("get_settings")
+    }>("get_settings");
+    // A hung invoke never rejects on its own, so without this the retry below
+    // would never fire -- which is the exact failure this is here to survive.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("get_settings timed out")), 4000)
+    );
+    Promise.race([call, timeout])
       .then((s) => {
         setTheme(s.theme);
         setTier(s.tier);
@@ -248,13 +266,25 @@ export default function App() {
         setUserEmail(s.user_email ?? "");
         setOnboardingComplete(s.onboarding_complete ?? false);
         setBlurSecrets(s.blur_secrets ?? true);
+        setSettingsState("ready");
       })
-      .catch(console.error);
+      .catch((e) => {
+        console.error("get_settings failed (attempt " + attempt + ")", e);
+        if (attempt < 2) {
+          setTimeout(() => loadSettings(attempt + 1), 400 * (attempt + 1));
+        } else {
+          setSettingsState("failed");
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
 
     invoke<string | null>("take_update_notice")
       .then((v) => v && setUpdateNotice(v))
       .catch(console.error);
-  }, []);
+  }, [loadSettings]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -321,7 +351,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    const unlistenOpen = appWindow.listen("panel-open", () => {
+    const openPanel = () => {
       setQuery("");
       setShowSettings(false);
       setFolderPickerFor(null);
@@ -344,7 +374,23 @@ export default function App() {
       refresh("", null, null, null);
       refreshFolderMemberships();
       setTimeout(() => inputRef.current?.focus(), 30);
-    });
+    };
+    const unlistenOpen = appWindow.listen("panel-open", openPanel);
+
+    // A "panel-open" emitted before this listener exists is dropped, and then
+    // `open` stays false -- which holds the panel's content off-screen at
+    // x:-100% while the OS window itself is visible. main.rs also shows the
+    // window without emitting anything at all on a fresh install (the sign-up
+    // path). Either way the user gets a window with nothing in it, so: if the
+    // window is already visible by the time we mount, treat it as open.
+    // Running this alongside a real event is harmless, it just re-applies the
+    // same state.
+    Promise.resolve(appWindow.isVisible?.())
+      .then((visible) => {
+        if (visible) openPanel();
+      })
+      .catch(() => {});
+
     const unlistenCloseRequest = appWindow.listen("panel-close-request", () => {
       closeWithAnimation();
     });
@@ -758,7 +804,24 @@ export default function App() {
       className="w-full h-full rounded-r-xl bg-cream dark:bg-charcoal shadow-2xl flex flex-col overflow-hidden text-ink dark:text-cream"
     >
       {authToken === null ? (
-        <div />
+        // Settings haven't loaded yet, or couldn't be. Either way the panel
+        // says which, instead of sitting there as a blank rectangle.
+        <div className="flex-1 flex flex-col items-center justify-center gap-2.5 px-8 text-center">
+          {settingsState === "failed" ? (
+            <>
+              <i className="ti ti-refresh-alert text-[22px] text-inkMuted dark:text-inkMutedDark" />
+              <div className="text-[13px] leading-snug">Couldn't load your settings.</div>
+              <button
+                onClick={() => loadSettings()}
+                className="mt-0.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-lg bg-accentFill dark:bg-accentFillDark text-accent dark:text-accentDark"
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <div className="text-[12px] text-inkMuted dark:text-inkMutedDark">Loading…</div>
+          )}
+        </div>
       ) : authToken === "" ? (
         <AuthGate
           onAuthenticated={(settings) => {
