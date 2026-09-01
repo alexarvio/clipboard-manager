@@ -2293,26 +2293,47 @@ fn main() {
             });
 
             // --- global hotkey to toggle the panel ---------------------------
+            // Deliberately NOT fatal. This used to end in `?`, so a hotkey
+            // that Windows had already given to someone else escaped setup()
+            // and panicked the whole app: it just refused to start, with no
+            // message, and no way to reach Settings and choose a different
+            // key. Windows hands out global hotkeys exclusively, so this is
+            // reachable for any user who already has Ctrl+Shift+V bound
+            // elsewhere -- it is not only the "second copy of this app is
+            // running" case. Everything except the hotkey still works, so we
+            // log it and carry on.
             let app_handle_for_shortcut = app.handle().clone();
-            app.global_shortcut().on_shortcut(hotkey.as_str(), move |_app, _shortcut, event| {
-                if event.state() == ShortcutState::Pressed {
-                    toggle_panel(&app_handle_for_shortcut);
-                }
-            })?;
+            if let Err(e) = app.global_shortcut().on_shortcut(
+                hotkey.as_str(),
+                move |_app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        toggle_panel(&app_handle_for_shortcut);
+                    }
+                },
+            ) {
+                eprintln!(
+                    "[clip] couldn't register the panel hotkey ({hotkey}): {e}. \
+                     Another app is probably using it. The tray icon still opens \
+                     the panel, and you can pick a different hotkey in Settings."
+                );
+            }
 
             // --- second hotkey: open the Dashboard directly --------------------
             // Added while the tray was broken, kept afterwards: a keyboard path
             // into the Dashboard that doesn't depend on the tray at all is
             // worth having on its own.
+            // Same reasoning as the panel hotkey above: never fatal.
             let app_handle_for_dashboard_shortcut = app.handle().clone();
-            app.global_shortcut().on_shortcut(
+            if let Err(e) = app.global_shortcut().on_shortcut(
                 "Ctrl+Shift+D",
                 move |_app, _shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
                         open_dashboard(&app_handle_for_dashboard_shortcut);
                     }
                 },
-            )?;
+            ) {
+                eprintln!("[clip] couldn't register the Ctrl+Shift+D dashboard hotkey: {e}");
+            }
 
             // --- system tray ---------------------------------------------------
             // Left-clicking the tray icon itself opens the full Dashboard window
