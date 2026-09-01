@@ -2081,21 +2081,12 @@ fn dock_to_left_edge(window: &tauri::WebviewWindow) {
 /// hidden at startup), so this just shows + focuses it; it's created once
 /// and reused rather than rebuilt on every open.
 fn open_dashboard(app: &tauri::AppHandle) {
-    // TEMPORARY debug logging -- remove once the tray-icon-does-nothing issue
-    // is diagnosed. Prints unconditionally so we can see in the terminal
-    // whether this function is even being reached, and whether the
-    // "dashboard" window lookup is succeeding, without needing to guess.
-    eprintln!("[debug] open_dashboard() called");
     match app.get_webview_window("dashboard") {
         Some(window) => {
-            eprintln!("[debug] found the dashboard window, calling show()+set_focus()");
-            let show_result = window.show();
-            let focus_result = window.set_focus();
-            eprintln!("[debug] show() = {:?}, set_focus() = {:?}", show_result, focus_result);
+            window.show().ok();
+            window.set_focus().ok();
         }
-        None => {
-            eprintln!("[debug] get_webview_window(\"dashboard\") returned None -- the window doesn't exist!");
-        }
+        None => {}
     }
 }
 
@@ -2309,12 +2300,10 @@ fn main() {
                 }
             })?;
 
-            // --- TEMPORARY: second hotkey to open the Dashboard directly ------
-            // Stopgap while we diagnose why the tray icon isn't receiving click
-            // events on this machine -- gives a working path into the Dashboard
-            // that doesn't depend on the tray at all. Remove once the tray
-            // click issue is resolved (or keep it, it's a reasonable shortcut
-            // to have either way).
+            // --- second hotkey: open the Dashboard directly --------------------
+            // Added while the tray was broken, kept afterwards: a keyboard path
+            // into the Dashboard that doesn't depend on the tray at all is
+            // worth having on its own.
             let app_handle_for_dashboard_shortcut = app.handle().clone();
             app.global_shortcut().on_shortcut(
                 "Ctrl+Shift+D",
@@ -2343,7 +2332,19 @@ fn main() {
                 &[&dashboard_item, &show_item, &settings_item, &quit_item],
             )?;
 
-            TrayIconBuilder::new()
+            // The tray icon is built here, in code, and must NOT also be
+            // declared in tauri.conf.json's app.trayIcon. That entry builds a
+            // second, independent tray icon, which is what put two
+            // FatClipboard entries in the notification area: the config's one
+            // carried the logo but none of the handlers below, so clicking it
+            // did nothing, while this one carried every handler but had no
+            // image set, so it showed up as a blank square. The config entry
+            // is gone; this one now takes the app icon.
+            let mut tray = TrayIconBuilder::with_id("main");
+            if let Some(icon) = app.default_window_icon() {
+                tray = tray.icon(icon.clone());
+            }
+            tray
                 .menu(&menu)
                 // Tauri shows the attached menu on left-click by default,
                 // which was silently swallowing left-clicks before they ever
@@ -2356,8 +2357,6 @@ fn main() {
                 .show_menu_on_left_click(false)
                 .tooltip("FatClipboard")
                 .on_menu_event(move |app, event| {
-                    // TEMPORARY debug logging.
-                    eprintln!("[debug] on_menu_event fired, id = {:?}", event.id().as_ref());
                     match event.id().as_ref() {
                         "dashboard" => open_dashboard(app),
                         "show" => toggle_panel(app),
@@ -2367,18 +2366,12 @@ fn main() {
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
-                    // TEMPORARY debug logging -- prints on EVERY tray icon
-                    // event (not just the ones we act on), so we can see in
-                    // the terminal whether Windows is sending us anything at
-                    // all when the icon is clicked.
-                    eprintln!("[debug] on_tray_icon_event fired: {:?}", event);
                     if let TrayIconEvent::Click {
                         button: tauri::tray::MouseButton::Left,
                         button_state: tauri::tray::MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        eprintln!("[debug] matched Left+Up click, calling open_dashboard()");
                         open_dashboard(tray.app_handle());
                     }
                 })
