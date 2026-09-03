@@ -739,11 +739,12 @@ export default function SettingsPanel({
 
           <div className="flex items-center justify-between">
             <div>
-              <span>Blur detected API keys & secrets</span>
+              <span>Blur sensitive information</span>
               <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70 max-w-[280px]">
-                Copied text that looks like an API key or secret shows blurred in history until
-                you click to reveal it. This never affects what gets sent for AI transform or
-                semantic search — that content is always kept out, whether this is on or off.
+                Copied text that looks like a secret — an API key, an access token, a wallet
+                address — shows blurred in history until you click to reveal it. This never
+                affects what gets sent for AI transform or semantic search: that content is
+                always kept out, whether this is on or off.
               </p>
             </div>
             <input

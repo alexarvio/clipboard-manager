@@ -343,6 +343,7 @@
       <div class="privacy-points">
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Your account holds an email and a plan, never clipboard content</div>
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Screenshot OCR runs on your machine; no image is uploaded</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Anything that looks like a key or token is blurred in your history until you click to reveal it, and is held back from every AI feature</div>
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> On Free, nothing you copy ever leaves your PC</div>
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> On Pro, AI transform, AI filters and Smart search send text to our AI providers, and Smart search indexes your history to work</div>
       </div>
@@ -364,6 +365,7 @@
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Up to 3 folders, and anything you file never expires</div>
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Screenshot capture, OCR &amp; search</div>
         <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Snippet templates &amp; sequential paste</div>
+        <div class="check"><i class="ti ti-check" aria-hidden="true"></i> Detected keys &amp; tokens blurred in your history</div>
       </div>
       <a class="plan-cta outline" href="#download">Download free</a>
     </div>
@@ -399,6 +401,10 @@
       <details>
         <summary>Where is my clipboard data stored?<i class="ti ti-plus" aria-hidden="true"></i></summary>
         <p>In a local database on your own machine, and on the free plan nothing ever leaves it. Pro's AI features are the exception: an AI transform sends the item you run it on, a custom AI filter sends your 500 most recent items so it can pick the matches, and switching on Smart search sends your history to be indexed. All of it goes to our AI providers, Anthropic and Voyage AI. We record how many tokens each request used, for cost tracking; the text itself is never stored on our side.</p>
+      </details>
+      <details>
+        <summary>I copy API keys and tokens. Do they just sit in my history?<i class="ti ti-plus" aria-hidden="true"></i></summary>
+        <p>They are blurred until you click to reveal them. FatClipboard flags anything that looks like a secret: a recognised key format from a provider like OpenAI, Anthropic, Stripe, GitHub, AWS, Slack or Google, a JWT, a PEM private key, or just a long random-looking string such as an access token or a wallet address. A flagged clip is also kept out of every AI feature, so it is never sent for an AI transform, never handed to a custom AI filter and never indexed by Smart search, whether the blur is switched on or off. It is pattern matching rather than a guarantee, so it can miss an unusual format or occasionally flag a long licence key that is not secret. The blur can be turned off in Settings; the AI exclusion cannot.</p>
       </details>
       <details>
         <summary>Windows says “unknown publisher” when I install it. Is that normal?<i class="ti ti-plus" aria-hidden="true"></i></summary>

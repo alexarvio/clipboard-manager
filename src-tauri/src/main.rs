@@ -774,7 +774,7 @@ async fn transform_clip(
     // existing history item), so it's re-classified here directly.
     if classify::looks_like_secret(&content) {
         return Err(
-            "this looks like an API key or secret, so it won't be sent for AI transform".into(),
+            "this looks like sensitive information, so it won't be sent for AI transform".into(),
         );
     }
 

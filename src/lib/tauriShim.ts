@@ -657,7 +657,7 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
     case "transform_clip": {
       await delay(null, 550);
       if (looksLikeSecretMock(args.content as string)) {
-        throw "this looks like an API key or secret, so it won't be sent for AI transform";
+        throw "this looks like sensitive information, so it won't be sent for AI transform";
       }
       const fn = TRANSFORM_RESPONSES[args.instruction as string];
       if (fn) return fn(args.content) as unknown as T;
