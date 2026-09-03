@@ -783,6 +783,25 @@ async function mockInvoke<T>(cmd: string, args: any = {}): Promise<T> {
       return delay(true as T);
     }
 
+    // Mirrors main.rs's get_app_version -- the browser preview has no
+    // package info, so it reports the version tauri.conf.json would bake in.
+    case "get_app_version":
+      return delay("0.0.0-preview") as Promise<T>;
+
+    // Mirrors main.rs's open_external. Same allow-list, opened in a new tab
+    // since there is no system browser to hand off to here.
+    case "open_external": {
+      const url = String(args.url ?? "");
+      const allowed = [
+        "https://fatclipboard.com/",
+        "https://github.com/alexarvio/clipboard-manager/",
+        "mailto:contact@fatclipboard.com",
+      ];
+      if (!allowed.some((p) => url.startsWith(p))) throw `refusing to open `;
+      window.open(url, "_blank", "noopener");
+      return delay(undefined as T);
+    }
+
     default:
       console.warn(`[mock invoke] unhandled command "${cmd}"`, args);
       return delay(undefined as T);

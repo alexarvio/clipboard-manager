@@ -1709,6 +1709,30 @@ struct UrlResponse {
     error: Option<String>,
 }
 
+/// Version baked into this build, shown on the Dashboard's Help & about page
+/// so a support email can say exactly which build it came from.
+#[tauri::command]
+fn get_app_version(app: tauri::AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+/// Opens one of the app's own links (site, legal pages, release notes, the
+/// support address) in the default browser or mail client. Allow-listed by
+/// prefix rather than open-ended, so a front-end bug can never hand an
+/// arbitrary URL to the shell.
+#[tauri::command]
+fn open_external(url: String) -> Result<(), String> {
+    const ALLOWED: [&str; 3] = [
+        "https://fatclipboard.com/",
+        "https://github.com/alexarvio/clipboard-manager/",
+        "mailto:contact@fatclipboard.com",
+    ];
+    if !ALLOWED.iter().any(|prefix| url.starts_with(prefix)) {
+        return Err(format!("refusing to open {url}"));
+    }
+    open::that(url).map_err(|e| format!("couldn't open browser: {e}"))
+}
+
 /// Starts a Stripe Checkout session for the given plan ("monthly" or
 /// "annual") and opens it in the system's default browser.
 #[tauri::command]
@@ -2467,6 +2491,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_history,
+            get_app_version,
+            open_external,
             paste_item,
             paste_text,
             copy_to_clipboard,

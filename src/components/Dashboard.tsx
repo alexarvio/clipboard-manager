@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { invoke } from "../lib/tauriShim";
 import { ALL_CATEGORIES } from "../lib/categories";
@@ -203,6 +203,20 @@ const CARD =
 const NAV_ROW = "flex items-center gap-[11px] rounded-xl px-[11px] py-[9px] text-[13px] text-left transition-colors";
 const NAV_IDLE = "text-ink dark:text-cream hover:bg-black/[0.04] dark:hover:bg-white/[0.05]";
 const NAV_ACTIVE = "bg-accent/10 dark:bg-accentDark/15 text-accent dark:text-accentDark font-semibold";
+
+// Opens one of our own links via the allow-listed open_external command --
+// a plain <a href> does nothing useful inside a Tauri webview.
+function openExternal(url: string) {
+  invoke("open_external", { url }).catch(console.error);
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-block rounded-md border border-borderLight dark:border-borderDark bg-black/[0.04] dark:bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11.5px] leading-none">
+      {children}
+    </kbd>
+  );
+}
 const LABEL = "text-[11.5px] font-medium uppercase tracking-[0.07em] text-inkMuted dark:text-inkMutedDark";
 
 // Shared by Home's "Last 7 days" tile and Insights' three-up strip. Returns
@@ -289,10 +303,11 @@ export default function Dashboard() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [transformingId, setTransformingId] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  // Bottom-of-sidebar "Help & about" popover -- there's no dedicated help
-  // screen anywhere in the app yet, so this stays a lightweight inline panel
-  // rather than a new nav route.
-  const [showHelp, setShowHelp] = useState(false);
+  // Help & about is a full nav route (see the "help" branch of <main>). The
+  // version comes from the build itself, not a string somebody has to
+  // remember to bump. Both wait on their invokes before showing.
+  const [appVersion, setAppVersion] = useState("");
+  const [hotkey, setHotkey] = useState("Ctrl+Shift+V");
   // Same fail-safe-blurred default and reasoning as App.tsx's blurSecrets.
   const [blurSecrets, setBlurSecrets] = useState(true);
   // One-shot "what's new" banner -- see App.tsx's updateNotice for the full
@@ -313,7 +328,10 @@ export default function Dashboard() {
         first_name?: string;
         onboarding_complete?: boolean;
         blur_secrets?: boolean;
+        hotkey?: string;
       }>("get_settings");
+      setHotkey(settings.hotkey || "Ctrl+Shift+V");
+      invoke<string>("get_app_version").then(setAppVersion).catch(console.error);
       setTheme(settings.theme);
       setTier(settings.tier);
       setAuthToken(settings.auth_token ?? "");
@@ -590,8 +608,8 @@ export default function Dashboard() {
             {theme === "dark" ? "Light mode" : "Dark mode"}
           </button>
           <button
-            onClick={() => setShowHelp((v) => !v)}
-            className={`w-full ${NAV_ROW} ${NAV_IDLE}`}
+            onClick={() => setNav("help")}
+            className={`w-full ${NAV_ROW} ${nav === "help" ? NAV_ACTIVE : NAV_IDLE}`}
           >
             <i className="ti ti-help-circle text-[16px]" />
             Help &amp; about
@@ -601,23 +619,6 @@ export default function Dashboard() {
             Log out
           </button>
 
-          {showHelp && (
-            <div className="absolute bottom-full left-1 mb-2 w-64 rounded-2xl border border-borderLight dark:border-borderDark bg-creamSurface dark:bg-charcoalSurface shadow-float dark:shadow-floatDark p-4 z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <img src={fatClipboardLogo} alt="FatClipboard" className="h-3.5 w-auto" />
-                <span className="text-[11px] text-inkMuted dark:text-inkMutedDark">v0.1.0</span>
-              </div>
-              <p className="text-[12px] text-inkMuted dark:text-inkMutedDark mb-3">
-                Copy, transform, and organize everything you copy.
-              </p>
-              <a
-                href="mailto:support@clipapp.io"
-                className="block w-full rounded-lg bg-black/[0.05] dark:bg-white/[0.08] py-1.5 text-center text-[12px] transition-colors hover:bg-black/[0.08] dark:hover:bg-white/[0.12]"
-              >
-                Contact support
-              </a>
-            </div>
-          )}
         </div>
       </aside>
 
@@ -1193,6 +1194,137 @@ export default function Dashboard() {
                 Pick a folder to see what's in it.
               </p>
             )}
+          </div>
+        )}
+
+        {nav === "help" && (
+          <div className="flex-1 min-w-0 overflow-y-auto px-9 pt-[34px] pb-10">
+            <h1 className="text-[23px] font-semibold tracking-[-0.015em]">Help &amp; about</h1>
+            <p className="mt-1 mb-5 text-[13.5px] text-inkMuted dark:text-inkMutedDark">
+              How FatClipboard works, the shortcuts, and where to reach us.
+            </p>
+            <div className="w-full max-w-[720px] flex flex-col gap-4">
+              {/* About: identity, version and plan on one row, then the one
+                  thing people most often ask support -- how updates happen. */}
+              <section className={`${CARD} p-5`}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <img src={fatClipboardLogo} alt="FatClipboard" className="h-4 w-auto" />
+                    {appVersion && (
+                      <span className="text-[12px] text-inkMuted dark:text-inkMutedDark">
+                        v{appVersion}
+                      </span>
+                    )}
+                  </div>
+                  <span className="rounded-full bg-black/[0.05] dark:bg-white/[0.08] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide">
+                    {tier === "pro" ? "Pro" : "Free"}
+                  </span>
+                </div>
+                <p className="mt-3 text-[13px]">
+                  Copy, transform, and organize everything you copy.
+                </p>
+                <p className="mt-2 text-[12.5px] text-inkMuted dark:text-inkMutedDark">
+                  Updates install on their own. Each time FatClipboard starts it checks for a
+                  newer version, installs it, and relaunches, so there is never anything to
+                  download by hand.
+                </p>
+              </section>
+
+              <section className={`${CARD} p-5`}>
+                <h2 className="text-[14px] font-semibold mb-3">How it works</h2>
+                <ol className="flex flex-col gap-2.5 text-[13px]">
+                  {[
+                    <>Copy anything as usual. FatClipboard keeps it in your history, on this PC.</>,
+                    <>
+                      Press <Kbd>{hotkey}</Kbd> in any app to open the quick panel.
+                    </>,
+                    <>
+                      Type to search, pick a clip, press <Kbd>Enter</Kbd>. It is pasted where you
+                      were typing.
+                    </>,
+                    <>
+                      The <strong className="font-semibold">FC</strong> icon in the system tray opens
+                      this Dashboard. Closing the panel only hides it; quit from the tray menu.
+                    </>,
+                  ].map((step, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-accent/10 dark:bg-accentDark/15 text-accent dark:text-accentDark text-[11px] font-semibold flex items-center justify-center">
+                        {i + 1}
+                      </span>
+                      <span className="pt-0.5">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              <section className={`${CARD} p-5`}>
+                <h2 className="text-[14px] font-semibold mb-3">Keyboard shortcuts</h2>
+                <dl className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2.5 text-[13px] items-center">
+                  {[
+                    [hotkey, "Open or close the quick panel"],
+                    ["Ctrl+Shift+D", "Open the Dashboard"],
+                    ["↑ ↓", "Move through clips"],
+                    ["Enter", "Paste the selected clip"],
+                    ["Esc", "Close the panel"],
+                    ["Enter", "Paste the next item while stack-pasting"],
+                  ].map(([keys, what], i) => (
+                    <Fragment key={i}>
+                      <dt>
+                        <Kbd>{keys}</Kbd>
+                      </dt>
+                      <dd className="text-inkMuted dark:text-inkMutedDark">{what}</dd>
+                    </Fragment>
+                  ))}
+                </dl>
+                <p className="mt-3 text-[12px] text-inkMuted dark:text-inkMutedDark">
+                  The panel hotkey can be changed in Settings.
+                </p>
+              </section>
+
+              <section className={`${CARD} p-5`}>
+                <h2 className="text-[14px] font-semibold mb-3">Links</h2>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["Website", "https://fatclipboard.com/", "ti-world"],
+                    ["Privacy policy", "https://fatclipboard.com/privacy.html", "ti-shield-lock"],
+                    ["Terms", "https://fatclipboard.com/terms.html", "ti-file-text"],
+                    [
+                      "Release notes",
+                      "https://github.com/alexarvio/clipboard-manager/releases",
+                      "ti-news",
+                    ],
+                  ].map(([label, url, icon]) => (
+                    <button
+                      key={url}
+                      onClick={() => openExternal(url)}
+                      className="flex items-center gap-1.5 rounded-lg border border-borderLight dark:border-borderDark px-3 py-1.5 text-[12.5px] transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                    >
+                      <i className={`ti ${icon} text-[14px]`} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className={`${CARD} p-5`}>
+                <h2 className="text-[14px] font-semibold mb-1">Need a hand?</h2>
+                <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-3">
+                  Email us. The version is filled into the subject so we can match it to a build.
+                </p>
+                <button
+                  onClick={() =>
+                    openExternal(
+                      `mailto:contact@fatclipboard.com?subject=${encodeURIComponent(
+                        `FatClipboard v${appVersion || "?"}`,
+                      )}`,
+                    )
+                  }
+                  className="rounded-lg bg-ink dark:bg-cream px-4 py-2 text-[12.5px] font-semibold text-cream dark:text-charcoal"
+                >
+                  Contact support
+                </button>
+              </section>
+            </div>
           </div>
         )}
 
