@@ -209,6 +209,14 @@ pub fn init(conn: &Connection) {
     // it can never newly blur anything and stays cheap on every open.
     unflag_stale_secrets(conn);
 
+    // Same idea for category, which is also stamped once at insert. When a
+    // pattern gets stricter (2026-09-03: "let's" no longer means "code", a
+    // bare "account" no longer means "bank account"), the rows it wrongly
+    // labelled before would keep that label forever. Re-run classify() over
+    // just the rows carrying the two labels that got stricter and relabel
+    // the ones that no longer match. Scoped and cheap, so it runs every open.
+    reclassify_stale_categories(conn);
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS folders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2050,4 +2058,41 @@ pub fn semantic_search_transform_log(
     scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     scored.truncate(limit);
     scored
+}
+
+/// Re-checks clips currently labelled "code" or "bank_account" against the
+/// present classifier and relabels the ones that no longer qualify. See the
+/// call site in `open` for why only those two labels are revisited.
+fn reclassify_stale_categories(conn: &Connection) {
+    let mut rows: Vec<(i64, String, String)> = Vec::new();
+    {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, content, category FROM clip_items
+                 WHERE category IN ('code', 'bank_account')",
+            )
+            .unwrap();
+        let mapped = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })
+            .unwrap();
+        for r in mapped.filter_map(|r| r.ok()) {
+            rows.push(r);
+        }
+    }
+    for (id, content, old) in rows {
+        let new = classify::classify(&content);
+        if new != old {
+            conn.execute(
+                "UPDATE clip_items SET category = ?1 WHERE id = ?2",
+                params![new, id],
+            )
+            .ok();
+        }
+    }
 }

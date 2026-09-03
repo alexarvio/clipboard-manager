@@ -257,6 +257,22 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [tier, setTier] = useState<"free" | "pro">("free");
   const [firstName, setFirstName] = useState("");
+
+  // Re-evaluated every minute and whenever the window comes back into view.
+  // This window is hidden and shown rather than remounted, so a greeting
+  // computed once at render stayed "Good morning" all afternoon (2026-09-03).
+  const [greeting, setGreeting] = useState(timeOfDayGreeting);
+  useEffect(() => {
+    const update = () => setGreeting(timeOfDayGreeting());
+    const timer = setInterval(update, 60_000);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [history, setHistory] = useState<ClipEntry[]>([]);
   const [nav, setNav] = useState("home");
@@ -616,7 +632,7 @@ export default function Dashboard() {
               <div className="flex items-start justify-between gap-5 mb-6">
                 <div className="min-w-0">
                   <h1 className="text-[23px] font-semibold tracking-[-0.015em]">
-                    {timeOfDayGreeting()}
+                    {greeting}
                     {firstName ? `, ${firstName}` : ""}.
                   </h1>
                   <p className="mt-1 text-[13.5px] text-inkMuted dark:text-inkMutedDark">

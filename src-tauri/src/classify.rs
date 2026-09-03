@@ -4,9 +4,14 @@ use regex::Regex;
 static EMAIL_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$").unwrap());
 
+// Each keyword needs its qualifier. A bare "account" or "swift" turned any
+// sentence mentioning an account, or a swift reply, into a "bank account"
+// (2026-09-03); IBAN and SWIFT now only count next to something code-shaped.
 static BANK_KEYWORDS_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\b(account\s*(no\.?|number|#)?|routing\s*(no\.?|number|#)?|iban|swift|sort\s*code)\b")
-        .unwrap()
+    Regex::new(
+        r"(?i)\b(account\s*(no\.?|number|#|:?\s*\d{6})|routing\s*(no\.?|number|#|:?\s*\d{9})|iban\s*:?\s*[a-z]{2}\d{2}|swift\s*(code|bic)|bic\s*:?\s*[a-z]{6}|sort\s*code)\b",
+    )
+    .unwrap()
 });
 
 static PHONE_FORMATTED_RE: Lazy<Regex> =
@@ -34,9 +39,14 @@ static FILE_PATH_RE: Lazy<Regex> =
 static PRICE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"[$€£¥]\s?\d[\d,]*(\.\d{1,2})?|\b\d+(\.\d{1,2})?\s?(usd|eur|gbp)\b").unwrap());
 
+// Keywords must appear the way code writes them, not the way prose does:
+// "let's say", "import duties", "a class act" all matched the bare-word
+// version and labelled chat messages "Code" (2026-09-03). Structural markers
+// (arrows, trailing semicolons, braces on their own line, HTML tags) are
+// unchanged.
 static CODE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
-        r"(?m)(=>|;\s*$|\{\s*$|^\s*\}|\bfunction\b|\bconst\b|\blet\b|\bimport\b|\bdef\s+\w+\(|\bclass\s+\w+|^\s*#include|</?[a-zA-Z][^>]*>)",
+        r"(?m)(=>|;\s*$|\{\s*$|^\s*\}|\bfunction\s*\w*\s*\(|\b(const|let|var)\s+[A-Za-z_$][\w$]*\s*[=:;]|^\s*import\s+[\w{*]|\bdef\s+\w+\(|\bclass\s+\w+\s*[{(:]|^\s*#include|</?[a-zA-Z][^>]*>)",
     )
     .unwrap()
 });
@@ -204,4 +214,50 @@ pub fn classify(content: &str) -> &'static str {
         return "code";
     }
     "text"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prose_is_text() {
+        for s in [
+            "I think then let's say you can just push it. I'm gonna go to the gym.",
+            "okay, I wanna be able to show Finley, my trainer, something. What would we need for me to do that? I know we can do an account for him.",
+            "Thanks for the swift reply, I'll import the duties spreadsheet into the class folder.",
+            "Please let me know if that works; constant updates are fine.",
+        ] {
+            assert_eq!(classify(s), "text", "{s:?}");
+        }
+    }
+
+    #[test]
+    fn code_is_code() {
+        for s in [
+            "const x = 1;",
+            "let total = a + b",
+            "import React from \"react\";",
+            "function add(a, b) {\n  return a + b;\n}",
+            "def main():\n    pass",
+            "<div class=\"x\">hi</div>",
+            "items.map(i => i.id)",
+        ] {
+            assert_eq!(classify(s), "code", "{s:?}");
+        }
+    }
+
+    #[test]
+    fn bank_details_still_detected() {
+        for s in [
+            "Routing: 121000358",
+            "Account number 000123456789",
+            "IBAN: GB29 NWBK 6016 1331 9268 19",
+            "SWIFT code NWBKGB2L",
+            "Sort code 60-16-13",
+            "12345678901",
+        ] {
+            assert_eq!(classify(s), "bank_account", "{s:?}");
+        }
+    }
 }
