@@ -1309,8 +1309,13 @@ export default function Dashboard() {
               <section className={`${CARD} p-5`}>
                 <h2 className="text-[14px] font-semibold mb-1">Need a hand?</h2>
                 <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-3">
-                  Email us. The version is filled into the subject so we can match it to a build.
+                  Email us at the address below. Mention the version shown above so we can match
+                  it to a build.
                 </p>
+                {/* The address itself, not a button hiding it: people want to
+                    read it, copy it, or paste it into whatever mail app they
+                    actually use. Clicking still hands it to the default mail
+                    client with the version pre-filled. */}
                 <button
                   onClick={() =>
                     openExternal(
@@ -1319,9 +1324,10 @@ export default function Dashboard() {
                       )}`,
                     )
                   }
-                  className="rounded-lg bg-ink dark:bg-cream px-4 py-2 text-[12.5px] font-semibold text-cream dark:text-charcoal"
+                  className="inline-flex items-center gap-2 text-[14px] font-medium text-accent dark:text-accentDark hover:underline"
                 >
-                  Contact support
+                  <i className="ti ti-mail text-[15px]" />
+                  contact@fatclipboard.com
                 </button>
               </section>
             </div>
