@@ -211,7 +211,7 @@ export default function FolderPicker({
 
       {folders.length === 0 && (
         <p className="text-[11px] text-inkMuted dark:text-inkMutedDark px-3 py-2">
-          {stack.length > 1 ? "No subfolders here." : "No folders yet — create one from the Folders tab."}
+          {stack.length > 1 ? "No subfolders here." : "No folders yet. Create one from the Folders tab."}
         </p>
       )}
       {folders.map((f) => (

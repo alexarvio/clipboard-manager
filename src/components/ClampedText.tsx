@@ -104,7 +104,7 @@ export default function ClampedText({
         </p>
         <div className="absolute inset-0 flex items-center gap-1.5 pl-0.5 text-[12px] font-medium text-inkMuted dark:text-inkMutedDark">
           <i className="ti ti-lock text-[13px]" />
-          Sensitive information detected — click to reveal
+          Sensitive information detected. Click to reveal
         </div>
       </div>
     );

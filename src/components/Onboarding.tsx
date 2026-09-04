@@ -110,7 +110,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
             <i className="ti ti-history text-[32px] text-accent dark:text-accentDark mb-4" />
             <h1 className="text-[17px] font-semibold mb-2">Everything you copy, remembered</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark max-w-[260px]">
-              FatClipboard saves what you copy automatically -- sorted by date and category -- so nothing gets lost the
+              FatClipboard saves what you copy automatically, sorted by date and category, so nothing gets lost the
               moment you copy something else.
             </p>
           </>
@@ -132,7 +132,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
             <i className="ti ti-wand text-[32px] text-accent dark:text-accentDark mb-4" />
             <h1 className="text-[17px] font-semibold mb-2">Rewrite, summarize, or translate</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark max-w-[260px]">
-              Select any saved clip and transform it with AI right from the panel -- fix grammar, change tone, or
+              Select any saved clip and transform it with AI right from the panel: fix grammar, change tone, or
               translate on the spot.
             </p>
           </>
@@ -142,7 +142,7 @@ export default function Onboarding({ onDone }: { onDone: (theme: "dark" | "light
           <div className="w-full max-w-[280px] text-left">
             <h1 className="text-[17px] font-semibold mb-1 text-center">Make it yours</h1>
             <p className="text-[13px] text-inkMuted dark:text-inkMutedDark mb-6 text-center">
-              A couple of quick settings -- you can always change these later.
+              A couple of quick settings. You can always change these later.
             </p>
 
             <label className="block text-inkMuted dark:text-inkMutedDark text-xs mb-1">Global hotkey</label>

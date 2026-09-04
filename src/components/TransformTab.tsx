@@ -655,7 +655,7 @@ export default function TransformTab({
               style={{ height: 72 }}
               className="w-full bg-black/[0.03] dark:bg-white/[0.05] border border-borderLight dark:border-borderDark rounded-lg px-2.5 py-2 text-[13px]"
             >
-              Following up on our call yesterday -- here's the summary you asked for...
+              Following up on our call yesterday. Here's the summary you asked for...
             </div>
           </div>
           <div>
@@ -686,7 +686,7 @@ export default function TransformTab({
           </span>
           <p className="text-[13px] font-medium">AI Transform is a Pro feature</p>
           <p className="text-[12px] text-inkMuted dark:text-inkMutedDark max-w-[220px]">
-            Paste in anything -- an email, a paragraph you found online, whatever -- and run it
+            Paste in anything (an email, a paragraph you found online, whatever) and run it
             through a prompt without saving it first. Upgrade to Pro to turn it on.
           </p>
         </div>
@@ -1106,7 +1106,7 @@ export default function TransformTab({
           </p>
           {log.length === 0 ? (
             <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">
-              Nothing yet — run a transform above and it'll show up here.
+              Nothing yet. Run a transform above and it'll show up here.
             </p>
           ) : smartLoading ? (
             <p className="text-[12px] text-inkMuted dark:text-inkMutedDark">Searching…</p>
@@ -1289,7 +1289,7 @@ export default function TransformTab({
                   <p className="text-inkMuted dark:text-inkMutedDark text-[12.5px] text-center py-6">Loading…</p>
                 ) : pickerScreenshots.length === 0 ? (
                   <p className="text-inkMuted dark:text-inkMutedDark text-[12.5px] text-center py-6">
-                    No screenshots yet -- take one (Win+Shift+S or PrintScreen) and it'll show up here.
+                    No screenshots yet. Take one (Win+Shift+S or PrintScreen) and it'll show up here.
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">

@@ -32,9 +32,9 @@ function welcomeEmailHtml() {
       <ul style="padding-left: 20px; margin: 0 0 16px;">
         <li>Hit <strong>Ctrl+Shift+V</strong> anywhere to open your clipboard history</li>
         <li>Pin your most-used snippets so they're always one click away</li>
-        <li>Save recurring text -- templates, signatures, snippets -- into a folder</li>
+        <li>Save recurring text (templates, signatures, snippets) into a folder</li>
       </ul>
-      <p>Questions? Just reply to this email -- a real person reads these.</p>
+      <p>Questions? Just reply to this email. A real person reads these.</p>
       <p style="color: #6E6859; font-size: 13px; margin-top: 24px;">-- The FatClipboard team</p>
     </div>
   `;
@@ -65,7 +65,7 @@ function passwordResetEmailHtml(token) {
       <p style="margin: 24px 0; text-align: center;">
         <span style="display: inline-block; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 15px; letter-spacing: 0.02em; background: #FFFFFF; border-radius: 8px; padding: 12px 16px; word-break: break-all;">${token}</span>
       </p>
-      <p style="color: #6E6859; font-size: 13px;">This code expires in 1 hour and can only be used once. If you didn't request this, you can safely ignore this email -- your password hasn't changed.</p>
+      <p style="color: #6E6859; font-size: 13px;">This code expires in 1 hour and can only be used once. If you didn't request this, you can safely ignore this email. Your password hasn't changed.</p>
       <p style="color: #6E6859; font-size: 13px; margin-top: 24px;">-- The FatClipboard team</p>
     </div>
   `;

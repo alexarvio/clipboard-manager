@@ -635,12 +635,12 @@ export default function FoldersPanel({
 
         {pinMsg === "limit" && (
           <div className="mx-1 mt-1 mb-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2 text-[11.5px] text-inkMuted dark:text-inkMutedDark text-center">
-            Pin limit reached (3) — unpin a folder first.
+            Pin limit reached (3). Unpin a folder first.
           </div>
         )}
         {pinMsg === "pro" && (
           <div className="mx-1 mt-1 mb-1 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium">
-            Pinning folders is a Pro feature — upgrade to use it.
+            Pinning folders is a Pro feature. Upgrade to use it.
           </div>
         )}
 
@@ -960,7 +960,7 @@ export default function FoldersPanel({
                     onClick={() =>
                       applyPlaceholderAtSelection(newItemContentRef, newItemContent, setNewItemContent)
                     }
-                    title="Highlight a word (or a few) and click this to turn it into a fill-in-later placeholder -- or just click to insert one at the cursor"
+                    title="Highlight a word (or a few) and click this to turn it into a fill-in-later placeholder, or just click to insert one at the cursor"
                     className="flex items-center gap-1 text-[10px] text-accent dark:text-accentDark hover:opacity-70 transition-opacity"
                   >
                     <i className="ti ti-braces text-[10px]" />
@@ -1088,7 +1088,7 @@ export default function FoldersPanel({
 
         {transformPaywall && (
           <div className="mx-3 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium shrink-0">
-            AI transform is a Pro feature — upgrade to use it.
+            AI transform is a Pro feature. Upgrade to use it.
           </div>
         )}
 
@@ -1268,7 +1268,7 @@ function FolderRow({
             ? "opacity-100 text-accent dark:text-accentDark"
             : "opacity-0 group-hover:opacity-60 text-inkMuted dark:text-inkMutedDark"
         }`}
-        title={folder.pinned ? "Unpin" : tier === "pro" ? "Pin" : "Pin folders — Pro only"}
+        title={folder.pinned ? "Unpin" : tier === "pro" ? "Pin" : "Pin folders (Pro only)"}
       >
         <i className={folder.pinned ? "ti ti-pinned-filled text-[13px]" : "ti ti-pin text-[13px]"} />
       </button>
@@ -1456,7 +1456,7 @@ function FolderItemRow({
                 {hasPlaceholder && (
                   <i
                     className="ti ti-writing text-[11px] text-accent dark:text-accentDark shrink-0"
-                    title="Template -- fill in details before pasting"
+                    title="Template: fill in details before pasting"
                   />
                 )}
               </p>
@@ -1484,7 +1484,7 @@ function FolderItemRow({
                 hasPlaceholder && (
                   <i
                     className="ti ti-writing text-[11px] text-accent dark:text-accentDark mr-1"
-                    title="Template -- fill in details before pasting"
+                    title="Template: fill in details before pasting"
                   />
                 )
               }
@@ -1545,7 +1545,7 @@ function FolderItemRow({
                       e.stopPropagation();
                       onTransformItem(item);
                     }}
-                    title={tier === "pro" ? "Transform with AI" : "AI transform — Pro only"}
+                    title={tier === "pro" ? "Transform with AI" : "AI transform (Pro only)"}
                     className="shrink-0 opacity-0 group-hover:opacity-60 text-inkMuted dark:text-inkMutedDark hover:!opacity-100 hover:text-accent dark:hover:text-accentDark transition-opacity"
                   >
                     <i className={tier === "pro" ? "ti ti-sparkles text-[13px]" : "ti ti-lock text-[13px]"} />
@@ -1769,7 +1769,7 @@ function EditItem({
               <button
                 type="button"
                 onClick={() => applyPlaceholderAtSelection(contentRef, content, setContent)}
-                title="Highlight a word (or a few) and click this to turn it into a fill-in-later placeholder -- or just click to insert one at the cursor"
+                title="Highlight a word (or a few) and click this to turn it into a fill-in-later placeholder, or just click to insert one at the cursor"
                 className="flex items-center gap-1 text-[10px] text-accent dark:text-accentDark hover:opacity-70 transition-opacity"
               >
                 <i className="ti ti-braces text-[10px]" />

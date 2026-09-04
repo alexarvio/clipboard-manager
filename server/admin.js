@@ -470,7 +470,7 @@ function buildTimeSeries(signupRows, subs) {
 }
 
 function formatUSD(cents) {
-  if (cents == null) return "—"; // em dash -- Stripe isn't configured
+  if (cents == null) return "n/a"; // Stripe isn't configured
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
@@ -480,7 +480,7 @@ function formatUSD(cents) {
 // places or it just renders as "$0.00" for anyone still on a handful of
 // cheap embed calls.
 function formatUSDPrecise(dollars) {
-  if (dollars == null) return "—";
+  if (dollars == null) return "n/a";
   if (dollars > 0 && dollars < 0.01) {
     return dollars.toLocaleString("en-US", {
       style: "currency",
@@ -549,7 +549,7 @@ function renderDashboard({
   const conversionRate =
     trafficConfigured && traffic.visitors_30d > 0
       ? (((waitlist.signups_30d + traffic.downloads_30d) / traffic.visitors_30d) * 100).toFixed(1) + "%"
-      : "—";
+      : "n/a";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -607,11 +607,11 @@ function renderDashboard({
     <h1>Admin</h1>
     <p class="subtitle">Live account and revenue snapshot. <span class="refresh"><a href="/admin">Refresh</a></span></p>
 
-    ${!stripeConfigured ? `<div class="warning">Stripe isn't configured on this server (STRIPE_SECRET_KEY missing) -- revenue figures and the Pro/MRR charts below are unavailable.</div>` : ""}
-    ${!anthropicConfigured ? `<div class="warning">ANTHROPIC_ADMIN_KEY isn't set -- Anthropic cost is unavailable. This is a separate key from ANTHROPIC_API_KEY, and needs an Organization set up in the Anthropic Console first. See server/.env.example.</div>` : ""}
+    ${!stripeConfigured ? `<div class="warning">Stripe isn't configured on this server (STRIPE_SECRET_KEY missing), so revenue figures and the Pro/MRR charts below are unavailable.</div>` : ""}
+    ${!anthropicConfigured ? `<div class="warning">ANTHROPIC_ADMIN_KEY isn't set, so Anthropic cost is unavailable. This is a separate key from ANTHROPIC_API_KEY, and needs an Organization set up in the Anthropic Console first. See server/.env.example.</div>` : ""}
     ${anthropicConfigured && anthropicError ? `<div class="warning">Couldn't reach Anthropic's Cost API: ${escapeHtml(anthropicError)}</div>` : ""}
     ${trafficConfigured && trafficError ? `<div class="warning">Couldn't load website traffic: ${escapeHtml(trafficError)}</div>` : ""}
-    ${!trafficConfigured ? `<div class="warning">No website traffic recorded yet -- this fills in once the tracking snippet on website/index.html sends its first pageview.</div>` : ""}
+    ${!trafficConfigured ? `<div class="warning">No website traffic recorded yet. This fills in once the tracking snippet on website/index.html sends its first pageview.</div>` : ""}
 
     <div class="section-title">Website (traffic &amp; conversions)</div>
     <div class="grid">
@@ -832,7 +832,7 @@ router.get("/", requireAdmin, async (_req, res) => {
     );
   } catch (err) {
     console.error("[clip-server] /admin failed:", err);
-    res.status(500).send("Something went wrong loading the dashboard -- check the server logs.");
+    res.status(500).send("Something went wrong loading the dashboard. Check the server logs.");
   }
 });
 

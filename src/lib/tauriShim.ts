@@ -116,7 +116,7 @@ const history = [
   { id: 1, content: "https://stripe.com/docs/api", pinned: true, created_at: minutesAgo(1), category: "link", is_secret: false },
   { id: 2, content: "alex@clipapp.io", pinned: false, created_at: minutesAgo(2), category: "email", is_secret: false },
   { id: 3, content: "(415) 555-0192", pinned: false, created_at: minutesAgo(3), category: "phone", is_secret: false },
-  { id: 4, content: "Thanks for the quick turnaround — really appreciate you prioritizing this.", pinned: false, created_at: minutesAgo(4), category: "", is_secret: false },
+  { id: 4, content: "Thanks for the quick turnaround, really appreciate you prioritizing this.", pinned: false, created_at: minutesAgo(4), category: "", is_secret: false },
   { id: 5, content: "1234 Market St, San Francisco, CA 94103", pinned: false, created_at: minutesAgo(5), category: "address", is_secret: false },
   { id: 6, content: "npm run tauri dev", pinned: false, created_at: minutesAgo(6), category: "", is_secret: false },
   { id: 7, content: "Routing: 121000358  Account: 0099213456", pinned: false, created_at: minutesAgo(7), category: "bank_account", is_secret: false },
@@ -213,7 +213,7 @@ let screenshots: {
   // needs real text to match against.
   ocr_text: string | null;
 }[] = [
-  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#313851", "Screenshot 1"), ocr_text: "Invoice #4471 — Total due: $1,240.00 — Due Jun 30, 2026" },
+  { id: 1, width: 1920, height: 1080, pinned: true, created_at: minutesAgo(3), thumb_data_uri: fakeThumb("#313851", "Screenshot 1"), ocr_text: "Invoice #4471. Total due: $1,240.00. Due Jun 30, 2026" },
   { id: 2, width: 1440, height: 900, pinned: false, created_at: minutesAgo(20), thumb_data_uri: fakeThumb("#666E85", "Screenshot 2"), ocr_text: "Flight confirmation: SFO → JFK, Jun 14, 7:45 AM, Seat 14C" },
   { id: 3, width: 1920, height: 1080, pinned: false, created_at: daysAgo(1), thumb_data_uri: fakeThumb("#222222", "Screenshot 3"), ocr_text: null },
 ];

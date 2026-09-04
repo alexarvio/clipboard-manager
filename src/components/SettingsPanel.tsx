@@ -368,7 +368,7 @@ export default function SettingsPanel({
       await invoke("resend_verification");
       setResendState("sent");
     } catch (err) {
-      setVerifyError(typeof err === "string" ? err : "Couldn't send that -- try again in a moment.");
+      setVerifyError(typeof err === "string" ? err : "Couldn't send that. Try again in a moment.");
       setResendState("idle");
     }
   }
@@ -378,7 +378,7 @@ export default function SettingsPanel({
     try {
       const tier = await checkAccountStatus();
       if (tier !== "pro") {
-        setCheckoutError("Still on Free — if you just finished checking out, give it a few seconds and try again.");
+        setCheckoutError("Still on Free. If you just finished checking out, give it a few seconds and try again.");
       }
     } catch (err) {
       setCheckoutError(typeof err === "string" ? err : "Couldn't check status.");
@@ -601,7 +601,7 @@ export default function SettingsPanel({
           <div>
             <p className="text-[13px] font-medium mb-1">Waiting for checkout…</p>
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-3">
-              Finish checking out in your browser — this updates automatically within a few seconds, or click
+              Finish checking out in your browser. This updates automatically within a few seconds, or click
               refresh below.
             </p>
             {checkoutError && (
@@ -630,7 +630,7 @@ export default function SettingsPanel({
           <div>
             <p className="text-[13px] font-medium mb-1">Verify your email</p>
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-3">
-              We sent a 6-digit code to your email — enter it below to start your trial.
+              We sent a 6-digit code to your email. Enter it below to start your trial.
             </p>
             {verifyError && (
               <p className="text-[12px] text-red-500 dark:text-red-400 mb-3">{verifyError}</p>
@@ -662,7 +662,7 @@ export default function SettingsPanel({
                 {resendState === "sending"
                   ? "Sending…"
                   : resendState === "sent"
-                  ? "Code sent — check your inbox"
+                  ? "Code sent. Check your inbox"
                   : "Resend code"}
               </button>
               <button
@@ -682,7 +682,7 @@ export default function SettingsPanel({
           <div>
             <p className="text-[13px] font-medium mb-1">Free</p>
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-3">
-              Start a 7-day free trial of Pro — unlimited history, AI transform, AI filters, and semantic search.
+              Start a 7-day free trial of Pro: unlimited history, AI transform, AI filters, and semantic search.
               Card required, cancel anytime during the trial and you won't be charged.
             </p>
             {checkoutError && (
@@ -711,7 +711,7 @@ export default function SettingsPanel({
                 ) : (
                   <>
                     <span className="font-medium">Annual</span>
-                    <span className="block opacity-70 text-[11px]">$29/yr — save 40%</span>
+                    <span className="block opacity-70 text-[11px]">$29/yr (save 40%)</span>
                   </>
                 )}
               </button>
@@ -741,8 +741,8 @@ export default function SettingsPanel({
             <div>
               <span>Blur sensitive information</span>
               <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70 max-w-[280px]">
-                Copied text that looks like a secret — an API key, an access token, a wallet
-                address — shows blurred in history until you click to reveal it. This never
+                Copied text that looks like a secret, such as an API key, an access token, or a
+                wallet address, shows blurred in history until you click to reveal it. This never
                 affects what gets sent for AI transform or semantic search: that content is
                 always kept out, whether this is on or off.
               </p>
@@ -770,7 +770,7 @@ export default function SettingsPanel({
                 setting to change. */}
             {settings.tier !== "pro" && (
               <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
-                Fixed by plan, not editable — upgrade to Pro for unlimited history.
+                Fixed by plan, not editable. Upgrade to Pro for unlimited history.
               </p>
             )}
           </div>
@@ -787,7 +787,7 @@ export default function SettingsPanel({
               <option value="en">English</option>
             </select>
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mt-1 opacity-70">
-              Only English is available right now — more languages are on the roadmap, not a
+              Only English is available right now. More languages are on the roadmap, not a
               current setting.
             </p>
           </div>
@@ -901,7 +901,7 @@ export default function SettingsPanel({
               <>
                 {settings.custom_filters.length === 0 && !addingFilter && (
                   <p className="text-inkMuted dark:text-inkMutedDark text-xs text-center py-3">
-                    No AI filters yet — add one below, or from the filter dropdown in the main window.
+                    No AI filters yet. Add one below, or from the filter dropdown in the main window.
                   </p>
                 )}
 
@@ -1065,7 +1065,7 @@ export default function SettingsPanel({
         <Section
           icon="ti-sparkles"
           title="AI Transform"
-          description={`Built-in presets are always shown. Choose up to ${MAX_VISIBLE_PRESETS} of your own saved ones to show alongside them -- separately for text clips and for screenshots, since different ones tend to make sense for each.`}
+          description={`Built-in presets are always shown. Choose up to ${MAX_VISIBLE_PRESETS} of your own saved ones to show alongside them, separately for text clips and for screenshots, since different ones tend to make sense for each.`}
         >
           {/* Redesigned 2026-08-03 -- the old layout stacked a Text/
               Screenshots switch, a combined "x/6" counter, *another*
@@ -1146,7 +1146,7 @@ export default function SettingsPanel({
 
           {presetCapMsg && (
             <div className="mb-2.5 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium">
-              You can show up to {MAX_VISIBLE_PRESETS} of your own presets at once — uncheck one
+              You can show up to {MAX_VISIBLE_PRESETS} of your own presets at once. Uncheck one
               first.
             </div>
           )}
@@ -1366,7 +1366,7 @@ export default function SettingsPanel({
         <Section
           icon="ti-code"
           title="Developer"
-          description="Dev-only tools for testing -- see docs/billing-flow.md and server/README.md. This local toggle changes what the UI shows, but the server independently re-checks the real tier from its own database on every AI request, so this alone cannot unlock Pro features against a real deployed server."
+          description="Dev-only tools for testing. See docs/billing-flow.md and server/README.md. This local toggle changes what the UI shows, but the server independently re-checks the real tier from its own database on every AI request, so this alone cannot unlock Pro features against a real deployed server."
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1420,7 +1420,7 @@ export default function SettingsPanel({
         <div className="flex items-center justify-between mb-3">
           <div className="min-w-0">
             <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-0.5">Signed in as</p>
-            <p className="text-[13px] font-medium truncate">{settings.user_email || "—"}</p>
+            <p className="text-[13px] font-medium truncate">{settings.user_email || "Not set"}</p>
           </div>
           <button
             onClick={logOut}
@@ -1433,7 +1433,7 @@ export default function SettingsPanel({
         <div>
           <p className="text-inkMuted dark:text-inkMutedDark text-xs mb-1">
             First name
-            <span className="opacity-70"> — used for the "Good morning" greeting on Dashboard</span>
+            <span className="opacity-70"> (used for the "Good morning" greeting on Dashboard)</span>
           </p>
           <div className="flex items-center gap-2">
             <input

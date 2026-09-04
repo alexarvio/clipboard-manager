@@ -133,7 +133,7 @@ async function createCheckoutSession(user, plan) {
 async function createPortalSession(user) {
   if (!stripe) throw new Error("server is not configured for billing yet");
   if (!user.stripe_customer_id) {
-    throw new Error("no billing account yet -- start a Pro trial first");
+    throw new Error("no billing account yet, start a Pro trial first");
   }
 
   const session = await stripe.billingPortal.sessions.create({

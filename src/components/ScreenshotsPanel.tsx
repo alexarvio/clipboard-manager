@@ -550,7 +550,7 @@ export default function ScreenshotsPanel({
     <div className="flex-1 overflow-y-auto px-4 pt-3 pb-2">
       {transformPaywallMsg && (
         <div className="mx-1 mt-1 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium">
-          Transform with AI is a Pro feature — upgrade to use it on screenshots.
+          Transform with AI is a Pro feature. Upgrade to use it on screenshots.
         </div>
       )}
       {showSmart ? (
@@ -592,13 +592,13 @@ export default function ScreenshotsPanel({
               </p>
             ) : (
               <p className="text-inkMuted dark:text-inkMutedDark text-sm text-center mt-10 px-4">
-                No screenshots yet -- take one (Win+Shift+S or PrintScreen) and it'll show up here.
+                No screenshots yet. Take one (Win+Shift+S or PrintScreen) and it'll show up here.
               </p>
             ))}
 
           {pinMsg === "limit" && (
             <div className="mx-1 mt-1 mb-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2 text-[11.5px] text-inkMuted dark:text-inkMutedDark text-center">
-              Pin limit reached ({PIN_LIMIT}) — unpin one first.
+              Pin limit reached ({PIN_LIMIT}). Unpin one first.
             </div>
           )}
 

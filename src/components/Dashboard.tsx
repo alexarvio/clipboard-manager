@@ -701,7 +701,7 @@ export default function Dashboard() {
                   </div>
                   {feedGroups.length === 0 && (
                     <p className="text-[13px] text-inkMuted dark:text-inkMutedDark">
-                      Nothing copied yet -- start using FatClipboard and it'll show up here.
+                      Nothing copied yet. Start using FatClipboard and it'll show up here.
                     </p>
                   )}
                   {feedGroups.map((group) => (
@@ -1121,7 +1121,7 @@ export default function Dashboard() {
               <div className="min-w-0">
                 <h1 className="text-[23px] font-semibold tracking-[-0.015em]">Folders</h1>
                 <p className="mt-1 text-[13.5px] text-inkMuted dark:text-inkMutedDark">
-                  Same folders as the quick panel -- changes here show up there too.
+                  Same folders as the quick panel. Changes here show up there too.
                 </p>
               </div>
               {/* Hands off to FoldersPanel's own create flow rather than
@@ -1338,7 +1338,7 @@ export default function Dashboard() {
           <div className="flex-1 min-w-0 min-h-0 flex flex-col px-9 pt-[34px] pb-10">
             <h1 className="text-[23px] font-semibold tracking-[-0.015em]">Settings</h1>
             <p className="mt-1 mb-5 text-[13.5px] text-inkMuted dark:text-inkMutedDark">
-              Same settings as the quick panel -- changes here apply everywhere.
+              Same settings as the quick panel. Changes here apply everywhere.
             </p>
             {/* The design's 720px reading column. SettingsPanel keeps its own
                 grouping: it carries a good deal more than the four groups in

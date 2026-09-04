@@ -2029,7 +2029,7 @@ export default function App() {
                           goToTransform(item.content);
                         }}
                         className="text-xs shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 text-inkMuted dark:text-inkMutedDark transition-opacity"
-                        title={tier === "pro" ? "Transform with AI" : "AI transform — Pro only"}
+                        title={tier === "pro" ? "Transform with AI" : "AI transform (Pro only)"}
                       >
                         <i className="ti ti-sparkles text-[14px]" />
                       </button>
@@ -2198,7 +2198,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="mx-3 mb-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2 text-[11.5px] text-inkMuted dark:text-inkMutedDark text-center"
           >
-            Pin limit reached (3) — unpin something first.
+            Pin limit reached (3). Unpin something first.
           </motion.div>
         )}
         {paywallMsg && (
@@ -2208,7 +2208,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="mx-3 mb-2 rounded-lg bg-accent/10 dark:bg-accentDark/15 px-3 py-2 text-[11.5px] text-accent dark:text-accentDark text-center font-medium"
           >
-            That's a Pro feature — upgrade to use it.
+            That's a Pro feature. Upgrade to use it.
           </motion.div>
         )}
         {updateNotice && (

@@ -145,7 +145,7 @@ const authAttemptLimiter = rateLimit({
   max: 20, // generous for someone mistyping their password a few times, not for a brute-force script
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "too many attempts -- try again in a few minutes" },
+  message: { error: "too many attempts, try again in a few minutes" },
 });
 // --- Email verification ----------------------------------------------------
 //
@@ -302,7 +302,7 @@ function requireAuth(req, res, next) {
     req.authUser = jwt.verify(token, JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ error: "session expired -- please log in again" });
+    return res.status(401).json({ error: "session expired, please log in again" });
   }
 }
 
@@ -349,7 +349,7 @@ const verificationLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "too many attempts -- try again in a few minutes" },
+  message: { error: "too many attempts, try again in a few minutes" },
 });
 app.use(["/auth/verify-email", "/auth/resend-verification"], verificationLimiter);
 
@@ -401,7 +401,7 @@ app.post("/auth/resend-verification", requireAuth, async (req, res) => {
     await sendVerificationEmail(user.email, code);
   } catch (err) {
     console.error("[clip-server] failed to resend verification email:", err);
-    return res.status(502).json({ error: "couldn't send that -- try again in a moment" });
+    return res.status(502).json({ error: "couldn't send that, try again in a moment" });
   }
 
   res.json({ ok: true });
@@ -509,7 +509,7 @@ const passwordResetLimiter = rateLimit({
   max: 5, // generous for someone retrying a typo'd email, not for inbox-bombing a stranger
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "too many attempts -- try again in a few minutes" },
+  message: { error: "too many attempts, try again in a few minutes" },
 });
 app.use(["/auth/forgot-password", "/auth/reset-password"], passwordResetLimiter);
 
@@ -640,7 +640,7 @@ async function requirePro(req, res, next) {
       req.authUser.sub,
     ]);
     if (!rows[0]) {
-      return res.status(401).json({ error: "account not found -- please log in again" });
+      return res.status(401).json({ error: "account not found, please log in again" });
     }
     if (rows[0].tier !== "pro") {
       return res.status(403).json({ error: "this feature requires Clip Pro" });
@@ -671,7 +671,7 @@ const burstLimiter = rateLimit({
   max: 20, // generous for a human clicking a button repeatedly; not for a script
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "too many requests -- slow down and try again in a minute" },
+  message: { error: "too many requests, slow down and try again in a minute" },
 });
 app.use(["/transform", "/filter-match"], burstLimiter);
 
@@ -685,7 +685,7 @@ const embedBurstLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "too many requests -- slow down and try again in a minute" },
+  message: { error: "too many requests, slow down and try again in a minute" },
 });
 app.use("/embed", embedBurstLimiter);
 
@@ -734,7 +734,7 @@ function dailyCap(kind) {
     const count = entry.counts[kind] || 0;
     if (count >= DAILY_LIMITS[kind]) {
       console.warn(`[clip-server] daily cap hit for ${kind} (key=${key})`);
-      return res.status(429).json({ error: "daily limit reached -- try again tomorrow" });
+      return res.status(429).json({ error: "daily limit reached, try again tomorrow" });
     }
     entry.counts[kind] = count + 1;
     next();
